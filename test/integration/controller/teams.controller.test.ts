@@ -1,0 +1,133 @@
+import { HttpStatus, type INestApplication } from '@nestjs/common'
+import request from 'supertest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+
+import { asTeamID } from '#/domain/team/team-id.js'
+import { TeamModule } from '#/module/team.module.ts'
+import { TeamsController } from '#/presentation/http/team/teams.controller.js'
+
+import { TeamBuilder } from '../../builder/team.builder.js'
+import { byId } from '../../util/sort-by-id.js'
+import { teams } from '../fixture/fixture.js'
+import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+
+describe('TeamsController', () => {
+  const unknownTeamId = asTeamID('00000000-0002-4000-8000-000000000000')
+  const integrationTest = setupDatabaseIntegrationTest()
+
+  let app: INestApplication
+
+  beforeAll(integrationTest.beforeAll)
+  afterAll(integrationTest.afterAll)
+
+  beforeEach(async () => {
+    await integrationTest.beforeEach()
+
+    const module = await integrationTest
+      .createModule({
+        testName: TeamsController.name,
+        imports: [TeamModule],
+      })
+      .compile()
+
+    app = await module.createNestApplication({ logger: false }).enableShutdownHooks().init()
+  })
+
+  afterEach(async () => {
+    await app.close()
+    await integrationTest.afterEach()
+  })
+
+  describe('GET /teams', () => {
+    it('should return 200 OK', () =>
+      request(app.getHttpServer())
+        .get('/teams')
+        .expect(HttpStatus.OK)
+        .expect(
+          Object.values(teams)
+            .sort(byId)
+            .map(example => example.toJSON()),
+        ))
+  })
+
+  describe('GET /teams/:id', () => {
+    it('should return 200 OK', () =>
+      request(app.getHttpServer())
+        .get(`/teams/${teams.platform.id}`)
+        .expect(HttpStatus.OK)
+        .expect(teams.platform.toJSON()))
+
+    it('should return 404 Not Found', () =>
+      request(app.getHttpServer()).get(`/teams/${unknownTeamId}`).expect(HttpStatus.NOT_FOUND))
+  })
+
+  describe('DELETE /teams/:id', () => {
+    it('should return 204 No Content', () =>
+      request(app.getHttpServer()).delete(`/teams/${teams.qa.id}`).expect(HttpStatus.NO_CONTENT))
+
+    it('should return 404 Not Found', () =>
+      request(app.getHttpServer()).get(`/teams/${unknownTeamId}`).expect(HttpStatus.NOT_FOUND))
+  })
+
+  describe('POST /teams', () => {
+    it('should return 201 Created', () =>
+      request(app.getHttpServer())
+        .post('/teams')
+        .send({
+          name: 'Traffic',
+        })
+        .expect(HttpStatus.CREATED)
+        .then(({ body }) =>
+          expect(body).toEqual({
+            id: expect.any(String),
+            name: 'Traffic',
+          }),
+        ))
+
+    it('should return 400 Bad Request', () =>
+      request(app.getHttpServer())
+        .post('/teams')
+        .send({
+          name: 42,
+        })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 409 Conflict if the name is taken', () =>
+      request(app.getHttpServer())
+        .post('/teams')
+        .send({
+          name: teams.qa.name,
+        })
+        .expect(HttpStatus.CONFLICT))
+  })
+
+  describe('PUT /teams/:id', () => {
+    const expected = TeamBuilder.from(teams.qa).withName('Quality Assurance').build()
+
+    it('should return 200 OK', async () => {
+      await request(app.getHttpServer())
+        .put(`/teams/${teams.qa.id}`)
+        .send(expected.toJSON())
+        .expect(HttpStatus.OK)
+        .expect(expected.toJSON())
+    })
+
+    it('should return 400 Bad Request if the payload is invalid', () =>
+      request(app.getHttpServer())
+        .put(`/teams/${teams.qa.id}`)
+        .send({ ...expected.toJSON(), name: 42 })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 400 Bad Request if the ids do not match', () =>
+      request(app.getHttpServer())
+        .put(`/teams/${teams.qa.id}`)
+        .send({ ...expected.toJSON(), id: teams.platform.id })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 404 Not Found', () =>
+      request(app.getHttpServer())
+        .put(`/teams/${unknownTeamId}`)
+        .send({ ...expected.toJSON(), id: unknownTeamId })
+        .expect(HttpStatus.NOT_FOUND))
+  })
+})

@@ -1,0 +1,24 @@
+{
+    "database": {
+        "connection": {
+            "host": "DATABASE_HOST",
+            "port": {
+                "__name": "DATABASE_PORT",
+                "__format": "number"
+            },
+            "ssl": {
+                "__name": "DATABASE_SSL",
+                "__format": "boolean"
+            },
+            "username": "DATABASE_USERNAME",
+            "password": "DATABASE_PASSWORD"
+        }
+    },
+    "server": {
+        "hostname": "SERVER_HOSTNAME",
+        "port": {
+            "__name": "SERVER_PORT",
+            "__format": "number"
+        }
+    }
+}

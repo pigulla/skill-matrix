@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: skillmatrix
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d skillmatrix"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  migrate:
+    image: node:26-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - ../migrations:/app/migrations:ro
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/skillmatrix
+    command: ["npx", "--yes", "node-pg-migrate@9.0.0", "up", "-m", "migrations", "-t", "pgmigrations", "--migration-file-language", "sql"]
+    restart: "no"
+
+  seed:
+    image: postgres:18-alpine
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGPASSWORD: postgres
+    volumes:
+      - ../test/integration/fixture/fixture.sql:/fixture.sql:ro
+    command: ["psql", "-h", "db", "-U", "postgres", "-d", "skillmatrix", "-v", "ON_ERROR_STOP=1", "-f", "/fixture.sql"]
+    restart: "no"

@@ -1,0 +1,47 @@
+{
+    "server": {
+        "hostname": "localhost",
+        "port": 3000
+    },
+    "application": {
+        "isProduction": true
+    },
+    "logging": {
+        "enabled": true,
+        "pretty": false,
+        "level": "log",
+        "requestResponse": false
+    },
+    "database": {
+        "connection": {
+            "name": "application",
+            "host": "localhost",
+            "port": 5432,
+            "ssl": true,
+            "username": "",
+            "password": "",
+            "database": "skillmatrix"
+        },
+        "logQueries": false,
+        "disableWarnings": false
+    },
+    "openApi": {
+        "server": "http://example.com",
+        "title": "Skill Matrix API",
+        "description": "This is the API for the skill matrix of Retail Platform.",
+        "version": "1.0",
+        "swagger": {
+            "enabled": false,
+            "path": "swagger"
+        },
+        "license": {
+            "name": "ISC",
+            "url": "https://spdx.org/licenses/ISC"
+        },
+        "contact": {
+            "name": "Raphael Pigulla",
+            "email": "raphael.pigulla@holidaycheck.com",
+            "url": "https://www.linkedin.com/in/pigulla"
+        }
+    }
+}
