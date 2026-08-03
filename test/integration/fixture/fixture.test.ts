@@ -7,12 +7,10 @@ import { SkillRepository } from '#/infrastructure/persistence/skill/skill.reposi
 import { TeamRepository } from '#/infrastructure/persistence/team/team.repository.js'
 import { UserRepository } from '#/infrastructure/persistence/user/user.repository.js'
 
+import { byId } from '../../util/sort-by-id.js'
+
 import { exampleKinds, examples, skills, teams, users } from './fixture.js'
 import { setupDatabaseIntegrationTest } from './setup-database-integration-test.js'
-
-function byId<T extends { id: string }>(a: T, b: T): number {
-  return a.id.localeCompare(b.id)
-}
 
 describe('Data in the SQL fixture', () => {
   const integrationTest = setupDatabaseIntegrationTest()
@@ -46,28 +44,28 @@ describe('Data in the SQL fixture', () => {
     await integrationTest.afterEach()
   })
 
-  it('should should match the modeled examples', async () => {
-    const all = await app.get(ExampleRepository).getAll()
+  it('should match the modeled examples', async () => {
+    const all = (await app.get(ExampleRepository).getAll())._unsafeUnwrap()
     expect(all.sort(byId)).toEqual(Object.values(examples).sort(byId))
   })
 
-  it('should should match the modeled skills', async () => {
-    const all = await app.get(SkillRepository).getAll()
+  it('should match the modeled skills', async () => {
+    const all = (await app.get(SkillRepository).getAll())._unsafeUnwrap()
     expect(all.sort(byId)).toEqual(Object.values(skills).sort(byId))
   })
 
-  it('should should match the modeled example kinds', async () => {
-    const all = await app.get(ExampleKindRepository).getAll()
+  it('should match the modeled example kinds', async () => {
+    const all = (await app.get(ExampleKindRepository).getAll())._unsafeUnwrap()
     expect(all.sort()).toEqual(Object.values(exampleKinds).sort())
   })
 
-  it('should should match the modeled users', async () => {
-    const all = await app.get(UserRepository).getAll()
+  it('should match the modeled users', async () => {
+    const all = (await app.get(UserRepository).getAll())._unsafeUnwrap()
     expect(all.sort(byId)).toEqual(Object.values(users).sort(byId))
   })
 
-  it('should should match the modeled teams', async () => {
-    const all = await app.get(TeamRepository).getAll()
+  it('should match the modeled teams', async () => {
+    const all = (await app.get(TeamRepository).getAll())._unsafeUnwrap()
     expect(all.sort(byId)).toEqual(Object.values(teams).sort(byId))
   })
 })

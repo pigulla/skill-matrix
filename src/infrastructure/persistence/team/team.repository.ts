@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { TransactionHost } from '@nestjs-cls/transactional'
 import { TransactionalAdapterPgPromise } from '@nestjs-cls/transactional-adapter-pg-promise'
+import { errAsync, okAsync, ResultAsync } from 'neverthrow'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
 import { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
@@ -27,88 +28,58 @@ export class TeamRepository implements ITeamRepository {
     this.txHost = txHost
   }
 
-  public async get(id: TeamID): Promise<Team> {
-    let row: unknown
-
-    try {
-      row = await this.txHost.tx.oneOrNone<unknown>(GET, { id })
-    } catch (error) {
+  public get(id: TeamID): ResultAsync<Team, TeamNotFoundError> {
+    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(GET, { id }), error => {
       throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    if (row === null) {
-      throw new TeamNotFoundError(id)
-    }
-
-    return teamsRow.parse(row).toDomain()
+    }).andThen(row =>
+      row === null ? errAsync(new TeamNotFoundError(id)) : okAsync(teamsRow.parse(row).toDomain()),
+    )
   }
 
-  public async getAll(): Promise<Team[]> {
-    let rows: unknown[]
-
-    try {
-      rows = await this.txHost.tx.manyOrNone<unknown>(GET_ALL)
-    } catch (error) {
+  public getAll(): ResultAsync<Team[], never> {
+    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
       throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    return rows.map(row => teamsRow.parse(row).toDomain())
+    }).map(rows => rows.map(row => teamsRow.parse(row).toDomain()))
   }
 
-  public async create({ id, name }: Team): Promise<Team> {
-    let row: unknown
-
-    try {
-      row = await this.txHost.tx.one<unknown>(INSERT, { id, name })
-    } catch (error) {
+  public create({
+    id,
+    name,
+  }: Team): ResultAsync<Team, DuplicateTeamIdError | DuplicateTeamNameError> {
+    return ResultAsync.fromPromise(this.txHost.tx.one<unknown>(INSERT, { id, name }), error => {
       if (isUniqueConstraintViolation('teams_pkey', error)) {
-        throw new DuplicateTeamIdError(id)
+        return new DuplicateTeamIdError(id)
       }
       if (isUniqueConstraintViolation('teams_name', error)) {
-        throw new DuplicateTeamNameError(name)
+        return new DuplicateTeamNameError(name)
       }
 
       throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    return teamsRow.parse(row).toDomain()
+    }).map(row => teamsRow.parse(row).toDomain())
   }
 
-  public async update({ id, name }: Team): Promise<Team> {
-    let row: unknown
+  public update({ id, name }: Team): ResultAsync<Team, TeamNotFoundError | DuplicateTeamNameError> {
+    return ResultAsync.fromPromise(
+      this.txHost.tx.oneOrNone<unknown>(UPDATE, { id, name }),
+      error => {
+        if (isUniqueConstraintViolation('teams_name', error)) {
+          return new DuplicateTeamNameError(name)
+        }
 
-    try {
-      row = await this.txHost.tx.oneOrNone<unknown>(UPDATE, { id, name })
-    } catch (error) {
-      if (isUniqueConstraintViolation('teams_name', error)) {
-        throw new DuplicateTeamNameError(name)
-      }
-
-      throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    if (row === null) {
-      throw new TeamNotFoundError(id)
-    }
-
-    return teamsRow.parse(row).toDomain()
+        throw new UnexpectedPersistenceError(error as Error)
+      },
+    ).andThen(row =>
+      row === null ? errAsync(new TeamNotFoundError(id)) : okAsync(teamsRow.parse(row).toDomain()),
+    )
   }
 
-  public async delete(id: TeamID): Promise<void> {
-    let row: unknown
-
-    try {
-      row = await this.txHost.tx.oneOrNone<unknown>(DELETE, { id })
-    } catch (error) {
+  public delete(id: TeamID): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError> {
+    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(DELETE, { id }), error => {
       if (isRestrictViolation('users_team_fkey', error)) {
-        throw new TeamNotEmptyError(id)
+        return new TeamNotEmptyError(id)
       }
 
       throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    if (row === null) {
-      throw new TeamNotFoundError(id)
-    }
+    }).andThen(row => (row === null ? errAsync(new TeamNotFoundError(id)) : okAsync(undefined)))
   }
 }

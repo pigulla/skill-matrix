@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { TransactionHost } from '@nestjs-cls/transactional'
 import { TransactionalAdapterPgPromise } from '@nestjs-cls/transactional-adapter-pg-promise'
+import { errAsync, okAsync, ResultAsync } from 'neverthrow'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
 import { DuplicateExampleKindError } from '#/domain/example-kind/error/duplicate-example-kind.error.js'
@@ -25,65 +26,43 @@ export class ExampleKindRepository implements IExampleKindRepository {
     this.txHost = txHost
   }
 
-  public async get(kind: ExampleKind): Promise<ExampleKind> {
-    let row: unknown
-
-    try {
-      row = await this.txHost.tx.oneOrNone<unknown>(GET, { kind })
-    } catch (error) {
+  public get(kind: ExampleKind): ResultAsync<ExampleKind, ExampleKindNotFoundError> {
+    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(GET, { kind }), error => {
       throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    if (row === null) {
-      throw new ExampleKindNotFoundError(kind)
-    }
-
-    return exampleKindRow.parse(row).toDomain()
+    }).andThen(row =>
+      row === null
+        ? errAsync(new ExampleKindNotFoundError(kind))
+        : okAsync(exampleKindRow.parse(row).toDomain()),
+    )
   }
 
-  public async getAll(): Promise<ExampleKind[]> {
-    let rows: unknown[]
-
-    try {
-      rows = await this.txHost.tx.manyOrNone<unknown>(GET_ALL)
-    } catch (error) {
+  public getAll(): ResultAsync<ExampleKind[], never> {
+    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
       throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    return rows.map(row => exampleKindRow.parse(row).toDomain())
+    }).map(rows => rows.map(row => exampleKindRow.parse(row).toDomain()))
   }
 
-  public async create(kind: ExampleKind): Promise<ExampleKind> {
-    let row: unknown
-
-    try {
-      row = await this.txHost.tx.one<unknown>(INSERT, { kind })
-    } catch (error) {
+  public create(kind: ExampleKind): ResultAsync<ExampleKind, DuplicateExampleKindError> {
+    return ResultAsync.fromPromise(this.txHost.tx.one<unknown>(INSERT, { kind }), error => {
       if (isUniqueConstraintViolation('example_kinds_pkey', error)) {
-        throw new DuplicateExampleKindError(kind)
+        return new DuplicateExampleKindError(kind)
       }
 
       throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    return exampleKindRow.parse(row).toDomain()
+    }).map(row => exampleKindRow.parse(row).toDomain())
   }
 
-  public async delete(kind: ExampleKind): Promise<void> {
-    let row: unknown
-
-    try {
-      row = await this.txHost.tx.oneOrNone<unknown>(DELETE, { kind })
-    } catch (error) {
+  public delete(
+    kind: ExampleKind,
+  ): ResultAsync<void, ExampleKindNotFoundError | ExampleKindInUseError> {
+    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(DELETE, { kind }), error => {
       if (isForeignKeyViolation('examples_kind_fkey', error)) {
-        throw new ExampleKindInUseError(kind)
+        return new ExampleKindInUseError(kind)
       }
 
       throw new UnexpectedPersistenceError(error as Error)
-    }
-
-    if (row === null) {
-      throw new ExampleKindNotFoundError(kind)
-    }
+    }).andThen(row =>
+      row === null ? errAsync(new ExampleKindNotFoundError(kind)) : okAsync(undefined),
+    )
   }
 }

@@ -12,7 +12,7 @@ export type ExampleProperties = {
 
 export class ExampleBuilder {
   private properties: ExampleProperties = {
-    id: `0000-${EntityIdMarker.EXAMPLE}-4000-8000-000000000000`,
+    id: `00000000-${EntityIdMarker.EXAMPLE}-4000-8000-000000000000`,
     name: 'TypeScript',
     kind: 'technology',
     url: null,

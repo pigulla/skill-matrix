@@ -22,14 +22,10 @@ export class MigrationRepository implements IMigrationRepository {
     this.txHost = txHost
   }
 
-  public async getAll(): Promise<Set<Migration>> {
-    let migrations: Migration[]
-
+  public async getAll(): Promise<Migration[]> {
     try {
-      migrations = await this.txHost.tx.map<Migration>(
-        GET_ALL_NAMES,
-        { table: 'pgmigrations' },
-        row => asMigration(row.name),
+      return await this.txHost.tx.map<Migration>(GET_ALL_NAMES, { table: 'pgmigrations' }, row =>
+        asMigration(row.name),
       )
     } catch (error) {
       if (
@@ -41,7 +37,5 @@ export class MigrationRepository implements IMigrationRepository {
 
       throw new UnexpectedPersistenceError(error as Error)
     }
-
-    return new Set(migrations)
   }
 }

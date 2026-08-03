@@ -6,15 +6,15 @@ import { exampleIdSchema } from '#/domain/example/example-id.js'
 
 const createExampleDTOSchema = z
   .strictObject(exampleSchema.pick({ name: true, kind: true, url: true }).shape)
-  .brand<'create-example-dto'>('create-example-dto')
+  .brand('create-example-dto')
 
 const updateExampleDTOSchema = createExampleDTOSchema
   .extend({
     id: exampleIdSchema,
   })
-  .brand<'update-example-dto'>('update-example-dto')
+  .brand('update-example-dto')
 
-export const exampleDTOSchema = updateExampleDTOSchema.brand<'example-dto'>('example-dto')
+export const exampleDTOSchema = updateExampleDTOSchema.brand('example-dto')
 
 export class CreateExampleDTO extends createZodDto(createExampleDTOSchema) {}
 

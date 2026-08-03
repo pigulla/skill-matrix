@@ -11,10 +11,17 @@ import {
   Put,
 } from '@nestjs/common'
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import type { ResultAsync } from 'neverthrow'
 
 import { ITeamSkillProficienciesService } from '#/application/team/team-skill-proficiencies.service.interface.js'
+import type { SkillReferenceNotFoundError } from '#/domain/skill/error/skill-reference-not-found.error.js'
 import type { SkillID } from '#/domain/skill/skill-id.js'
+import type { DuplicateTeamSkillError } from '#/domain/team/error/duplicate-team-skill.error.js'
+import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
+import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
+import type { TeamSkillNotFoundError } from '#/domain/team/error/team-skill-not-found.error.js'
 import type { TeamID } from '#/domain/team/team-id.js'
+import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { fromDomain, SetSkillProficiencyDTO, TeamSkillProficienciesDTO } from './team-skill.dto.js'
 
@@ -44,11 +51,12 @@ export class TeamSkillsController {
     description: 'The operation completed successfully.',
   })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'The team was not found.' })
-  public async get(
+  @UnwrapResult()
+  public get(
     @Param('teamId', new ParseUUIDPipe({ version: '4' }))
     teamId: TeamID,
-  ): Promise<TeamSkillProficienciesDTO> {
-    return fromDomain(await this.service.get({ teamId }))
+  ): ResultAsync<TeamSkillProficienciesDTO, TeamNotFoundError> {
+    return this.service.get({ teamId }).map(fromDomain)
   }
 
   @Post(':skillId')
@@ -67,19 +75,26 @@ export class TeamSkillsController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'The referenced skill or team was not found.',
   })
-  public async add(
+  @UnwrapResult()
+  public add(
     @Param('teamId', new ParseUUIDPipe({ version: '4' }))
     teamId: TeamID,
     @Param('skillId', new ParseUUIDPipe({ version: '4' }))
     skillId: SkillID,
     @Body() dto: SetSkillProficiencyDTO,
-  ): Promise<TeamSkillProficienciesDTO> {
-    return fromDomain(await this.service.add({ teamId, skillId, proficiency: dto.proficiency }))
+  ): ResultAsync<
+    TeamSkillProficienciesDTO,
+    | DuplicateTeamSkillError
+    | SkillReferenceNotFoundError
+    | TeamReferenceNotFoundError
+    | TeamNotFoundError
+  > {
+    return this.service.add({ teamId, skillId, proficiency: dto.proficiency }).map(fromDomain)
   }
 
   @Put(':skillId')
-  @ApiOperation({ summary: 'Update a skill proficiency on a team.' })
   @ApiParam({ name: 'skillId', type: 'string', format: 'uuid' })
+  @ApiOperation({ summary: 'Update a skill proficiency on a team.' })
   @ApiResponse({
     status: HttpStatus.OK,
     type: TeamSkillProficienciesDTO,
@@ -89,14 +104,15 @@ export class TeamSkillsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The team or skill association was not found.',
   })
-  public async update(
+  @UnwrapResult()
+  public update(
     @Param('teamId', new ParseUUIDPipe({ version: '4' }))
     teamId: TeamID,
     @Param('skillId', new ParseUUIDPipe({ version: '4' }))
     skillId: SkillID,
     @Body() dto: SetSkillProficiencyDTO,
-  ): Promise<TeamSkillProficienciesDTO> {
-    return fromDomain(await this.service.update({ teamId, skillId, proficiency: dto.proficiency }))
+  ): ResultAsync<TeamSkillProficienciesDTO, TeamSkillNotFoundError | TeamNotFoundError> {
+    return this.service.update({ ...dto, teamId, skillId }).map(fromDomain)
   }
 
   @Delete(':skillId')
@@ -112,12 +128,13 @@ export class TeamSkillsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The team or skill association was not found.',
   })
-  public async remove(
+  @UnwrapResult()
+  public remove(
     @Param('teamId', new ParseUUIDPipe({ version: '4' }))
     teamId: TeamID,
     @Param('skillId', new ParseUUIDPipe({ version: '4' }))
     skillId: SkillID,
-  ): Promise<TeamSkillProficienciesDTO> {
-    return fromDomain(await this.service.remove({ teamId, skillId }))
+  ): ResultAsync<TeamSkillProficienciesDTO, TeamSkillNotFoundError | TeamNotFoundError> {
+    return this.service.remove({ teamId, skillId }).map(fromDomain)
   }
 }

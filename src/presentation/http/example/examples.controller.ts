@@ -12,17 +12,18 @@ import {
   Put,
 } from '@nestjs/common'
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import type { ResultAsync } from 'neverthrow'
 
 import { IExampleService } from '#/application/example/example.service.interface.js'
+import type { DuplicateExampleIdError } from '#/domain/example/error/duplicate-example-id.error.js'
+import type { DuplicateExampleNameError } from '#/domain/example/error/duplicate-example-name.error.js'
+import type { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
+import type { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
 import type { ExampleID } from '#/domain/example/example-id.js'
+import type { ExampleKindReferenceNotFoundError } from '#/domain/example-kind/error/example-kind-reference-not-found.error.js'
+import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
-import {
-  CreateExampleDTO,
-  ExampleDTO,
-  fromDomain,
-  toDomain,
-  UpdateExampleDTO,
-} from './example.dto.js'
+import { CreateExampleDTO, ExampleDTO, fromDomain, UpdateExampleDTO } from './example.dto.js'
 
 @Controller('examples')
 @ApiTags('Examples')
@@ -49,10 +50,9 @@ export class ExamplesController {
     type: [ExampleDTO],
     description: 'The operation completed successfully.',
   })
-  public async getAll(): Promise<ExampleDTO[]> {
-    const examples = await this.service.getAll()
-
-    return examples.map(example => fromDomain(example))
+  @UnwrapResult()
+  public getAll(): ResultAsync<ExampleDTO[], never> {
+    return this.service.getAll().map(examples => examples.map(example => fromDomain(example)))
   }
 
   @Get(':id')
@@ -70,11 +70,12 @@ export class ExamplesController {
     status: HttpStatus.NOT_FOUND,
     description: 'The example with the given id was not found.',
   })
-  public async getOne(
+  @UnwrapResult()
+  public getOne(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: ExampleID,
-  ): Promise<ExampleDTO> {
-    return fromDomain(await this.service.get(id))
+  ): ResultAsync<ExampleDTO, ExampleNotFoundError> {
+    return this.service.get(id).map(fromDomain)
   }
 
   @Delete(':id')
@@ -96,11 +97,12 @@ export class ExamplesController {
     status: HttpStatus.CONFLICT,
     description: 'The example is still referenced by a skill.',
   })
-  public async delete(
+  @UnwrapResult()
+  public delete(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: ExampleID,
-  ): Promise<void> {
-    await this.service.delete(id)
+  ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError> {
+    return this.service.delete(id)
   }
 
   @Post()
@@ -113,10 +115,22 @@ export class ExamplesController {
     type: ExampleDTO,
     description: 'The operation completed successfully.',
   })
-  public async create(@Body() dto: CreateExampleDTO): Promise<ExampleDTO> {
-    const result = await this.service.create(dto)
-
-    return fromDomain(result)
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'An example with an identical name already exists.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    description: 'The referenced skill does not exist.',
+  })
+  @UnwrapResult()
+  public create(
+    @Body() dto: CreateExampleDTO,
+  ): ResultAsync<
+    ExampleDTO,
+    DuplicateExampleIdError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
+  > {
+    return this.service.create(dto).map(fromDomain)
   }
 
   @Put(':id')
@@ -134,17 +148,27 @@ export class ExamplesController {
     status: HttpStatus.NOT_FOUND,
     description: 'The example with the given id was not found.',
   })
-  public async update(
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'An example with an identical name already exists.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    description: 'The referenced skill does not exist.',
+  })
+  @UnwrapResult()
+  public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: ExampleID,
     @Body() dto: UpdateExampleDTO,
-  ): Promise<ExampleDTO> {
+  ): ResultAsync<
+    ExampleDTO,
+    ExampleNotFoundError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
+  > {
     if (id !== dto.id) {
       throw new BadRequestException('The id in the payload does not match the id in the route.')
     }
 
-    const result = await this.service.update(toDomain(dto))
-
-    return fromDomain(result)
+    return this.service.update(dto).map(fromDomain)
   }
 }

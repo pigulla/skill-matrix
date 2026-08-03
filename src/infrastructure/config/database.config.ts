@@ -11,8 +11,8 @@ export const databaseConfig = z
         port: z.number().int().positive().max(65535),
         ssl: z.boolean(),
         database: z.string().min(1),
-        username: z.string(),
-        password: z.string(),
+        username: z.string().min(1),
+        password: z.string().min(1),
       })
       .readonly(),
     logQueries: z.boolean(),

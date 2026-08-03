@@ -1,4 +1,4 @@
-import type { JsonObject } from 'type-fest'
+import type { Except, JsonObject } from 'type-fest'
 import z from 'zod'
 
 import { type ExampleKind, exampleKindSchema } from '../example-kind/example-kind.js'
@@ -19,7 +19,9 @@ export const exampleSchema = z.object({
   }),
 })
 
-export class Example {
+export type Properties = z.infer<typeof exampleSchema>
+
+export class Example implements Properties {
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Disable structural typing.
   readonly #brand = Symbol.for(Example.name)
 
@@ -39,6 +41,10 @@ export class Example {
     this.name = result.data.name
     this.kind = result.data.kind
     this.url = result.data.url
+  }
+
+  public update(data: Partial<Except<Properties, 'id'>>): Example {
+    return new Example({ ...this, ...data })
   }
 
   public toJSON(): JsonObject {

@@ -33,7 +33,7 @@ it("returns 404 when the service throws", async () => {
 
 ## Persistence / repository tests
 
-Use the shared harness `test/integration/persistence/setup-database-integration-test.ts`. It starts one `postgres:17` Testcontainer (`beforeAll`/`afterAll`) and runs all migrations up before each test and down after (`beforeEach`/`afterEach`) via the node-pg-migrate `runner`, so every test gets a clean schema. `createModule` wires `DatabaseModule` + the transactional CLS plugin and points the DB config at the container.
+Use the shared harness `test/integration/fixture/setup-database-integration-test.ts`. It starts one `postgres:18-alpine` Testcontainer per test file (`beforeAll`/`afterAll`). In `beforeAll` it also runs all migrations and seeds `fixture.sql` **once**, then marks that database as a Postgres template (`IS_TEMPLATE = true`). Each test's `beforeEach`/`afterEach` then just clones (`CREATE DATABASE ... TEMPLATE ...`) and drops a fresh per-test database — no migrations run per test. `createModule` wires `DatabaseModule` + the transactional CLS plugin and points the DB config at that test's database.
 
 ```ts
 const integrationTest = setupDatabaseIntegrationTest();
@@ -51,7 +51,6 @@ beforeEach(async () => {
     app = await module.createNestApplication().enableShutdownHooks().init();
     userRepository = app.get(UserRepository);
     db = app.get(IConnectionProvider).database;
-    await db.multi(fixture); // seed from a fixture.sql read at the top of the file
 });
 afterEach(async () => {
     await app?.close();
@@ -59,6 +58,8 @@ afterEach(async () => {
 });
 ```
 
-- Seed state from a `fixture.sql` next to the test; assert **both** the returned domain object and the raw DB row (`db.one('SELECT ...')` — inline SQL is allowed only in tests).
+- Fixture data (teams, users, skills, examples, ...) is already present in every test's database via the template — no per-test seeding call is needed.
+- Assert **both** the returned domain object and the raw DB row (`db.one('SELECT ...')` — inline SQL is allowed only in tests).
 - Assert error cases throw the domain error (`*NotFoundError`, `Duplicate*Error`).
 - For the repository conventions being tested (SQL files, row mapping, error translation), see the `database-changes` skill.
+- Down-migrations are not exercised by these tests anymore; they're covered once by `test/integration/fixture/migration-round-trip.test.ts`.

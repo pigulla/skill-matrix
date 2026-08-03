@@ -7,7 +7,7 @@ export const userIdSchema = idSchema
   .refine(id => id.split('-')[1] === EntityIdMarker.USER, {
     message: `ID must have marker '${EntityIdMarker.USER}' in the second segment`,
   })
-  .brand<'user-id'>()
+  .brand('user-id')
   .meta({
     description: 'The ID of the user.',
     example: `00000000-${EntityIdMarker.USER}-4000-8000-000000000000`,

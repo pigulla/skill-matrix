@@ -27,4 +27,4 @@ export const skillWithExampleIdsRow = skillsRowSchema
       }),
   }))
   .readonly()
-  .brand<'skill-with-examples-row'>('skill-with-examples-row')
+  .brand('skill-with-examples-row')

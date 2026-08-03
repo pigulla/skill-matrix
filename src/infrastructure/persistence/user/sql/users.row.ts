@@ -20,4 +20,4 @@ export const usersRow = z
     },
   }))
   .readonly()
-  .brand<'users-row'>('users-row')
+  .brand('users-row')

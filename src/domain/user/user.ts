@@ -23,15 +23,9 @@ export const userSchema = z.object({
   teamId: teamIdSchema,
 })
 
-type Properties = {
-  id: UserID
-  email: string
-  firstName: string
-  lastName: string
-  teamId: TeamID
-}
+export type Properties = z.infer<typeof userSchema>
 
-export class User {
+export class User implements Properties {
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Disable structural typing.
   readonly #brand = Symbol.for(User.name)
 

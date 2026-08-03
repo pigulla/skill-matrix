@@ -1,10 +1,16 @@
 import { Injectable } from '@nestjs/common'
-import { Transactional } from '@nestjs-cls/transactional'
+import type { ResultAsync } from 'neverthrow'
+import type { Except, SetRequired } from 'type-fest'
 
-import { Example } from '#/domain/example/example.js'
+import type { DuplicateExampleIdError } from '#/domain/example/error/duplicate-example-id.error.js'
+import type { DuplicateExampleNameError } from '#/domain/example/error/duplicate-example-name.error.js'
+import type { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
+import type { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
+import { Example, type Properties } from '#/domain/example/example.js'
 import { IExampleRepository } from '#/domain/example/example.repository.interface.js'
-import { type ExampleID } from '#/domain/example/example-id.js'
-import type { ExampleKind } from '#/domain/example-kind/example-kind.js'
+import type { ExampleID } from '#/domain/example/example-id.js'
+import type { ExampleKindReferenceNotFoundError } from '#/domain/example-kind/error/example-kind-reference-not-found.error.js'
+import { ResultTransactional } from '#/util/result-transactional.decorator.js'
 
 import { IExampleService } from './example.service.interface.js'
 import { IExampleUuidProvider } from './example-uuid-provider.interface.js'
@@ -19,31 +25,43 @@ export class ExampleService implements IExampleService {
     this.uuidProvider = uuidProvider
   }
 
-  @Transactional()
-  public getAll(): Promise<Example[]> {
+  @ResultTransactional()
+  public getAll(): ResultAsync<Example[], never> {
     return this.exampleRepository.getAll()
   }
 
-  @Transactional()
-  public get(id: ExampleID): Promise<Example> {
+  @ResultTransactional()
+  public get(id: ExampleID): ResultAsync<Example, ExampleNotFoundError> {
     return this.exampleRepository.get(id)
   }
 
-  @Transactional()
-  public delete(id: ExampleID): Promise<void> {
+  @ResultTransactional()
+  public delete(id: ExampleID): ResultAsync<void, ExampleNotFoundError | ExampleInUseError> {
     return this.exampleRepository.delete(id)
   }
 
-  @Transactional()
-  public create(data: { name: string; kind: ExampleKind; url: string | null }): Promise<Example> {
+  @ResultTransactional()
+  public create(
+    properties: Except<Properties, 'id'>,
+  ): ResultAsync<
+    Example,
+    DuplicateExampleIdError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
+  > {
     const id = this.uuidProvider.generate()
-    const example = new Example({ ...data, id })
+    const example = new Example({ ...properties, id })
 
     return this.exampleRepository.create(example)
   }
 
-  @Transactional()
-  public update(example: Example): Promise<Example> {
-    return this.exampleRepository.update(example)
+  @ResultTransactional()
+  public update(
+    properties: SetRequired<Partial<Properties>, 'id'>,
+  ): ResultAsync<
+    Example,
+    ExampleNotFoundError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
+  > {
+    return this.exampleRepository
+      .get(properties.id)
+      .andThen(existing => this.exampleRepository.update(existing.update(properties)))
   }
 }

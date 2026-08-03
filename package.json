@@ -24,7 +24,7 @@
     }
   },
   "scripts": {
-    "audit": "npm audit --omit dev --audit-level high",
+    "audit": "npm audit --omit dev",
     "build": "rm -rf dist && tsc --project tsconfig.build.json && npm run build:copy-config && npm run build:copy-sql",
     "build:copy-config": "rsync --archive --include '*/' --exclude 'local*' config/ dist/config",
     "build:copy-sql": "rsync --archive --prune-empty-dirs --include '*/' --include '*.sql' --exclude '*' src/ dist/src && rsync --archive --prune-empty-dirs --include '*/' --include '*.sql' --exclude '*' migrations/ dist/migrations",
@@ -72,12 +72,13 @@
     "@nestjs/platform-express": "11.1.28",
     "@nestjs/swagger": "11.4.6",
     "@nestjs/terminus": "11.1.1",
-    "config": "4.4.2",
+    "config": "5.0.0",
     "dayjs": "1.11.21",
     "glob": "13.0.6",
     "nestjs-cls": "6.2.1",
     "nestjs-pino": "4.6.1",
     "nestjs-zod": "5.5.0",
+    "neverthrow": "8.2.0",
     "pg-promise": "12.7.0",
     "pg-protocol": "1.15.0",
     "reflect-metadata": "0.2.2",
@@ -87,12 +88,12 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.6",
+    "@biomejs/biome": "2.5.7",
     "@nestjs/testing": "11.1.28",
-    "@redocly/cli": "2.43.2",
+    "@redocly/cli": "2.44.1",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.47",
-    "@testcontainers/postgresql": "12.0.4",
+    "@testcontainers/postgresql": "12.1.0",
     "@tsconfig/node-ts": "23.6.4",
     "@tsconfig/node26": "26.0.0",
     "@types/node": "26.1.2",
@@ -113,7 +114,7 @@
     "tsarch": "5.4.1",
     "type-fest": "5.8.0",
     "typescript": "7.0.2",
-    "unplugin-swc": "1.5.9",
+    "unplugin-swc": "1.5.10",
     "vite": "8.2.0",
     "vitest": "4.1.10",
     "yaml": "2.9.0"

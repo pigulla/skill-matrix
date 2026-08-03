@@ -1,7 +1,7 @@
 import type { Except, JsonObject } from 'type-fest'
 import z from 'zod'
 
-import { type ExampleID, exampleIdSchema } from '#/domain/example/example-id.js'
+import { type ExampleID, exampleIdSchema } from '../example/example-id.js'
 
 import { InvalidSkillError } from './error/invalid-skill.error.js'
 import { type SkillID, skillIdSchema } from './skill-id.js'
@@ -16,19 +16,17 @@ export const skillSchema = z.object({
     description: 'A description of the skill.',
     example: 'Designing and building server-side services.',
   }),
-  exampleIds: z.set(exampleIdSchema).meta({
-    description: 'The ids of the examples associated with this skill.',
-  }),
+  exampleIds: z
+    .set(exampleIdSchema)
+    .meta({
+      description: 'The ids of the examples associated with this skill.',
+    })
+    .readonly(),
 })
 
-export type Properties = {
-  id: SkillID
-  name: string
-  description: string
-  exampleIds: ReadonlySet<ExampleID>
-}
+export type Properties = z.infer<typeof skillSchema>
 
-export class Skill {
+export class Skill implements Properties {
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Disable structural typing.
   readonly #brand = Symbol.for(Skill.name)
 

@@ -1,12 +1,18 @@
 import { Injectable } from '@nestjs/common'
-import { Transactional } from '@nestjs-cls/transactional'
+import type { ResultAsync } from 'neverthrow'
 
+import type { SkillReferenceNotFoundError } from '#/domain/skill/error/skill-reference-not-found.error.js'
 import type { Proficiency } from '#/domain/skill/proficiency.js'
 import type { SkillID } from '#/domain/skill/skill-id.js'
 import { SkillProficiency } from '#/domain/skill/skill-proficiency.js'
+import type { DuplicateTeamSkillError } from '#/domain/team/error/duplicate-team-skill.error.js'
+import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
+import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
+import type { TeamSkillNotFoundError } from '#/domain/team/error/team-skill-not-found.error.js'
 import type { TeamID } from '#/domain/team/team-id.js'
 import type { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 import { ITeamSkillProficienciesRepository } from '#/domain/team/team-skill-proficiencies.repository.interface.js'
+import { ResultTransactional } from '#/util/result-transactional.decorator.js'
 
 import { ITeamSkillProficienciesService } from './team-skill-proficiencies.service.interface.js'
 
@@ -18,43 +24,52 @@ export class TeamSkillProficienciesService implements ITeamSkillProficienciesSer
     this.repository = repository
   }
 
-  @Transactional()
-  public get(parameters: { teamId: TeamID }): Promise<TeamSkillProficiencies> {
+  @ResultTransactional()
+  public get(parameters: {
+    teamId: TeamID
+  }): ResultAsync<TeamSkillProficiencies, TeamNotFoundError> {
     return this.repository.get(parameters.teamId)
   }
 
-  @Transactional()
-  public async add(parameters: {
+  @ResultTransactional()
+  public add(parameters: {
     teamId: TeamID
     skillId: SkillID
     proficiency: Proficiency
-  }): Promise<TeamSkillProficiencies> {
-    await this.repository.add(
-      parameters.teamId,
-      new SkillProficiency({ skillId: parameters.skillId, proficiency: parameters.proficiency }),
-    )
-    return this.repository.get(parameters.teamId)
+  }): ResultAsync<
+    TeamSkillProficiencies,
+    | DuplicateTeamSkillError
+    | SkillReferenceNotFoundError
+    | TeamReferenceNotFoundError
+    | TeamNotFoundError
+  > {
+    const { teamId, skillId, proficiency } = parameters
+
+    return this.repository
+      .add(teamId, new SkillProficiency({ skillId, proficiency }))
+      .andThen(() => this.repository.get(teamId))
   }
 
-  @Transactional()
-  public async update(parameters: {
+  @ResultTransactional()
+  public update(parameters: {
     teamId: TeamID
     skillId: SkillID
     proficiency: Proficiency
-  }): Promise<TeamSkillProficiencies> {
-    await this.repository.update(
-      parameters.teamId,
-      new SkillProficiency({ skillId: parameters.skillId, proficiency: parameters.proficiency }),
-    )
-    return this.repository.get(parameters.teamId)
+  }): ResultAsync<TeamSkillProficiencies, TeamSkillNotFoundError | TeamNotFoundError> {
+    const { teamId, skillId, proficiency } = parameters
+
+    return this.repository
+      .update(teamId, new SkillProficiency({ skillId, proficiency }))
+      .andThen(() => this.repository.get(teamId))
   }
 
-  @Transactional()
-  public async remove(parameters: {
+  @ResultTransactional()
+  public remove(parameters: {
     teamId: TeamID
     skillId: SkillID
-  }): Promise<TeamSkillProficiencies> {
-    await this.repository.remove(parameters.teamId, parameters.skillId)
-    return this.repository.get(parameters.teamId)
+  }): ResultAsync<TeamSkillProficiencies, TeamSkillNotFoundError | TeamNotFoundError> {
+    const { teamId, skillId } = parameters
+
+    return this.repository.remove(teamId, skillId).andThen(() => this.repository.get(teamId))
   }
 }

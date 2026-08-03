@@ -6,7 +6,6 @@ export type UserServiceMock = Mocked<IUserService>
 
 export function mockUserService(): UserServiceMock {
   return {
-    assignTeam: vi.fn(),
     create: vi.fn(),
     delete: vi.fn(),
     get: vi.fn(),

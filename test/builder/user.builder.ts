@@ -55,7 +55,13 @@ export class UserBuilder {
   }
 
   public static from(user: User): UserBuilder {
-    return new UserBuilder().with(user)
+    return new UserBuilder().with({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      teamId: user.teamId,
+    })
   }
 
   public build(): User {

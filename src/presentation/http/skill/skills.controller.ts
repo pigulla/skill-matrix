@@ -12,9 +12,16 @@ import {
   Put,
 } from '@nestjs/common'
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import type { ResultAsync } from 'neverthrow'
 
 import { ISkillService } from '#/application/skill/skill.service.interface.js'
+import type { ExampleReferenceNotFoundError } from '#/domain/example/error/example-reference-not-found.error.js'
+import type { DuplicateSkillIdError } from '#/domain/skill/error/duplicate-skill-id.error.js'
+import type { DuplicateSkillNameError } from '#/domain/skill/error/duplicate-skill-name.error.js'
+import type { SkillInUseError } from '#/domain/skill/error/skill-in-use.error.js'
+import type { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
 import type { SkillID } from '#/domain/skill/skill-id.js'
+import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { CreateSkillDTO, fromDomain, SkillDTO, UpdateSkillDTO } from './skill.dto.js'
 
@@ -43,10 +50,9 @@ export class SkillsController {
     type: [SkillDTO],
     description: 'The operation completed successfully.',
   })
-  public async getAll(): Promise<SkillDTO[]> {
-    const skills = await this.service.getAll()
-
-    return skills.map(skill => fromDomain(skill))
+  @UnwrapResult()
+  public getAll(): ResultAsync<SkillDTO[], never> {
+    return this.service.getAll().map(skills => skills.map(fromDomain))
   }
 
   @Get(':id')
@@ -64,11 +70,12 @@ export class SkillsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The skill with the given id was not found.',
   })
-  public async getOne(
+  @UnwrapResult()
+  public getOne(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: SkillID,
-  ): Promise<SkillDTO> {
-    return fromDomain(await this.service.get(id))
+  ): ResultAsync<SkillDTO, SkillNotFoundError> {
+    return this.service.get(id).map(fromDomain)
   }
 
   @Delete(':id')
@@ -86,11 +93,16 @@ export class SkillsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The skill with the given id was not found.',
   })
-  public async delete(
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: `The skill is in use and can't be deleted.`,
+  })
+  @UnwrapResult()
+  public delete(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: SkillID,
-  ): Promise<void> {
-    await this.service.delete(id)
+  ): ResultAsync<void, SkillInUseError | SkillNotFoundError> {
+    return this.service.delete(id)
   }
 
   @Post()
@@ -111,14 +123,20 @@ export class SkillsController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'A referenced example was not found.',
   })
-  public async create(@Body() dto: CreateSkillDTO): Promise<SkillDTO> {
-    const result = await this.service.create({
-      name: dto.name,
-      description: dto.description,
-      exampleIds: new Set(dto.exampleIds),
-    })
-
-    return fromDomain(result)
+  @UnwrapResult()
+  public create(
+    @Body() dto: CreateSkillDTO,
+  ): ResultAsync<
+    SkillDTO,
+    DuplicateSkillIdError | DuplicateSkillNameError | ExampleReferenceNotFoundError
+  > {
+    return this.service
+      .create({
+        name: dto.name,
+        description: dto.description,
+        exampleIds: new Set(dto.exampleIds),
+      })
+      .map(fromDomain)
   }
 
   @Put(':id')
@@ -129,8 +147,8 @@ export class SkillsController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    type: SkillDTO,
     description: 'The operation completed successfully.',
+    type: SkillDTO,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -144,22 +162,19 @@ export class SkillsController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'A referenced example was not found.',
   })
-  public async update(
+  @UnwrapResult()
+  public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: SkillID,
     @Body() dto: UpdateSkillDTO,
-  ): Promise<SkillDTO> {
+  ): ResultAsync<
+    SkillDTO,
+    SkillNotFoundError | DuplicateSkillNameError | ExampleReferenceNotFoundError
+  > {
     if (id !== dto.id) {
       throw new BadRequestException('The id in the payload does not match the id in the route.')
     }
 
-    const result = await this.service.update({
-      id: dto.id,
-      name: dto.name,
-      description: dto.description,
-      exampleIds: new Set(dto.exampleIds),
-    })
-
-    return fromDomain(result)
+    return this.service.update({ ...dto, exampleIds: new Set(dto.exampleIds) }).map(fromDomain)
   }
 }

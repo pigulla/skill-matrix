@@ -33,7 +33,10 @@ export class TeamBuilder {
   }
 
   public static from(team: Team): TeamBuilder {
-    return new TeamBuilder().with(team)
+    return new TeamBuilder().with({
+      id: team.id,
+      name: team.name,
+    })
   }
 
   public build(): Team {

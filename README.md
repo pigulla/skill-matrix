@@ -11,6 +11,10 @@ API for managing skill matrices for individual developers and teams, built for R
 
 The codebase follows Clean Architecture, enforced by architecture tests. See [AGENTS.md](AGENTS.md#architecture) for the full layering rules and conventions.
 
+## Error handling
+
+Expected domain errors (not found, duplicate, still-in-use, missing reference, etc.) are returned as values using [`neverthrow`](https://github.com/supermacro/neverthrow) `Result`/`ResultAsync`, propagated from repository → service → controller; unexpected errors (bugs, infrastructure failures) are still thrown. See [AGENTS.md](AGENTS.md#error-handling) for the full pattern.
+
 ## Setup
 
 ```bash

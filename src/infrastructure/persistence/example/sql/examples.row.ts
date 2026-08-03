@@ -16,4 +16,4 @@ export const exampleRow = z
     toDomain: () => new Example({ id: data.id, name: data.name, kind: data.kind, url: data.url }),
   }))
   .readonly()
-  .brand<'example-row'>('example-row')
+  .brand('example-row')

@@ -4,6 +4,7 @@ import type { ModuleMetadata } from '@nestjs/common'
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { Test, type TestingModuleBuilder } from '@nestjs/testing'
 import { ClsPluginTransactional } from '@nestjs-cls/transactional'
+import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
 import { TransactionalAdapterPgPromise } from '@nestjs-cls/transactional-adapter-pg-promise'
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
@@ -11,30 +12,24 @@ import { ClsModule } from 'nestjs-cls'
 import { LoggerModule } from 'nestjs-pino'
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod'
 import { runner } from 'node-pg-migrate'
-import { txMode } from 'pg-promise'
+import pgPromise, { txMode } from 'pg-promise'
 import { expect } from 'vitest'
 
 import { createDatabaseConfig, DATABASE_CONFIG } from '#/infrastructure/config/database.config.js'
-import {
-  DB_CONNECTION,
-  IConnectionProvider,
-} from '#/infrastructure/persistence/connection-provider.interface.js'
+import { DB_CONNECTION } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ConfigModule } from '#/module/config.module.js'
 import { DatabaseModule } from '#/module/database.module.js'
 import { DomainErrorsExceptionFilter } from '#/presentation/http/domain-errors-exception-filter.js'
 
 import pgPromiseConfig from '../../../.pgmigrate.json' with { type: 'json' }
 
-import {
-  ASSOCIATION_ASSERTION_HELPER,
-  type AssociationHelper,
-  createAssociationAssertionHelper,
-} from './association-assertion-helper.js'
-import {
-  createEntityAssertionHelper,
-  ENTITY_ASSERTION_HELPER,
-  type EntityAssertionHelper,
-} from './entity-assertion-helper.js'
+// The container's own default database ("test") is migrated and seeded exactly
+// once in beforeAll, then flipped to a Postgres template database. Every test
+// clones it with `CREATE DATABASE ... TEMPLATE`, which copies files on disk
+// instead of replaying SQL — see
+// https://gajus.com/blog/setting-up-postgre-sql-for-running-integration-tests#what-worked
+
+const MAINTENANCE_DATABASE = 'postgres'
 
 export function setupDatabaseIntegrationTest(): {
   beforeAll: () => Promise<void>
@@ -48,6 +43,10 @@ export function setupDatabaseIntegrationTest(): {
   const migrationsDirectory = join(rootDirectory, pgPromiseConfig['migrations-dir'])
 
   let postgresContainer: StartedPostgreSqlContainer
+  let templateDatabase: string
+  let adminDb: Database
+  let testDatabaseCounter = 0
+  let currentTestDatabase: string
 
   async function beforeAll(): Promise<void> {
     postgresContainer = await new PostgreSqlContainer('postgres:18-alpine')
@@ -58,13 +57,9 @@ export function setupDatabaseIntegrationTest(): {
         },
       ])
       .start()
-  }
 
-  async function afterAll(): Promise<void> {
-    await postgresContainer?.stop()
-  }
+    templateDatabase = postgresContainer.getDatabase()
 
-  async function beforeEach(): Promise<void> {
     await runner({
       migrationsTable,
       dir: migrationsDirectory,
@@ -79,21 +74,44 @@ export function setupDatabaseIntegrationTest(): {
       env: {
         PGUSER: postgresContainer.getUsername(),
         PGPASSWORD: postgresContainer.getPassword(),
-        PGDATABASE: postgresContainer.getDatabase(),
+        PGDATABASE: templateDatabase,
       },
     })
     expect(result.exitCode).toBe(0)
+
+    const pgp = pgPromise({ noWarnings: true })
+    adminDb = pgp({
+      host: postgresContainer.getHost(),
+      port: postgresContainer.getPort(),
+      database: MAINTENANCE_DATABASE,
+      user: postgresContainer.getUsername(),
+      password: postgresContainer.getPassword(),
+      ssl: false,
+    })
+
+    await adminDb.none('ALTER DATABASE $(templateDatabase:name) WITH IS_TEMPLATE true', {
+      templateDatabase,
+    })
+  }
+
+  async function afterAll(): Promise<void> {
+    await adminDb?.$pool.end()
+    await postgresContainer?.stop()
+  }
+
+  async function beforeEach(): Promise<void> {
+    testDatabaseCounter += 1
+    currentTestDatabase = `test_${testDatabaseCounter}`
+
+    await adminDb.none('CREATE DATABASE $(testDatabase:name) TEMPLATE $(templateDatabase:name)', {
+      testDatabase: currentTestDatabase,
+      templateDatabase,
+    })
   }
 
   async function afterEach(): Promise<void> {
-    await runner({
-      migrationsTable,
-      dir: migrationsDirectory,
-      count: Number.POSITIVE_INFINITY,
-      direction: 'down',
-      ignorePattern: '\\..*',
-      databaseUrl: postgresContainer.getConnectionUri(),
-      log: () => {},
+    await adminDb.none('DROP DATABASE IF EXISTS $(testDatabase:name)', {
+      testDatabase: currentTestDatabase,
     })
   }
 
@@ -127,22 +145,8 @@ export function setupDatabaseIntegrationTest(): {
         { provide: APP_FILTER, useClass: DomainErrorsExceptionFilter },
         { provide: APP_PIPE, useClass: ZodValidationPipe },
         ...(options?.providers ?? []),
-        {
-          provide: ENTITY_ASSERTION_HELPER,
-          inject: [IConnectionProvider],
-          useFactory({ database }: IConnectionProvider): EntityAssertionHelper {
-            return createEntityAssertionHelper(database)
-          },
-        },
-        {
-          provide: ASSOCIATION_ASSERTION_HELPER,
-          inject: [IConnectionProvider],
-          useFactory({ database }: IConnectionProvider): AssociationHelper {
-            return createAssociationAssertionHelper(database)
-          },
-        },
       ],
-      exports: [...(options?.exports ?? []), ENTITY_ASSERTION_HELPER],
+      exports: options?.exports ?? [],
     })
       .overrideProvider(DATABASE_CONFIG)
       .useValue(
@@ -153,7 +157,7 @@ export function setupDatabaseIntegrationTest(): {
             host: postgresContainer.getHost(),
             port: postgresContainer.getPort(),
             ssl: false,
-            database: postgresContainer.getDatabase(),
+            database: currentTestDatabase,
             username: postgresContainer.getUsername(),
             password: postgresContainer.getPassword(),
           },

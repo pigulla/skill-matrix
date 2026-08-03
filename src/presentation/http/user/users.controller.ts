@@ -12,11 +12,17 @@ import {
   Put,
 } from '@nestjs/common'
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import type { ResultAsync } from 'neverthrow'
 
 import { IUserService } from '#/application/user/user.service.interface.js'
+import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
+import type { DuplicateUserEmailError } from '#/domain/user/error/duplicate-user-email.error.js'
+import type { DuplicateUserIdError } from '#/domain/user/error/duplicate-user-id.error.js'
+import type { UserNotFoundError } from '#/domain/user/error/user-not-found.error.js'
 import type { UserID } from '#/domain/user/user-id.js'
+import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
-import { AssignTeamDTO, CreateUserDTO, fromDomain, UpdateUserDTO, UserDTO } from './user.dto.js'
+import { CreateUserDTO, fromDomain, toDomain, UpdateUserDTO, UserDTO } from './user.dto.js'
 
 @Controller('users')
 @ApiTags('Users')
@@ -46,10 +52,9 @@ export class UsersController {
     type: [UserDTO],
     description: 'The operation completed successfully.',
   })
-  public async getAll(): Promise<UserDTO[]> {
-    const users = await this.service.getAll()
-
-    return users.map(user => fromDomain(user))
+  @UnwrapResult()
+  public getAll(): ResultAsync<UserDTO[], never> {
+    return this.service.getAll().map(users => users.map(fromDomain))
   }
 
   @Get(':id')
@@ -67,11 +72,12 @@ export class UsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'The user with the given id was not found.',
   })
-  public async getOne(
+  @UnwrapResult()
+  public getOne(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: UserID,
-  ): Promise<UserDTO> {
-    return fromDomain(await this.service.get(id))
+  ): ResultAsync<UserDTO, UserNotFoundError> {
+    return this.service.get(id).map(fromDomain)
   }
 
   @Delete(':id')
@@ -89,11 +95,12 @@ export class UsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'The user with the given id was not found.',
   })
-  public async delete(
+  @UnwrapResult()
+  public delete(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: UserID,
-  ): Promise<void> {
-    await this.service.delete(id)
+  ): ResultAsync<void, UserNotFoundError> {
+    return this.service.delete(id)
   }
 
   @Post()
@@ -107,13 +114,21 @@ export class UsersController {
     type: UserDTO,
   })
   @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'A user with an identical email address already exists.',
+  })
+  @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'The referenced team was not found.',
   })
-  public async create(@Body() dto: CreateUserDTO): Promise<UserDTO> {
-    const result = await this.service.create(dto)
-
-    return fromDomain(result)
+  @UnwrapResult()
+  public create(
+    @Body() dto: CreateUserDTO,
+  ): ResultAsync<
+    UserDTO,
+    DuplicateUserIdError | DuplicateUserEmailError | TeamReferenceNotFoundError
+  > {
+    return this.service.create(dto).map(fromDomain)
   }
 
   @Put(':id')
@@ -131,51 +146,23 @@ export class UsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'The user with the given id was not found.',
   })
-  public async update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: UserID,
-    @Body() dto: UpdateUserDTO,
-  ): Promise<UserDTO> {
-    if (id !== dto.id) {
-      throw new BadRequestException('The id in the payload does not match the id in the route.')
-    }
-
-    const result = await this.service.update({
-      id,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
-      email: dto.email,
-    })
-
-    return fromDomain(result)
-  }
-
-  @Put(':id/team')
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiOperation({
-    summary: 'Assign a user to a team.',
-    description: 'Move the user with the given id to the given team.',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    type: UserDTO,
-    description: 'The operation completed successfully.',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'The user with the given id was not found.',
-  })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'The referenced team was not found.',
   })
-  public async assignTeam(
+  @UnwrapResult()
+  public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: UserID,
-    @Body() dto: AssignTeamDTO,
-  ): Promise<UserDTO> {
-    const result = await this.service.assignTeam(id, dto.teamId)
+    @Body() dto: UpdateUserDTO,
+  ): ResultAsync<
+    UserDTO,
+    UserNotFoundError | DuplicateUserEmailError | TeamReferenceNotFoundError
+  > {
+    if (id !== dto.id) {
+      throw new BadRequestException('The id in the payload does not match the id in the route.')
+    }
 
-    return fromDomain(result)
+    return this.service.update(toDomain(dto)).map(fromDomain)
   }
 }

@@ -4,4 +4,4 @@ SELECT
 FROM
   view_team_skill_proficiencies
 WHERE
-  team_id = $(teamId)
+  team_id = $(team_id);

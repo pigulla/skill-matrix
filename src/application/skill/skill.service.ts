@@ -1,10 +1,16 @@
 import { Injectable } from '@nestjs/common'
-import { Transactional } from '@nestjs-cls/transactional'
-import type { Except } from 'type-fest'
+import type { ResultAsync } from 'neverthrow'
+import type { Except, SetRequired } from 'type-fest'
 
+import type { ExampleReferenceNotFoundError } from '#/domain/example/error/example-reference-not-found.error.js'
+import type { DuplicateSkillIdError } from '#/domain/skill/error/duplicate-skill-id.error.js'
+import type { DuplicateSkillNameError } from '#/domain/skill/error/duplicate-skill-name.error.js'
+import type { SkillInUseError } from '#/domain/skill/error/skill-in-use.error.js'
+import type { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
 import { type Properties, Skill } from '#/domain/skill/skill.js'
 import { ISkillRepository } from '#/domain/skill/skill.repository.interface.js'
-import { type SkillID } from '#/domain/skill/skill-id.js'
+import type { SkillID } from '#/domain/skill/skill-id.js'
+import { ResultTransactional } from '#/util/result-transactional.decorator.js'
 
 import { ISkillService } from './skill.service.interface.js'
 import { ISkillUuidProvider } from './skill-uuid-provider.interface.js'
@@ -19,23 +25,28 @@ export class SkillService implements ISkillService {
     this.uuidProvider = uuidProvider
   }
 
-  @Transactional()
-  public getAll(): Promise<Skill[]> {
+  @ResultTransactional()
+  public getAll(): ResultAsync<Skill[], never> {
     return this.skillRepository.getAll()
   }
 
-  @Transactional()
-  public get(id: SkillID): Promise<Skill> {
+  @ResultTransactional()
+  public get(id: SkillID): ResultAsync<Skill, SkillNotFoundError> {
     return this.skillRepository.get(id)
   }
 
-  @Transactional()
-  public delete(id: SkillID): Promise<void> {
+  @ResultTransactional()
+  public delete(id: SkillID): ResultAsync<void, SkillInUseError | SkillNotFoundError> {
     return this.skillRepository.delete(id)
   }
 
-  @Transactional()
-  public create(properties: Except<Properties, 'id'>): Promise<Skill> {
+  @ResultTransactional()
+  public create(
+    properties: Except<Properties, 'id'>,
+  ): ResultAsync<
+    Skill,
+    DuplicateSkillIdError | DuplicateSkillNameError | ExampleReferenceNotFoundError
+  > {
     const id = this.uuidProvider.generate()
     const skill = new Skill({
       id,
@@ -47,11 +58,15 @@ export class SkillService implements ISkillService {
     return this.skillRepository.create(skill)
   }
 
-  @Transactional()
-  public async update(properties: Properties): Promise<Skill> {
-    const skill = await this.skillRepository.get(properties.id)
-    const updated = skill.update(properties)
-
-    return await this.skillRepository.update(updated)
+  @ResultTransactional()
+  public update(
+    properties: SetRequired<Partial<Properties>, 'id'>,
+  ): ResultAsync<
+    Skill,
+    SkillNotFoundError | DuplicateSkillNameError | ExampleReferenceNotFoundError
+  > {
+    return this.skillRepository
+      .get(properties.id)
+      .andThen(existing => this.skillRepository.update(existing.update(properties)))
   }
 }

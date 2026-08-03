@@ -8,7 +8,7 @@ import { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.j
 
 const setSkillProficiencyDTOSchema = z
   .strictObject({ proficiency: proficiencySchema })
-  .brand<'set-skill-proficiency-dto'>('set-skill-proficiency-dto')
+  .brand('set-skill-proficiency-dto')
 
 const teamSkillProficienciesDTOSchema = z
   .strictObject({
@@ -20,7 +20,7 @@ const teamSkillProficienciesDTOSchema = z
       }),
     ),
   })
-  .brand<'team-skill-proficiencies-dto'>('team-skill-proficiencies-dto')
+  .brand('team-skill-proficiencies-dto')
 
 export class SetSkillProficiencyDTO extends createZodDto(setSkillProficiencyDTOSchema) {}
 

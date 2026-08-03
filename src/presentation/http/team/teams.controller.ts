@@ -12,11 +12,17 @@ import {
   Put,
 } from '@nestjs/common'
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import type { ResultAsync } from 'neverthrow'
 
 import { ITeamService } from '#/application/team/team.service.interface.js'
+import type { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
+import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
+import type { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
+import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import type { TeamID } from '#/domain/team/team-id.js'
+import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
-import { CreateTeamDTO, fromDomain, TeamDTO, toDomain, UpdateTeamDTO } from './team.dto.js'
+import { CreateTeamDTO, fromDomain, TeamDTO, UpdateTeamDTO } from './team.dto.js'
 
 @Controller('teams')
 @ApiTags('Teams')
@@ -43,10 +49,9 @@ export class TeamsController {
     type: [TeamDTO],
     description: 'The operation completed successfully.',
   })
-  public async getAll(): Promise<TeamDTO[]> {
-    const teams = await this.service.getAll()
-
-    return teams.map(team => fromDomain(team))
+  @UnwrapResult()
+  public getAll(): ResultAsync<TeamDTO[], never> {
+    return this.service.getAll().map(teams => teams.map(fromDomain))
   }
 
   @Get(':id')
@@ -64,11 +69,12 @@ export class TeamsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The team with the given id was not found.',
   })
-  public async getOne(
+  @UnwrapResult()
+  public getOne(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: TeamID,
-  ): Promise<TeamDTO> {
-    return fromDomain(await this.service.get(id))
+  ): ResultAsync<TeamDTO, TeamNotFoundError> {
+    return this.service.get(id).map(fromDomain)
   }
 
   @Delete(':id')
@@ -90,11 +96,12 @@ export class TeamsController {
     status: HttpStatus.CONFLICT,
     description: 'The team still has members and cannot be deleted.',
   })
-  public async delete(
+  @UnwrapResult()
+  public delete(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: TeamID,
-  ): Promise<void> {
-    await this.service.delete(id)
+  ): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError> {
+    return this.service.delete(id)
   }
 
   @Post()
@@ -108,10 +115,11 @@ export class TeamsController {
     status: HttpStatus.CONFLICT,
     description: 'A team with the given name already exists.',
   })
-  public async create(@Body() dto: CreateTeamDTO): Promise<TeamDTO> {
-    const result = await this.service.create(dto)
-
-    return fromDomain(result)
+  @UnwrapResult()
+  public create(
+    @Body() dto: CreateTeamDTO,
+  ): ResultAsync<TeamDTO, DuplicateTeamIdError | DuplicateTeamNameError> {
+    return this.service.create(dto).map(fromDomain)
   }
 
   @Put(':id')
@@ -133,17 +141,16 @@ export class TeamsController {
     status: HttpStatus.CONFLICT,
     description: 'A team with the given name already exists.',
   })
-  public async update(
+  @UnwrapResult()
+  public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: TeamID,
     @Body() dto: UpdateTeamDTO,
-  ): Promise<TeamDTO> {
+  ): ResultAsync<TeamDTO, TeamNotFoundError | DuplicateTeamNameError> {
     if (id !== dto.id) {
       throw new BadRequestException('The id in the payload does not match the id in the route.')
     }
 
-    const result = await this.service.update(toDomain(dto))
-
-    return fromDomain(result)
+    return this.service.update(dto).map(fromDomain)
   }
 }

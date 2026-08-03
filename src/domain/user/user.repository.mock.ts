@@ -6,7 +6,6 @@ export type UserRepositoryMock = Mocked<IUserRepository>
 
 export function mockUserRepository(): UserRepositoryMock {
   return {
-    assignTeam: vi.fn(),
     create: vi.fn(),
     delete: vi.fn(),
     get: vi.fn(),

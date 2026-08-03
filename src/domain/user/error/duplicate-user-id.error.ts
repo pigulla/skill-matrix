@@ -1,12 +1,9 @@
-import { DomainError } from '../../error/domain.error.js'
+import { DuplicateEntityIdError } from '../../error/duplicate-entity-id.error.js'
+import { User } from '../user.ts'
 import type { UserID } from '../user-id.js'
 
-export class DuplicateUserIdError extends DomainError {
-  public readonly id: UserID
-
+export class DuplicateUserIdError extends DuplicateEntityIdError<UserID> {
   public constructor(id: UserID) {
-    super('Duplicate user id')
-
-    this.id = id
+    super(User.name, id)
   }
 }

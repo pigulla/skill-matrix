@@ -6,7 +6,7 @@ import { SkillProficiency } from '#/domain/skill/skill-proficiency.js'
 import { teamIdSchema } from '#/domain/team/team-id.js'
 import { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 
-export const teamSkillProficiencyRowSchema = z
+export const teamSkillProficiencyRow = z
   .strictObject({
     team_id: teamIdSchema,
     skill_proficiencies: z.array(z.tuple([skillIdSchema, proficiencySchema])),
@@ -22,4 +22,4 @@ export const teamSkillProficiencyRowSchema = z
       }),
   }))
   .readonly()
-  .brand<'team-skill-proficiencies-row'>('team-skill-proficiencies-row')
+  .brand('team-skill-proficiencies-row')

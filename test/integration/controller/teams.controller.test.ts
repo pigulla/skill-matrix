@@ -3,7 +3,7 @@ import request from 'supertest'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { asTeamID } from '#/domain/team/team-id.js'
-import { TeamModule } from '#/module/team.module.ts'
+import { TeamModule } from '#/module/team.module.js'
 import { TeamsController } from '#/presentation/http/team/teams.controller.js'
 
 import { TeamBuilder } from '../../builder/team.builder.js'
@@ -53,9 +53,9 @@ describe('TeamsController', () => {
   describe('GET /teams/:id', () => {
     it('should return 200 OK', () =>
       request(app.getHttpServer())
-        .get(`/teams/${teams.platform.id}`)
+        .get(`/teams/${teams.traffic.id}`)
         .expect(HttpStatus.OK)
-        .expect(teams.platform.toJSON()))
+        .expect(teams.traffic.toJSON()))
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer()).get(`/teams/${unknownTeamId}`).expect(HttpStatus.NOT_FOUND))
@@ -63,7 +63,9 @@ describe('TeamsController', () => {
 
   describe('DELETE /teams/:id', () => {
     it('should return 204 No Content', () =>
-      request(app.getHttpServer()).delete(`/teams/${teams.qa.id}`).expect(HttpStatus.NO_CONTENT))
+      request(app.getHttpServer())
+        .delete(`/teams/${teams.testing.id}`)
+        .expect(HttpStatus.NO_CONTENT))
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer()).get(`/teams/${unknownTeamId}`).expect(HttpStatus.NOT_FOUND))
@@ -74,17 +76,17 @@ describe('TeamsController', () => {
       request(app.getHttpServer())
         .post('/teams')
         .send({
-          name: 'Traffic',
+          name: 'DevOps',
         })
         .expect(HttpStatus.CREATED)
         .then(({ body }) =>
           expect(body).toEqual({
             id: expect.any(String),
-            name: 'Traffic',
+            name: 'DevOps',
           }),
         ))
 
-    it('should return 400 Bad Request', () =>
+    it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
         .post('/teams')
         .send({
@@ -96,32 +98,44 @@ describe('TeamsController', () => {
       request(app.getHttpServer())
         .post('/teams')
         .send({
-          name: teams.qa.name,
+          name: teams.testing.name,
         })
         .expect(HttpStatus.CONFLICT))
+
+    it('should return 400 Bad Request if the payload contains an unknown property', () =>
+      request(app.getHttpServer())
+        .post('/teams')
+        .send({ name: 'DevOps', extraneous: 'nope' })
+        .expect(HttpStatus.BAD_REQUEST))
   })
 
   describe('PUT /teams/:id', () => {
-    const expected = TeamBuilder.from(teams.qa).withName('Quality Assurance').build()
+    const expected = TeamBuilder.from(teams.testing).withName('QA').build()
 
     it('should return 200 OK', async () => {
       await request(app.getHttpServer())
-        .put(`/teams/${teams.qa.id}`)
+        .put(`/teams/${teams.testing.id}`)
         .send(expected.toJSON())
         .expect(HttpStatus.OK)
         .expect(expected.toJSON())
     })
 
-    it('should return 400 Bad Request if the payload is invalid', () =>
+    it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
-        .put(`/teams/${teams.qa.id}`)
+        .put(`/teams/${teams.testing.id}`)
         .send({ ...expected.toJSON(), name: 42 })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the ids do not match', () =>
       request(app.getHttpServer())
-        .put(`/teams/${teams.qa.id}`)
-        .send({ ...expected.toJSON(), id: teams.platform.id })
+        .put(`/teams/${teams.testing.id}`)
+        .send({ ...expected.toJSON(), id: teams.traffic.id })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 400 Bad Request if the payload contains an unknown property', () =>
+      request(app.getHttpServer())
+        .put(`/teams/${teams.testing.id}`)
+        .send({ ...expected.toJSON(), extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 404 Not Found', () =>

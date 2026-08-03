@@ -90,10 +90,21 @@ describe('ExamplesController', () => {
           }),
         ))
 
-    it('should return 400 Bad Request', () =>
+    it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
         .post('/examples')
         .send({ name: 42, kind: unknownExampleId, url: null })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 400 Bad Request if the payload contains an unknown property', () =>
+      request(app.getHttpServer())
+        .post('/examples')
+        .send({
+          name: 'TypeScript',
+          kind: exampleKinds.TECHNOLOGY,
+          url: null,
+          extraneous: 'nope',
+        })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 422 Unprocessable Entity if the kind does not exist', () =>
@@ -114,7 +125,7 @@ describe('ExamplesController', () => {
         .expect(expected.toJSON())
     })
 
-    it('should return 400 Bad Request for an invalid payload', () =>
+    it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
         .put(`/examples/${examples.cobol.id}`)
         .send({ ...examples.cobol.toJSON(), url: 42 })
@@ -124,6 +135,12 @@ describe('ExamplesController', () => {
       request(app.getHttpServer())
         .put(`/examples/${examples.cobol.id}`)
         .send({ ...examples.cobol.toJSON(), id: examples.react.id })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 400 Bad Request if the payload contains an unknown property', () =>
+      request(app.getHttpServer())
+        .put(`/examples/${examples.cobol.id}`)
+        .send({ ...examples.cobol.toJSON(), extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 404 Not Found', () =>

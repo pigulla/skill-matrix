@@ -1,6 +1,6 @@
 import z from 'zod'
 
-export const exampleKindSchema = z.string().min(1).brand<'example-kind'>().meta({
+export const exampleKindSchema = z.string().min(1).brand('example-kind').meta({
   description: 'The kind of example.',
   example: 'technology',
 })

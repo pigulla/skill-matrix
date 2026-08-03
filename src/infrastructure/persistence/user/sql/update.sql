@@ -2,7 +2,8 @@ UPDATE users
 SET
   first_name = $(first_name),
   last_name = $(last_name),
-  email = $(email)
+  email = $(email),
+  team_id = $(team_id)
 WHERE
   id = $(id)
 RETURNING

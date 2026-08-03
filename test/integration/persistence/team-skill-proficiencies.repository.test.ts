@@ -1,25 +1,25 @@
 import type { INestApplication } from '@nestjs/common'
+import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
 import { SkillReferenceNotFoundError } from '#/domain/skill/error/skill-reference-not-found.error.js'
 import { asProficiency } from '#/domain/skill/proficiency.js'
-import { Skill } from '#/domain/skill/skill.js'
 import { asSkillID } from '#/domain/skill/skill-id.js'
 import { SkillProficiency } from '#/domain/skill/skill-proficiency.js'
 import { DuplicateTeamSkillError } from '#/domain/team/error/duplicate-team-skill.error.js'
 import { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
 import { TeamSkillNotFoundError } from '#/domain/team/error/team-skill-not-found.error.js'
-import { Team } from '#/domain/team/team.js'
 import { asTeamID } from '#/domain/team/team-id.js'
+import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { TeamSkillProficienciesRepository } from '#/infrastructure/persistence/team/team-skill-proficiencies.repository.js'
 
-import {
-  ASSOCIATION_ASSERTION_HELPER,
-  type AssociationHelper,
-} from '../fixture/association-assertion-helper.js'
+import { by } from '../../util/sort-by-id.js'
 import { skills, teamSkillProficiencies, teams } from '../fixture/fixture.js'
 import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+
+const bySkillId = by('skill_id')
 
 describe('TeamSkillProficienciesRepository', () => {
   const invalidTeamId = asTeamID('00000000-0002-4000-8000-000000000000')
@@ -28,7 +28,7 @@ describe('TeamSkillProficienciesRepository', () => {
 
   let app: INestApplication
   let repository: TeamSkillProficienciesRepository
-  let association: AssociationHelper
+  let db: Database
 
   beforeAll(integrationTest.beforeAll)
   afterAll(integrationTest.afterAll)
@@ -45,7 +45,7 @@ describe('TeamSkillProficienciesRepository', () => {
 
     app = await module.createNestApplication().enableShutdownHooks().init()
     repository = app.get(TeamSkillProficienciesRepository)
-    association = app.get(ASSOCIATION_ASSERTION_HELPER)
+    db = app.get(IConnectionProvider).database
   })
 
   afterEach(async () => {
@@ -55,69 +55,115 @@ describe('TeamSkillProficienciesRepository', () => {
 
   describe('get', () => {
     it('should return the skill proficiencies for a team', async () => {
-      await expect(repository.get(teams.platform.id)).resolves.toEqual(
-        teamSkillProficiencies.platform,
-      )
+      const result = await repository.get(teams.traffic.id)
+
+      expect(result._unsafeUnwrap()).toEqual(teamSkillProficiencies.traffic)
     })
 
     it('should return an empty collection for a team with no skills', async () => {
-      await expect(repository.get(teams.qa.id)).resolves.toEqual(teamSkillProficiencies.qa)
+      const result = await repository.get(teams.testing.id)
+
+      expect(result._unsafeUnwrap()).toEqual(teamSkillProficiencies.testing)
     })
 
-    it('should throw TeamNotFoundError when the team does not exist', async () => {
-      await expect(repository.get(invalidTeamId)).rejects.toThrow(TeamNotFoundError)
+    it('should return TeamNotFoundError when the team does not exist', async () => {
+      const result = await repository.get(invalidTeamId)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      await db.none(
+        'ALTER VIEW view_team_skill_proficiencies RENAME TO view_team_skill_proficiencies_renamed',
+      )
+
+      await expect(repository.get(teams.traffic.id)).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
   describe('add', () => {
     it('should add a skill proficiency', async () => {
-      const newProficiency = new SkillProficiency({
-        skillId: skills.frontendDevelopment.id,
+      const created = new SkillProficiency({
+        skillId: skills.qualityAssurance.id,
         proficiency: asProficiency(2),
       })
 
-      await expect(repository.add(teams.platform.id, newProficiency)).resolves.toBeUndefined()
+      const result = await repository.add(teams.traffic.id, created)
 
-      await association
-        .from(Team)
-        .withId(teams.platform.id)
-        .to(Skill)
-        .withId(skills.frontendDevelopment.id)
-        .andColumns('proficiency')
-        .withData({ [skills.frontendDevelopment.id]: { proficiency: 2 } })
-        .should.exist()
+      expect(result._unsafeUnwrap()).toBeUndefined()
+
+      await expect(
+        db.manyOrNone(
+          'SELECT skill_id, proficiency FROM skills_to_teams WHERE team_id=$(teamId) ORDER BY skill_id',
+          {
+            teamId: teams.traffic.id,
+          },
+        ),
+      ).resolves.toEqual(
+        [
+          {
+            skill_id: skills.backendDevelopment.id,
+            proficiency: 2,
+          },
+          {
+            skill_id: skills.frontendDevelopment.id,
+            proficiency: 3,
+          },
+          {
+            skill_id: created.skillId,
+            proficiency: created.proficiency,
+          },
+          {
+            skill_id: skills.softwareArchitecture.id,
+            proficiency: 2,
+          },
+        ].sort(bySkillId),
+      )
     })
 
-    it('should throw DuplicateTeamSkillError when the skill is already associated', async () => {
+    it('should return DuplicateTeamSkillError when the skill is already associated', async () => {
       const duplicate = new SkillProficiency({
         skillId: skills.backendDevelopment.id,
         proficiency: asProficiency(1),
       })
 
-      await expect(repository.add(teams.platform.id, duplicate)).rejects.toThrow(
-        DuplicateTeamSkillError,
-      )
+      const result = await repository.add(teams.traffic.id, duplicate)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateTeamSkillError)
     })
 
-    it('should throw SkillReferenceNotFoundError when the skill does not exist', async () => {
+    it('should return SkillReferenceNotFoundError when the skill does not exist', async () => {
       const proficiency = new SkillProficiency({
         skillId: invalidSkillId,
         proficiency: asProficiency(1),
       })
 
-      await expect(repository.add(teams.platform.id, proficiency)).rejects.toThrow(
-        SkillReferenceNotFoundError,
-      )
+      const result = await repository.add(teams.traffic.id, proficiency)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(SkillReferenceNotFoundError)
     })
 
-    it('should throw TeamReferenceNotFoundError when the team does not exist', async () => {
+    it('should return TeamReferenceNotFoundError when the team does not exist', async () => {
       const proficiency = new SkillProficiency({
-        skillId: skills.frontendDevelopment.id,
+        skillId: skills.qualityAssurance.id,
         proficiency: asProficiency(1),
       })
 
-      await expect(repository.add(invalidTeamId, proficiency)).rejects.toThrow(
-        TeamReferenceNotFoundError,
+      const result = await repository.add(invalidTeamId, proficiency)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamReferenceNotFoundError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      const proficiency = new SkillProficiency({
+        skillId: skills.qualityAssurance.id,
+        proficiency: asProficiency(2),
+      })
+
+      await db.none('ALTER TABLE skills_to_teams RENAME TO skills_to_teams_renamed')
+
+      await expect(repository.add(teams.traffic.id, proficiency)).rejects.toThrow(
+        UnexpectedPersistenceError,
       )
     })
   })
@@ -129,48 +175,84 @@ describe('TeamSkillProficienciesRepository', () => {
         proficiency: asProficiency(4),
       })
 
-      await expect(repository.update(teams.platform.id, updated)).resolves.toBeUndefined()
+      const result = await repository.update(teams.traffic.id, updated)
 
-      await association
-        .from(Team)
-        .withId(teams.platform.id)
-        .to(Skill)
-        .withId(skills.backendDevelopment.id)
-        .andColumns('proficiency')
-        .withData({ [skills.backendDevelopment.id]: { proficiency: 4 } })
-        .should.exist()
+      expect(result._unsafeUnwrap()).toBeUndefined()
+
+      await expect(
+        db.oneOrNone(
+          'SELECT * FROM skills_to_teams WHERE team_id=$(teamId) AND skill_id=$(skillId)',
+          { teamId: teams.traffic.id, skillId: skills.backendDevelopment.id },
+        ),
+      ).resolves.toMatchObject({
+        proficiency: 4,
+      })
     })
 
-    it('should throw TeamSkillNotFoundError when the association does not exist', async () => {
+    it('should return TeamSkillNotFoundError when the association does not exist', async () => {
       const proficiency = new SkillProficiency({
-        skillId: skills.frontendDevelopment.id,
+        skillId: skills.qualityAssurance.id,
         proficiency: asProficiency(1),
       })
 
-      await expect(repository.update(teams.platform.id, proficiency)).rejects.toThrow(
-        TeamSkillNotFoundError,
+      const result = await repository.update(teams.traffic.id, proficiency)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamSkillNotFoundError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      const updated = new SkillProficiency({
+        skillId: skills.backendDevelopment.id,
+        proficiency: asProficiency(4),
+      })
+
+      await db.none('ALTER TABLE skills_to_teams RENAME TO skills_to_teams_renamed')
+
+      await expect(repository.update(teams.traffic.id, updated)).rejects.toThrow(
+        UnexpectedPersistenceError,
       )
     })
   })
 
   describe('remove', () => {
     it('should remove the skill association', async () => {
-      await expect(
-        repository.remove(teams.platform.id, skills.backendDevelopment.id),
-      ).resolves.toBeUndefined()
+      const result = await repository.remove(teams.traffic.id, skills.backendDevelopment.id)
 
-      await association
-        .from(Team)
-        .withId(teams.platform.id)
-        .to(Skill)
-        .withId(skills.backendDevelopment.id)
-        .should.not.exist()
+      expect(result._unsafeUnwrap()).toBeUndefined()
+
+      await expect(
+        db.manyOrNone(
+          'SELECT skill_id, proficiency FROM skills_to_teams WHERE team_id=$(teamId) ORDER BY skill_id',
+          {
+            teamId: teams.traffic.id,
+          },
+        ),
+      ).resolves.toEqual(
+        [
+          {
+            skill_id: skills.frontendDevelopment.id,
+            proficiency: 3,
+          },
+          {
+            skill_id: skills.softwareArchitecture.id,
+            proficiency: 2,
+          },
+        ].sort(bySkillId),
+      )
     })
 
-    it('should throw TeamSkillNotFoundError when the association does not exist', async () => {
+    it('should return TeamSkillNotFoundError when the association does not exist', async () => {
+      const result = await repository.remove(teams.traffic.id, skills.qualityAssurance.id)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamSkillNotFoundError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      await db.none('ALTER TABLE skills_to_teams RENAME TO skills_to_teams_renamed')
+
       await expect(
-        repository.remove(teams.platform.id, skills.frontendDevelopment.id),
-      ).rejects.toThrow(TeamSkillNotFoundError)
+        repository.remove(teams.traffic.id, skills.backendDevelopment.id),
+      ).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 })

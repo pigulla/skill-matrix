@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*\\.test\\.ts', 'test/**/*.test.ts'],
+    setupFiles: ['./test/setup.ts'],
     reporters: ['default'],
     coverage: {
       provider: 'v8',
@@ -22,6 +23,9 @@ export default defineConfig({
         '**/*.mock.ts',
         '**/*.module.ts',
         '**/*.test.ts',
+        'src/index.ts',
+        'src/create-openapi-document.ts',
+        'src/infrastructure/persistence/default-transaction-options.ts',
       ],
       thresholds: {
         perFile: true,

@@ -1,19 +1,17 @@
 import type { INestApplication } from '@nestjs/common'
+import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
 import { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
-import { asTeamID } from '#/domain/team/team-id.js'
+import { DuplicateUserEmailError } from '#/domain/user/error/duplicate-user-email.error.js'
 import { DuplicateUserIdError } from '#/domain/user/error/duplicate-user-id.error.js'
 import { UserNotFoundError } from '#/domain/user/error/user-not-found.error.js'
-import { User } from '#/domain/user/user.js'
 import { asUserID } from '#/domain/user/user-id.js'
+import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { UserRepository } from '#/infrastructure/persistence/user/user.repository.js'
 
 import { UserBuilder } from '../../builder/user.builder.js'
-import {
-  ENTITY_ASSERTION_HELPER,
-  type EntityAssertionHelper,
-} from '../fixture/entity-assertion-helper.js'
 import { teams, users } from '../fixture/fixture.js'
 import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
 
@@ -23,7 +21,7 @@ describe('UserRepository', () => {
 
   let app: INestApplication
   let userRepository: UserRepository
-  let entity: EntityAssertionHelper
+  let db: Database
 
   beforeAll(integrationTest.beforeAll)
   afterAll(integrationTest.afterAll)
@@ -40,7 +38,7 @@ describe('UserRepository', () => {
 
     app = await module.createNestApplication().enableShutdownHooks().init()
     userRepository = app.get(UserRepository)
-    entity = app.get(ENTITY_ASSERTION_HELPER)
+    db = app.get(IConnectionProvider).database
   })
 
   afterEach(async () => {
@@ -50,87 +48,155 @@ describe('UserRepository', () => {
 
   describe('get', () => {
     it('should return a user', async () => {
-      await expect(userRepository.get(users.dale.id)).resolves.toEqual(users.dale)
+      const result = await userRepository.get(users.clemens.id)
+
+      expect(result._unsafeUnwrap()).toEqual(users.clemens)
     })
 
-    it('should throw', async () => {
-      await expect(userRepository.get(invalidId)).rejects.toThrow(UserNotFoundError)
+    it('should return UserNotFoundError', async () => {
+      const result = await userRepository.get(invalidId)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(UserNotFoundError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      await db.none('ALTER TABLE users RENAME TO users_renamed')
+
+      await expect(userRepository.get(users.clemens.id)).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
   describe('getAll', () => {
     it('should return all users', async () => {
-      await expect(userRepository.getAll()).resolves.to.have.deep.members(Object.values(users))
+      const result = await userRepository.getAll()
+
+      expect(result._unsafeUnwrap()).to.have.deep.members(Object.values(users))
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      await db.none('ALTER TABLE users RENAME TO users_renamed')
+
+      await expect(userRepository.getAll()).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
   describe('update', () => {
     it('should update a user', async () => {
-      const updatedUser = UserBuilder.from(users.dale)
-        .withFirstName('Dale-Bob')
-        .withEmail('dale-bob.glass@example.com')
+      const updated = UserBuilder.from(users.clemens)
+        .withFirstName('Clemens-Bob')
+        .withEmail('clemens-bob.cook@example.com')
+        .withTeamId(teams.traffic.id)
         .build()
 
-      await expect(userRepository.update(updatedUser)).resolves.toEqual(updatedUser)
+      const result = await userRepository.update(updated)
 
-      await entity(User)
-        .withId(users.dale.id)
-        .andColumns({
-          first_name: 'Dale-Bob',
-          last_name: 'Glass',
-          email: 'dale-bob.glass@example.com',
-          team_id: users.dale.teamId,
-        })
-        .should.exist()
+      expect(result._unsafeUnwrap()).toEqual(updated)
+
+      await expect(
+        db.oneOrNone('SELECT * FROM users WHERE id=$(id)', { id: updated.id }),
+      ).resolves.toMatchObject({
+        first_name: updated.firstName,
+        last_name: updated.lastName,
+        email: updated.email,
+        team_id: updated.teamId,
+      })
     })
 
-    it('should throw if the user does not exist', async () => {
+    it('should return UserNotFoundError if the user does not exist', async () => {
       const nonexistentUser = new UserBuilder().withId(invalidId).build()
-      await expect(() => userRepository.update(nonexistentUser)).rejects.toThrow(UserNotFoundError)
+
+      const result = await userRepository.update(nonexistentUser)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(UserNotFoundError)
+    })
+
+    it('should return TeamReferenceNotFoundError if the team does not exist', async () => {
+      const updated = UserBuilder.from(users.clemens)
+        .withTeamId('99999999-0002-4000-8000-000000000000')
+        .build()
+
+      const result = await userRepository.update(updated)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamReferenceNotFoundError)
+    })
+
+    it('should return DuplicateUserEmailError if the email already exists', async () => {
+      const updated = users.clemens.update({ email: users.peter.email })
+
+      const result = await userRepository.update(updated)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateUserEmailError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      const updated = UserBuilder.from(users.clemens).withFirstName('Clemens-Bob').build()
+
+      await db.none('ALTER TABLE users RENAME TO users_renamed')
+
+      await expect(userRepository.update(updated)).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
   describe('delete', () => {
     it('should delete a user', async () => {
-      await expect(userRepository.delete(users.dale.id)).resolves.toBeUndefined()
+      const result = await userRepository.delete(users.clemens.id)
 
-      await entity(User).withId(users.dale.id).should.not.exist()
+      expect(result._unsafeUnwrap()).toBeUndefined()
+
+      await expect(
+        db.oneOrNone('SELECT * FROM users WHERE id=$(id)', { id: users.clemens.id }),
+      ).resolves.toBeNull()
     })
 
-    it('should throw if the user does not exist', async () => {
-      await expect(() => userRepository.delete(invalidId)).rejects.toThrow(UserNotFoundError)
+    it('should return UserNotFoundError if the user does not exist', async () => {
+      const result = await userRepository.delete(invalidId)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(UserNotFoundError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      await db.none('ALTER TABLE users RENAME TO users_renamed')
+
+      await expect(userRepository.delete(users.clemens.id)).rejects.toThrow(
+        UnexpectedPersistenceError,
+      )
     })
   })
 
   describe('create', () => {
     it('should create a user', async () => {
-      const user = new UserBuilder()
+      const created = new UserBuilder()
         .with({
           id: '12345678-0001-4000-8000-000000000000',
           firstName: 'Bob',
           lastName: 'Farrell',
           email: 'bob.farrell@example.com',
-          teamId: teams.platform.id,
+          teamId: teams.traffic.id,
         })
         .build()
 
-      await expect(userRepository.create(user)).resolves.toEqual(user)
-      await entity(User)
-        .withId(user.id)
-        .andColumns({
-          first_name: user.firstName,
-          last_name: user.lastName,
-          email: user.email,
-          team_id: user.teamId,
-        })
-        .should.exist()
+      const result = await userRepository.create(created)
+
+      expect(result._unsafeUnwrap()).toEqual(created)
+
+      await expect(
+        db.oneOrNone('SELECT * FROM users WHERE id=$(id)', { id: created.id }),
+      ).resolves.toMatchObject({
+        id: created.id,
+        first_name: created.firstName,
+        last_name: created.lastName,
+        email: created.email,
+        team_id: created.teamId,
+      })
     })
 
-    it('should throw if the id already exists', async () => {
-      await expect(userRepository.create(users.eddie)).rejects.toThrow(DuplicateUserIdError)
+    it('should return DuplicateUserIdError if the id already exists', async () => {
+      const result = await userRepository.create(users.peter)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateUserIdError)
     })
 
-    it('should throw if the team does not exist', async () => {
+    it('should return TeamReferenceNotFoundError if the team does not exist', async () => {
       const user = new UserBuilder()
         .with({
           id: '12345678-0001-4000-8000-000000000001',
@@ -141,35 +207,25 @@ describe('UserRepository', () => {
         })
         .build()
 
-      await expect(userRepository.create(user)).rejects.toThrow(TeamReferenceNotFoundError)
-      await entity(User).withId(user.id).should.not.exist()
+      const result = await userRepository.create(user)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamReferenceNotFoundError)
     })
-  })
 
-  describe('assignTeam', () => {
-    it('should move a user to another team', async () => {
-      const result = await userRepository.assignTeam(users.dale.id, teams.platform.id)
-
-      expect(result.teamId).toBe(teams.platform.id)
-
-      await entity(User)
-        .withId(users.dale.id)
-        .andColumns({
-          team_id: teams.platform.id,
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      const user = new UserBuilder()
+        .with({
+          id: '12345678-0001-4000-8000-000000000002',
+          firstName: 'Bob',
+          lastName: 'Farrell',
+          email: 'bob.farrell.2@example.com',
+          teamId: teams.traffic.id,
         })
-        .should.exist()
-    })
+        .build()
 
-    it('should throw if the user does not exist', async () => {
-      await expect(() => userRepository.assignTeam(invalidId, teams.platform.id)).rejects.toThrow(
-        UserNotFoundError,
-      )
-    })
+      await db.none('ALTER TABLE users RENAME TO users_renamed')
 
-    it('should throw if the team does not exist', async () => {
-      await expect(() =>
-        userRepository.assignTeam(users.dale.id, asTeamID('99999999-0002-4000-8000-000000000000')),
-      ).rejects.toThrow(TeamReferenceNotFoundError)
+      await expect(userRepository.create(user)).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 })

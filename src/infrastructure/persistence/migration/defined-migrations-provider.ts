@@ -4,7 +4,7 @@ import { glob } from 'glob'
 import { IDefinedMigrationsProvider } from './defined-migrations-provider.interface.js'
 import { asMigration, type Migration } from './migration.js'
 
-export const MIGRATIONS_DIRECTORY = Symbol('directions-directory')
+export const MIGRATIONS_DIRECTORY = Symbol('migrations-directory')
 
 @Injectable()
 export class DefinedMigrationsProvider implements IDefinedMigrationsProvider {
@@ -14,15 +14,14 @@ export class DefinedMigrationsProvider implements IDefinedMigrationsProvider {
     this.migrationsDirectory = migrationsDirectory
   }
 
-  public async getAll(): Promise<Set<Migration>> {
+  public async getAll(): Promise<Migration[]> {
     const files = await glob('*.sql', {
       cwd: this.migrationsDirectory,
       nodir: true,
     })
-    const migrations = files
+    return files
       .map(file => file.substring(0, file.length - '.sql'.length))
       .map(value => asMigration(value))
-
-    return new Set(migrations)
+      .sort()
   }
 }

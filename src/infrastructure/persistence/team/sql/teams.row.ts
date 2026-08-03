@@ -13,4 +13,4 @@ export const teamsRow = z
     toDomain: () => new Team({ ...data }),
   }))
   .readonly()
-  .brand<'teams-row'>('teams-row')
+  .brand('teams-row')

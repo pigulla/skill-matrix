@@ -55,9 +55,9 @@ describe('UsersController', () => {
   describe('GET /user/:id', () => {
     it('should return 200 OK', () =>
       request(app.getHttpServer())
-        .get(`/users/${users.eddie.id}`)
+        .get(`/users/${users.peter.id}`)
         .expect(HttpStatus.OK)
-        .expect(users.eddie.toJSON()))
+        .expect(users.peter.toJSON()))
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer()).get(`/users/${unknownUserId}`).expect(HttpStatus.NOT_FOUND))
@@ -65,7 +65,7 @@ describe('UsersController', () => {
 
   describe('DELETE /users/:id', () => {
     it('should return 204 No Content', () =>
-      request(app.getHttpServer()).delete(`/users/${users.eddie.id}`).expect(HttpStatus.NO_CONTENT))
+      request(app.getHttpServer()).delete(`/users/${users.peter.id}`).expect(HttpStatus.NO_CONTENT))
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer()).get(`/users/${unknownUserId}`).expect(HttpStatus.NOT_FOUND))
@@ -79,7 +79,7 @@ describe('UsersController', () => {
           email: 'hairy@potter.com',
           firstName: 'Hairy',
           lastName: 'Potter',
-          teamId: teams.qa.id,
+          teamId: teams.testing.id,
         })
         .expect(HttpStatus.CREATED)
         .then(({ body }) =>
@@ -88,18 +88,30 @@ describe('UsersController', () => {
             email: 'hairy@potter.com',
             firstName: 'Hairy',
             lastName: 'Potter',
-            teamId: teams.qa.id,
+            teamId: teams.testing.id,
           }),
         ))
 
-    it('should return 400 Bad Request', () =>
+    it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
         .post('/users')
         .send({
           email: 'hairy.potter.com',
           firstName: 'Hairy',
           lastName: 'Potter',
-          teamId: teams.qa.id,
+          teamId: teams.testing.id,
+        })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 400 Bad Request if the payload contains an unknown property', () =>
+      request(app.getHttpServer())
+        .post('/users')
+        .send({
+          email: 'hairy@potter.com',
+          firstName: 'Hairy',
+          lastName: 'Potter',
+          teamId: teams.testing.id,
+          extraneous: 'nope',
         })
         .expect(HttpStatus.BAD_REQUEST))
 
@@ -107,10 +119,10 @@ describe('UsersController', () => {
       request(app.getHttpServer())
         .post('/users')
         .send({
-          email: users.eddie.email,
+          email: users.peter.email,
           firstName: 'Hairy',
           lastName: 'Potter',
-          teamId: teams.qa.id,
+          teamId: teams.testing.id,
         })
         .expect(HttpStatus.CONFLICT))
 
@@ -127,61 +139,57 @@ describe('UsersController', () => {
   })
 
   describe('PUT /users/:id', () => {
-    const expected = UserBuilder.from(users.eddie).withLastName('Spaghetti').build()
-    const { teamId, ...rest } = expected.toJSON()
+    const updated = UserBuilder.from(users.peter)
+      .withLastName('Spaghetti')
+      .withTeamId(teams.testing.id)
+      .build()
+    const body = updated.toJSON()
 
     it('should return 200 OK', async () => {
       await request(app.getHttpServer())
-        .put(`/users/${users.eddie.id}`)
-        .send(rest)
+        .put(`/users/${updated.id}`)
+        .send(body)
         .expect(HttpStatus.OK)
-        .expect(expected.toJSON())
+        .expect(body)
     })
 
-    it('should return 400 Bad Request if the payload is invalid', () =>
+    it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
-        .put(`/users/${users.eddie.id}`)
-        .send({ ...rest, firstName: 42 })
+        .put(`/users/${updated.id}`)
+        .send({ ...body, firstName: 42 })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the ids do not match', () =>
       request(app.getHttpServer())
-        .put(`/users/${users.eddie.id}`)
-        .send({ ...rest, id: users.dale.id })
+        .put(`/users/${updated.id}`)
+        .send({ ...body, id: users.clemens.id })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 400 Bad Request if the payload contains an unknown property', () =>
+      request(app.getHttpServer())
+        .put(`/users/${updated.id}`)
+        .send({ ...body, extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
         .put(`/users/${unknownUserId}`)
-        .send({ ...rest, id: unknownUserId })
+        .send({ ...body, id: unknownUserId })
         .expect(HttpStatus.NOT_FOUND))
-  })
 
-  describe('PUT /users/:id/team', () => {
-    it('should return 200 OK', async () => {
-      await request(app.getHttpServer())
-        .put(`/users/${users.eddie.id}/team`)
-        .send({ teamId: teams.qa.id })
-        .expect(HttpStatus.OK)
-        .expect(UserBuilder.from(users.eddie).withTeamId(teams.qa.id).build().toJSON())
-    })
-
-    it('should return 400 Bad Request if the payload is invalid', () =>
+    it('should return 409 Conflict if the email is taken', () =>
       request(app.getHttpServer())
-        .put(`/users/${users.eddie.id}/team`)
-        .send({ teamId: 'Banana' })
-        .expect(HttpStatus.BAD_REQUEST))
-
-    it('should return 404 Not Found', () =>
-      request(app.getHttpServer())
-        .put(`/users/${unknownUserId}/team`)
-        .send({ teamId: teams.qa.id })
-        .expect(HttpStatus.NOT_FOUND))
+        .put(`/users/${updated.id}`)
+        .send({
+          ...body,
+          email: users.cherie.email,
+        })
+        .expect(HttpStatus.CONFLICT))
 
     it('should return 422 Unprocessable Entity if the team does not exist', () =>
       request(app.getHttpServer())
-        .put(`/users/${users.eddie.id}/team`)
-        .send({ teamId: unknownTeamId })
+        .put(`/users/${updated.id}`)
+        .send({ ...body, teamId: unknownTeamId })
         .expect(HttpStatus.UNPROCESSABLE_ENTITY))
   })
 })

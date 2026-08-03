@@ -13,10 +13,9 @@ import { ExampleKindRepository } from '#/infrastructure/persistence/example-kind
 import { ExamplesController } from '#/presentation/http/example/examples.controller.js'
 
 import { DatabaseModule } from './database.module.js'
-import { UtilityModule } from './utility.module.js'
 
 @Module({
-  imports: [DatabaseModule, UtilityModule],
+  imports: [DatabaseModule],
   controllers: [ExamplesController],
   providers: [
     { provide: IExampleRepository, useClass: ExampleRepository },
@@ -25,5 +24,6 @@ import { UtilityModule } from './utility.module.js'
     { provide: IExampleKindRepository, useClass: ExampleKindRepository },
     { provide: IExampleKindService, useClass: ExampleKindService },
   ],
+  exports: [IExampleRepository],
 })
 export class ExampleModule {}

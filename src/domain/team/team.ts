@@ -1,4 +1,4 @@
-import type { JsonObject } from 'type-fest'
+import type { Except, JsonObject } from 'type-fest'
 import z from 'zod'
 
 import { InvalidTeamError } from './error/invalid-team.error.js'
@@ -12,7 +12,9 @@ export const teamSchema = z.object({
   }),
 })
 
-export class Team {
+export type Properties = z.infer<typeof teamSchema>
+
+export class Team implements Properties {
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Disable structural typing.
   readonly #brand = Symbol.for(Team.name)
 
@@ -28,6 +30,10 @@ export class Team {
 
     this.id = result.data.id
     this.name = result.data.name
+  }
+
+  public update(data: Partial<Except<Properties, 'id'>>): Team {
+    return new Team({ ...this, ...data })
   }
 
   public toJSON(): JsonObject {

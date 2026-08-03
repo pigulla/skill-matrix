@@ -6,26 +6,26 @@ This file provides guidance to agents when working with code in this repository.
 
 ```bash
 # Development
-npm start                   # Run with jiti (TypeScript, development conditions)
-npm run build               # Compile TypeScript + copy configs + copy SQL files
+npm start                     # Run with jiti (TypeScript, development conditions)
+npm run build                 # Compile TypeScript + copy configs + copy SQL files
 
 # Testing
-npm run test                # Run all tests and linting tasks.
-npm run vitest:unit         # Unit tests only (src/**/*.test.ts)
-npm run vitest:integration  # Integration tests (test/integration/**/*.test.ts)
-npm run vitest:architecture # Architecture enforcement tests
-npm run vitest:coverage     # Full coverage report (excludes architecture tests)
-npm run vitest              # All test categories
+npm run test                  # Run all tests and linting tasks.
+npm run vitest:unit           # Unit tests only (src/**/*.test.ts)
+npm run vitest:integration    # Integration tests (test/integration/**/*.test.ts)
+npm run vitest:architecture   # Architecture enforcement tests
+npm run vitest:with-coverage  # Full coverage report (excludes architecture tests)
+npm run vitest                # All test categories
 
 # Running a single test file
 npx vitest run path/to/file.test.ts
 
 # Lint & Format
-npm run lint                # Full lint suite (tsc + biome + knip + sql + lockfile + package.json)
-npm run format              # Format everything (biome + package.json + sql)
+npm run lint                  # Full lint suite (tsc + biome + knip + sql + lockfile + package.json)
+npm run format                # Format everything (biome + package.json + sql)
 
 # OpenAPI docs
-npm run openapi             # Build, generate HTML, and validate spec
+npm run openapi               # Build, generate HTML, and validate spec
 ```
 
 ## Architecture
@@ -58,6 +58,23 @@ DTOs are validated at the boundary with Zod (`nestjs-zod`). Domain objects are i
 - **Config:** Node-Config (`config/`) with Zod-validated schemas in `src/infrastructure/config/`
 - **Logging:** Pino via `nestjs-pino`; no `console.*` allowed (Biome enforces this)
 - **Controllers:** Controllers never contain business logic. They serve exclusively as an adapter from HTTP to the application layer (or in trivial cases the domain layer). All business logic must be in application services.
+
+### Error handling
+
+Errors split into two channels, chosen by whether the caller is expected to handle the failure:
+
+- **Expected domain errors** — not-found, duplicate, still-in-use, missing-reference, and similar — are returned as values using [`neverthrow`](https://github.com/supermacro/neverthrow)'s `Result`/`ResultAsync`, never thrown. This applies across the entire call chain: repository → service → controller.
+- **Unexpected errors** — bugs, infrastructure failures — are still thrown as `Error` subclasses and propagate as rejections/exceptions, exactly as before this pattern existed.
+
+Never throw a concrete domain error (`EntityNotFoundError`, `DuplicateEntityError`, `EntityInUseError`, `EntityReferenceNotFoundError`, or any subclass) from a repository or service method — return it as an `Err` instead. This pattern is applied uniformly across every domain (`user`, `skill`, `example`, `example-kind`, `team`, `team-skill-proficiencies`).
+
+Concrete shape, layer by layer:
+
+- **Repository interfaces** (`src/domain/*/*.repository.interface.ts`, abstract classes): every method returns `ResultAsync<T, E>`. Methods with no failure case still return `ResultAsync<T, never>` rather than `Promise<T>` — this keeps every method eligible for the same decorator below, so there is nothing to remember per-method.
+- **Repository implementations** (`src/infrastructure/persistence/*/`): decorated with `@ResultTransactional()` only when a single repository method issues more than one DB statement that must succeed or fail together (e.g. an insert followed by writing associated rows) — this guarantees the method is safe on its own, even if it's ever called from something other than a service. A method that issues a single DB statement needs no decorator. Each method wraps its DB call(s) as `ResultAsync.fromPromise(promise, errorMapper)`. The `errorMapper` inspects the underlying `pg-promise` error — via `isUniqueConstraintViolation`/`isForeignKeyViolation`/`isRestrictViolation` — and `return`s a domain error instance to produce an `Err`; anything unrecognized is `throw`n as `UnexpectedPersistenceError`, which stays a genuine rejection, not an `Err`. Row-not-found (`oneOrNone` returning `null`) becomes `.andThen(row => row === null ? errAsync(new XNotFoundError(id)) : okAsync(...))`.
+- **Application services** (`src/application/*/`): compose repository calls with `.andThen(...)`/`.map(...)` combinators — no manual `await`/`try`/`catch`. Every public method is decorated with `@ResultTransactional()` (`src/util/result-transactional.decorator.ts`) instead of `@Transactional()`, including methods that make only a single repository call, for the same uniformity reason as above. The service-level transaction guarantees atomicity across multiple repository calls (or calls spanning multiple repositories) within one method — it composes correctly with any repository-level `@ResultTransactional()` from the point above, since a transaction already open in scope is reused rather than nested. `@ResultTransactional()` still runs the method inside a real DB transaction, but — unlike plain `@Transactional()` — it forces a genuine `ROLLBACK` when the wrapped method resolves `Err`, even if an earlier write in the same call already succeeded (a resolved `Err` is not a rejection, so plain `@Transactional()` would otherwise happily commit it). Never use plain `@Transactional()` on a method returning a `ResultAsync`, at either layer.
+- **Controllers** (`src/presentation/http/*/`): handler methods return `ResultAsync<Dto, E>` directly (instead of `Promise<Dto>`) and are additionally decorated with `@UnwrapResult()` (`src/util/unwrap-result.decorator.ts`), which awaits the result and either returns the `Ok` value or `throw`s the `Err` value — so the existing `DomainErrorsExceptionFilter` maps it to an HTTP status exactly as it would a direct throw, with no filter changes needed. Handler bodies should be one-liners, e.g. `return this.service.get(id).map(fromDomain)`.
+- **Tests**: integration tests assert on the resolved `Result` with `._unsafeUnwrap()` / `._unsafeUnwrapErr()` instead of `.resolves.toEqual(...)` / `.rejects.toThrow(SomeExpectedError)`. Genuinely unexpected errors (`UnexpectedPersistenceError`) still assert with `.rejects.toThrow(...)`, since those remain real rejections rather than `Err` values. Controller integration tests need no changes — HTTP status/body behavior is identical whether an error was thrown directly or unwrapped from a `Result`.
 
 ### Code Conventions
 

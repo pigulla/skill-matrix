@@ -106,9 +106,9 @@ Query method cheat-sheet (pg-promise): `one` (exactly one, throws otherwise), `o
 
 Bind the token to the implementation in the relevant NestJS module (`src/module/*`): `{ provide: IWidgetRepository, useClass: WidgetRepository }`. Application services depend on `IWidgetRepository`, never on the concrete class.
 
-## 8. Transactions live in the service
+## 8. Transactions live in the service (usually)
 
-Put `@Transactional()` on the **application service** method that orchestrates the work (see `src/application/user.service.ts`). The repository never manages transactions.
+Put `@Transactional()` on the **application service** method that orchestrates the work (see `src/application/user.service.ts`). The repository doesn't manage transactions — unless the repository method itself performs multiple related writes that must succeed or fail together (e.g. inserting a row and then rebuilding its join-table associations), in which case that method may carry its own `@Transactional()` to stay atomic in isolation (see `SkillRepository.create()`/`update()`). Because `@nestjs-cls/transactional` defaults to `Propagation.Required`, this joins the caller's already-open transaction rather than starting a separate one, so it composes safely with the service-level `@Transactional()` above it. A repository method with only one statement never needs this — it's already atomic.
 
 ## 9. Integration test
 

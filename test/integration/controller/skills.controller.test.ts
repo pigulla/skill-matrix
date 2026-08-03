@@ -66,7 +66,7 @@ describe('SkillsController', () => {
   describe('DELETE /skills/:id', () => {
     it('should return 204 No Content', () =>
       request(app.getHttpServer())
-        .delete(`/skills/${skills.frontendDevelopment.id}`)
+        .delete(`/skills/${skills.qualityAssurance.id}`)
         .expect(HttpStatus.NO_CONTENT))
 
     it('should return 404 Not Found', () =>
@@ -97,12 +97,24 @@ describe('SkillsController', () => {
           }),
         ))
 
-    it('should return 400 Bad Request', () =>
+    it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
         .post('/skills')
         .send({
           name: 'Legacy',
           description: `Things we don't need anymore`,
+          exampleIds: 42,
+        })
+        .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 400 Bad Request if the payload contains an unknown property', () =>
+      request(app.getHttpServer())
+        .post('/skills')
+        .send({
+          name: 'Legacy',
+          description: `Things we don't need anymore`,
+          exampleIds: [examples.cobol.id, examples.solid.id],
+          extraneous: 'nope',
         })
         .expect(HttpStatus.BAD_REQUEST))
 
@@ -140,7 +152,7 @@ describe('SkillsController', () => {
         .expect(expected.toJSON())
     })
 
-    it('should return 400 Bad Request if the payload is invalid', () =>
+    it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
         .put(`/skills/${skills.backendDevelopment.id}`)
         .send({ ...skills.backendDevelopment.toJSON(), name: 42 })
@@ -152,10 +164,22 @@ describe('SkillsController', () => {
         .send({ ...skills.backendDevelopment.toJSON(), id: skills.frontendDevelopment.id })
         .expect(HttpStatus.BAD_REQUEST))
 
+    it('should return 400 Bad Request if the payload contains an unknown property', () =>
+      request(app.getHttpServer())
+        .put(`/skills/${skills.backendDevelopment.id}`)
+        .send({ ...skills.backendDevelopment.toJSON(), extraneous: 'nope' })
+        .expect(HttpStatus.BAD_REQUEST))
+
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
         .put(`/skills/${unknownSkillId}`)
         .send({ ...skills.backendDevelopment.toJSON(), id: unknownSkillId })
         .expect(HttpStatus.NOT_FOUND))
+
+    it('should return 409 Conflict if the name is not unique', () =>
+      request(app.getHttpServer())
+        .put(`/skills/${skills.backendDevelopment.id}`)
+        .send({ ...skills.backendDevelopment.toJSON(), name: skills.frontendDevelopment.name })
+        .expect(HttpStatus.CONFLICT))
   })
 })

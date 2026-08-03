@@ -7,9 +7,9 @@ export type TimeProviderMock = Mocked<ITimeProvider>
 
 export function mockTimeProvider(now?: Dayjs): TimeProviderMock {
   return {
-    now: vi.fn().mockReturnValueOnce(now),
+    now: vi.fn().mockReturnValue(now),
     highResolutionTimestamp: vi
       .fn()
-      .mockReturnValueOnce(now === undefined ? undefined : BigInt(now.unix() * 10e6)),
+      .mockReturnValue(now === undefined ? undefined : BigInt(now.unix() * 10e6)),
   }
 }

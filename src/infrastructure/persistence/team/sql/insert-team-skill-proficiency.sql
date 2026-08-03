@@ -1,6 +1,6 @@
 INSERT INTO
-  team_skills (team_id, skill_id, proficiency)
+  skills_to_teams (team_id, skill_id, proficiency)
 VALUES
-  ($(teamId), $(skillId), $(proficiency))
+  ($(team_id), $(skill_id), $(proficiency))
 RETURNING
-  skill_id
+  skill_id;

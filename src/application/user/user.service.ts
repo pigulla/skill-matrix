@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common'
-import { Transactional } from '@nestjs-cls/transactional'
+import type { ResultAsync } from 'neverthrow'
+import type { Except, SetRequired } from 'type-fest'
 
-import type { TeamID } from '#/domain/team/team-id.js'
-import { User } from '#/domain/user/user.js'
+import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
+import type { DuplicateUserEmailError } from '#/domain/user/error/duplicate-user-email.error.js'
+import type { DuplicateUserIdError } from '#/domain/user/error/duplicate-user-id.error.js'
+import type { UserNotFoundError } from '#/domain/user/error/user-not-found.error.js'
+import { type Properties, User } from '#/domain/user/user.js'
 import { IUserRepository } from '#/domain/user/user.repository.interface.js'
-import { type UserID } from '#/domain/user/user-id.js'
+import type { UserID } from '#/domain/user/user-id.js'
+import { ResultTransactional } from '#/util/result-transactional.decorator.js'
 
 import { IUserService } from './user.service.interface.js'
 import { IUserUuidProvider } from './user-uuid-provider.interface.js'
@@ -19,48 +24,40 @@ export class UserService implements IUserService {
     this.uuidProvider = uuidProvider
   }
 
-  @Transactional()
-  public getAll(): Promise<User[]> {
+  @ResultTransactional()
+  public getAll(): ResultAsync<User[], never> {
     return this.userRepository.getAll()
   }
 
-  @Transactional()
-  public get(id: UserID): Promise<User> {
+  @ResultTransactional()
+  public get(id: UserID): ResultAsync<User, UserNotFoundError> {
     return this.userRepository.get(id)
   }
 
-  @Transactional()
-  public delete(id: UserID): Promise<void> {
+  @ResultTransactional()
+  public delete(id: UserID): ResultAsync<void, UserNotFoundError> {
     return this.userRepository.delete(id)
   }
 
-  @Transactional()
-  public create(data: {
-    firstName: string
-    lastName: string
-    email: string
-    teamId: TeamID
-  }): Promise<User> {
+  @ResultTransactional()
+  public create(
+    data: Except<Properties, 'id'>,
+  ): ResultAsync<
+    User,
+    DuplicateUserIdError | DuplicateUserEmailError | TeamReferenceNotFoundError
+  > {
     const id = this.uuidProvider.generate()
     const user = new User({ ...data, id })
 
     return this.userRepository.create(user)
   }
 
-  @Transactional()
-  public async update(data: {
-    id: UserID
-    firstName: string
-    lastName: string
-    email: string
-  }): Promise<User> {
-    const existing = await this.userRepository.get(data.id)
-
-    return this.userRepository.update(existing.update(data))
-  }
-
-  @Transactional()
-  public assignTeam(userId: UserID, teamId: TeamID): Promise<User> {
-    return this.userRepository.assignTeam(userId, teamId)
+  @ResultTransactional()
+  public update(
+    data: SetRequired<Partial<Properties>, 'id'>,
+  ): ResultAsync<User, UserNotFoundError | DuplicateUserEmailError | TeamReferenceNotFoundError> {
+    return this.userRepository
+      .get(data.id)
+      .andThen(existing => this.userRepository.update(existing.update(data)))
   }
 }

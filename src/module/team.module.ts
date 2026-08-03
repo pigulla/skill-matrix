@@ -14,10 +14,9 @@ import { TeamSkillsController } from '#/presentation/http/team/team-skills.contr
 import { TeamsController } from '#/presentation/http/team/teams.controller.js'
 
 import { DatabaseModule } from './database.module.js'
-import { UtilityModule } from './utility.module.js'
 
 @Module({
-  imports: [DatabaseModule, UtilityModule],
+  imports: [DatabaseModule],
   controllers: [TeamsController, TeamSkillsController],
   providers: [
     { provide: ITeamRepository, useClass: TeamRepository },

@@ -1,14 +1,13 @@
 import { createZodDto } from 'nestjs-zod'
+import { z } from 'zod'
 
 import { Team, teamSchema } from '#/domain/team/team.js'
 
-const updateTeamDTOSchema = teamSchema.brand<'update-team-dto'>('update-team-dto')
+const updateTeamDTOSchema = z.strictObject(teamSchema.shape).brand('update-team-dto')
 
-const createTeamDTOSchema = updateTeamDTOSchema
-  .omit({ id: true })
-  .brand<'create-team-dto'>('create-team-dto')
+const createTeamDTOSchema = updateTeamDTOSchema.omit({ id: true }).brand('create-team-dto')
 
-const teamDTOSchema = updateTeamDTOSchema.brand<'team-dto'>('team-dto')
+const teamDTOSchema = updateTeamDTOSchema.brand('team-dto')
 
 export class CreateTeamDTO extends createZodDto(createTeamDTOSchema) {}
 

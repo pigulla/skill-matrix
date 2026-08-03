@@ -1,3 +1,4 @@
+import { asExampleKind } from '#/domain/example-kind/example-kind.js'
 import type { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
@@ -5,131 +6,250 @@ import { SkillBuilder } from '../../builder/skill.builder.js'
 import { TeamBuilder } from '../../builder/team.builder.js'
 import { TeamSkillProficienciesBuilder } from '../../builder/team-skill-proficiencies.builder.js'
 import { UserBuilder } from '../../builder/user.builder.js'
+import { by } from '../../util/sort-by-id.js'
 
 export const teams = {
-  platform: TeamBuilder.create({
-    id: '40000000-0002-4000-8000-000000000001',
-    name: 'Platform',
+  platformEngineering: TeamBuilder.create({
+    id: '22222222-0002-4000-8000-111111111111',
+    name: 'Platform Engineering',
   }),
-  product: TeamBuilder.create({
-    id: '40000000-0002-4000-8000-000000000002',
-    name: 'Product',
+  testing: TeamBuilder.create({
+    id: '22222222-0002-4000-8000-222222222222',
+    name: 'Testing',
   }),
-  qa: TeamBuilder.create({
-    id: '40000000-0002-4000-8000-000000000003',
-    name: 'QA',
+  traffic: TeamBuilder.create({
+    id: '22222222-0002-4000-8000-333333333333',
+    name: 'Traffic',
+  }),
+  coreServices: TeamBuilder.create({
+    id: '22222222-0002-4000-8000-444444444444',
+    name: 'Core Services',
   }),
 }
 
 export const users = {
-  eddie: UserBuilder.create({
-    id: '10000000-0001-4000-8000-edd1ebea1e00',
-    firstName: 'Eddie',
-    lastName: 'Beale',
-    email: 'eddie.beale@example.com',
-    teamId: teams.platform.id,
+  peter: UserBuilder.create({
+    id: '11111111-0001-4000-8000-111111111111',
+    firstName: 'Peter',
+    lastName: 'Parker',
+    email: 'peter.parker@example.com',
+    teamId: teams.platformEngineering.id,
+  }),
+  priscilla: UserBuilder.create({
+    id: '11111111-0001-4000-8000-222222222222',
+    firstName: 'Priscilla',
+    lastName: 'Potts',
+    email: 'priscilla.potts@example.com',
+    teamId: teams.platformEngineering.id,
+  }),
+  theodore: UserBuilder.create({
+    id: '11111111-0001-4000-8000-333333333333',
+    firstName: 'Theodore',
+    lastName: 'Trentin',
+    email: 'theodore.trentin@example.com',
+    teamId: teams.traffic.id,
   }),
   tess: UserBuilder.create({
-    id: '20000000-0001-4000-8000-7e555ad1e900',
+    id: '11111111-0001-4000-8000-444444444444',
     firstName: 'Tess',
-    lastName: 'Sadler',
-    email: 'tess.sadler@example.com',
-    teamId: teams.platform.id,
+    lastName: 'Turner',
+    email: 'tess.turner@example.com',
+    teamId: teams.traffic.id,
   }),
-  dale: UserBuilder.create({
-    id: '30000000-0001-4000-8000-da1e61a55000',
-    firstName: 'Dale',
-    lastName: 'Glass',
-    email: 'dale.glass@example.com',
-    teamId: teams.product.id,
+  clemens: UserBuilder.create({
+    id: '11111111-0001-4000-8000-555555555555',
+    firstName: 'Clemens',
+    lastName: 'Cook',
+    email: 'clemens.cook@example.com',
+    teamId: teams.coreServices.id,
+  }),
+  cherie: UserBuilder.create({
+    id: '11111111-0001-4000-8000-666666666666',
+    firstName: 'Cherie',
+    lastName: 'Cooper',
+    email: 'cherie.cooper@example.com',
+    teamId: teams.coreServices.id,
+  }),
+  courtney: UserBuilder.create({
+    id: '11111111-0001-4000-8000-777777777777',
+    firstName: 'Courtney',
+    lastName: 'Cox',
+    email: 'courtney.cox@example.com',
+    teamId: teams.coreServices.id,
   }),
 }
 
 export const exampleKinds = {
-  CONCEPT: 'concept',
-  METHODOLOGY: 'methodology',
-  PATTERN: 'pattern',
-  TECHNOLOGY: 'technology',
+  CONCEPT: asExampleKind('concept'),
+  METHODOLOGY: asExampleKind('methodology'),
+  PATTERN: asExampleKind('pattern'),
+  TECHNOLOGY: asExampleKind('technology'),
 }
 
 export const examples = {
+  html: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-111111111111',
+    name: 'HTML',
+    kind: exampleKinds.TECHNOLOGY,
+    url: null,
+  }),
+  css: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-222222222222',
+    name: 'CSS',
+    kind: exampleKinds.TECHNOLOGY,
+    url: null,
+  }),
   react: ExampleBuilder.create({
-    id: 'a0000000-0004-4000-8000-000000000003',
+    id: '44444444-0004-4000-8000-333333333333',
     name: 'React',
     kind: exampleKinds.TECHNOLOGY,
     url: 'https://react.dev',
   }),
   nestjs: ExampleBuilder.create({
-    id: 'a0000000-0004-4000-8000-000000000001',
-    name: 'NestJS',
+    id: '44444444-0004-4000-8000-444444444444',
+    name: 'Nest.js',
     kind: exampleKinds.TECHNOLOGY,
     url: 'https://nestjs.com',
   }),
+  vuejs: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-555555555555',
+    name: 'Vue.js',
+    kind: exampleKinds.TECHNOLOGY,
+    url: 'https://vuejs.org',
+  }),
   postgresql: ExampleBuilder.create({
-    id: 'a0000000-0004-4000-8000-000000000002',
+    id: '44444444-0004-4000-8000-666666666666',
     name: 'PostgreSQL',
     kind: exampleKinds.TECHNOLOGY,
     url: 'https://www.postgresql.org',
   }),
   solid: ExampleBuilder.create({
-    id: 'a0000000-0004-4000-8000-000000000004',
+    id: '44444444-0004-4000-8000-777777777777',
     name: 'SOLID',
+    kind: exampleKinds.PATTERN,
+    url: null,
+  }),
+  hexagonalArchitecture: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-888888888888',
+    name: 'Hexagonal Architecture',
+    kind: exampleKinds.PATTERN,
+    url: 'https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)',
+  }),
+  cobol: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-999999999999',
+    name: 'COBOL',
+    kind: exampleKinds.TECHNOLOGY,
+    url: null,
+  }),
+  infrastructureAsCode: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-aaaaaaaaaaaa',
+    name: 'Infrastructure-as-Code',
     kind: exampleKinds.METHODOLOGY,
     url: null,
   }),
-  nextjs: ExampleBuilder.create({
-    id: 'a0000000-0004-4000-8000-000000000005',
-    name: 'Next.js',
-    kind: exampleKinds.TECHNOLOGY,
-    url: 'https://nextjs.org',
+  domainDrivenDesign: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-bbbbbbbbbbbb',
+    name: 'Domain-Driven Design',
+    kind: exampleKinds.METHODOLOGY,
+    url: 'https://en.wikipedia.org/wiki/Domain-driven_design',
   }),
-  cobol: ExampleBuilder.create({
-    id: 'a0000000-0004-4000-8000-000000000006',
-    name: 'COBOL',
+  circuitBreaker: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-cccccccccccc',
+    name: 'Circuit Breaker',
+    kind: exampleKinds.PATTERN,
+    url: null,
+  }),
+  bulkhead: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-dddddddddddd',
+    name: 'Bulkhead',
+    kind: exampleKinds.PATTERN,
+    url: null,
+  }),
+  sql: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-eeeeeeeeeeee',
+    name: 'SQL',
     kind: exampleKinds.TECHNOLOGY,
+    url: null,
+  }),
+  factory: ExampleBuilder.create({
+    id: '44444444-0004-4000-8000-ffffffffffff',
+    name: 'Factory',
+    kind: exampleKinds.PATTERN,
     url: null,
   }),
 }
 
 export const skills = {
-  backendDevelopment: SkillBuilder.create({
-    id: '10000000-0003-4000-8000-5c111a00a100',
-    name: 'Backend Development',
-    description: 'Designing and building server-side services.',
-    exampleIds: [examples.nestjs.id, examples.postgresql.id],
-  }),
   frontendDevelopment: SkillBuilder.create({
-    id: '20000000-0003-4000-8000-5c111b00b200',
+    id: '33333333-0003-4000-8000-111111111111',
     name: 'Frontend Development',
-    description: 'Building modern web user interfaces.',
-    exampleIds: [examples.react.id, examples.nextjs.id],
+    description: 'Building and styling user-facing interfaces for the web.',
+    exampleIds: [
+      examples.html.id,
+      examples.css.id,
+      examples.react.id,
+      examples.vuejs.id,
+      examples.factory.id,
+    ],
+  }),
+  backendDevelopment: SkillBuilder.create({
+    id: '33333333-0003-4000-8000-222222222222',
+    name: 'Backend Development',
+    description: 'Designing and building server-side services, APIs, and data persistence.',
+    exampleIds: [
+      examples.nestjs.id,
+      examples.postgresql.id,
+      examples.infrastructureAsCode.id,
+      examples.circuitBreaker.id,
+      examples.bulkhead.id,
+      examples.sql.id,
+      examples.factory.id,
+    ],
   }),
   softwareArchitecture: SkillBuilder.create({
-    id: '30000000-0003-4000-8000-5c111c00c300',
+    id: '33333333-0003-4000-8000-333333333333',
     name: 'Software Architecture',
     description:
       'The high-level structure of a software system, including its components, relationships, and the key decisions guiding its design and evolution.',
-    exampleIds: [examples.solid.id],
+    exampleIds: [
+      examples.solid.id,
+      examples.hexagonalArchitecture.id,
+      examples.domainDrivenDesign.id,
+    ],
+  }),
+  qualityAssurance: SkillBuilder.create({
+    id: '33333333-0003-4000-8000-444444444444',
+    name: 'Quality Assurance',
+    description:
+      'Verifying software correctness and reliability through testing and process improvement.',
+    exampleIds: [],
   }),
 }
 
+const bySkillId = by('skillId')
+
 export const teamSkillProficiencies = {
-  platform: TeamSkillProficienciesBuilder.create({
-    teamId: teams.platform.id,
+  platformEngineering: TeamSkillProficienciesBuilder.create({
+    teamId: teams.platformEngineering.id,
+    skills: [{ skillId: skills.backendDevelopment.id, proficiency: 1 }].sort(bySkillId),
+  }),
+  testing: TeamSkillProficienciesBuilder.create({
+    teamId: teams.testing.id,
+    skills: [].sort(bySkillId),
+  }),
+  traffic: TeamSkillProficienciesBuilder.create({
+    teamId: teams.traffic.id,
+    skills: [
+      { skillId: skills.backendDevelopment.id, proficiency: 2 },
+      { skillId: skills.frontendDevelopment.id, proficiency: 3 },
+      { skillId: skills.softwareArchitecture.id, proficiency: 2 },
+    ].sort(bySkillId),
+  }),
+  coreServices: TeamSkillProficienciesBuilder.create({
+    teamId: teams.coreServices.id,
     skills: [
       { skillId: skills.backendDevelopment.id, proficiency: 3 },
-      { skillId: skills.softwareArchitecture.id, proficiency: 2 },
-    ],
-  }),
-  product: TeamSkillProficienciesBuilder.create({
-    teamId: teams.product.id,
-    skills: [
-      { skillId: skills.softwareArchitecture.id, proficiency: 2 },
-      { skillId: skills.backendDevelopment.id, proficiency: 1 },
-    ],
-  }),
-  qa: TeamSkillProficienciesBuilder.create({
-    teamId: teams.qa.id,
-    skills: [],
+      { skillId: skills.softwareArchitecture.id, proficiency: 3 },
+    ].sort(bySkillId),
   }),
 } satisfies Record<keyof typeof teams, TeamSkillProficiencies>

@@ -7,7 +7,7 @@ export const skillIdSchema = idSchema
   .refine(id => id.split('-')[1] === EntityIdMarker.SKILL, {
     message: `ID must have marker '${EntityIdMarker.SKILL}' in the second segment`,
   })
-  .brand<'skill-id'>()
+  .brand('skill-id')
   .meta({
     description: 'The ID of the skill.',
     example: `00000000-${EntityIdMarker.SKILL}-4000-8000-000000000000`,

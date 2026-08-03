@@ -7,7 +7,7 @@ export const teamIdSchema = idSchema
   .refine(id => id.split('-')[1] === EntityIdMarker.TEAM, {
     message: `ID must have marker '${EntityIdMarker.TEAM}' in the second segment`,
   })
-  .brand<'team-id'>()
+  .brand('team-id')
   .meta({
     description: 'The ID of the team.',
     example: `00000000-${EntityIdMarker.TEAM}-4000-8000-000000000000`,

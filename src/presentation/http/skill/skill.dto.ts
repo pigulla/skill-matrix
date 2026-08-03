@@ -5,7 +5,8 @@ import { exampleIdSchema } from '#/domain/example/example-id.js'
 import { EntityIdMarker } from '#/domain/id-markers.js'
 import { Skill, skillSchema } from '#/domain/skill/skill.js'
 
-const updateSkillDTOSchema = skillSchema
+const updateSkillDTOSchema = z
+  .strictObject(skillSchema.shape)
   .extend({
     exampleIds: z
       .array(exampleIdSchema)
@@ -15,18 +16,16 @@ const updateSkillDTOSchema = skillSchema
         example: [`00000000-${EntityIdMarker.EXAMPLE}-4000-8000-000000000000`],
       }),
   })
-  .brand<'create-skill-dto'>('create-skill-dto')
+  .brand('update-skill-dto')
 
-const createSkillDTOSchema = updateSkillDTOSchema
-  .omit({ id: true })
-  .brand<'update-skill-dto'>('update-skill-dto')
+const createSkillDTOSchema = updateSkillDTOSchema.omit({ id: true }).brand('create-skill-dto')
 
 const skillDTOSchema = z
   .strictObject({
     ...createSkillDTOSchema.shape,
     ...skillSchema.pick({ id: true }).shape,
   })
-  .brand<'skill-dto'>('skill-dto')
+  .brand('skill-dto')
 
 export class CreateSkillDTO extends createZodDto(createSkillDTOSchema) {}
 
@@ -41,4 +40,8 @@ export function fromDomain(skill: Skill): SkillDTO {
     description: skill.description,
     exampleIds: [...skill.exampleIds],
   })
+}
+
+export function toDomain(skill: SkillDTO | UpdateSkillDTO): Skill {
+  return new Skill({ ...skill, exampleIds: new Set(skill.exampleIds) })
 }

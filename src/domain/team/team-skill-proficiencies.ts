@@ -37,13 +37,15 @@ export class TeamSkillProficiencies {
     }
 
     this.teamId = result.data.teamId
-    this.skills = new Map(result.data.skills.map(s => [s.skillId, new SkillProficiency(s)]))
+    this.skills = new Map(
+      result.data.skills.map(skill => [skill.skillId, new SkillProficiency(skill)]),
+    )
   }
 
   public toJSON(): JsonObject {
     return {
       teamId: this.teamId,
-      skills: [...this.skills.values()].map(s => s.toJSON()),
+      skills: [...this.skills.values()].map(skill => skill.toJSON()),
     }
   }
 }

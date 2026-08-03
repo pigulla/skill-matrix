@@ -1,4 +1,6 @@
 SELECT
   name
 FROM
-  $(table:name);
+  $(table:name)
+ORDER BY
+  name ASC;

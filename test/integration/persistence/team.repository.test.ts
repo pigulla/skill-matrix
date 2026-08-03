@@ -1,19 +1,17 @@
 import type { INestApplication } from '@nestjs/common'
+import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
 import { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
 import { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
 import { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
 import { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
-import { Team } from '#/domain/team/team.js'
 import { asTeamID } from '#/domain/team/team-id.js'
+import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { TeamRepository } from '#/infrastructure/persistence/team/team.repository.js'
 
 import { TeamBuilder } from '../../builder/team.builder.js'
-import {
-  ENTITY_ASSERTION_HELPER,
-  type EntityAssertionHelper,
-} from '../fixture/entity-assertion-helper.js'
 import { teams, users } from '../fixture/fixture.js'
 import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
 
@@ -23,7 +21,7 @@ describe('TeamRepository', () => {
 
   let app: INestApplication
   let teamRepository: TeamRepository
-  let entity: EntityAssertionHelper
+  let db: Database
 
   beforeAll(integrationTest.beforeAll)
   afterAll(integrationTest.afterAll)
@@ -40,7 +38,7 @@ describe('TeamRepository', () => {
 
     app = await module.createNestApplication().enableShutdownHooks().init()
     teamRepository = app.get(TeamRepository)
-    entity = app.get(ENTITY_ASSERTION_HELPER)
+    db = app.get(IConnectionProvider).database
   })
 
   afterEach(async () => {
@@ -50,17 +48,35 @@ describe('TeamRepository', () => {
 
   describe('get', () => {
     it('should return a team', async () => {
-      await expect(teamRepository.get(teams.platform.id)).resolves.toEqual(teams.platform)
+      const result = await teamRepository.get(teams.traffic.id)
+
+      expect(result._unsafeUnwrap()).toEqual(teams.traffic)
     })
 
-    it('should throw', async () => {
-      await expect(teamRepository.get(invalidId)).rejects.toThrow(TeamNotFoundError)
+    it('should return TeamNotFoundError', async () => {
+      const result = await teamRepository.get(invalidId)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      await db.none('ALTER TABLE teams RENAME TO teams_renamed')
+
+      await expect(teamRepository.get(teams.traffic.id)).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
   describe('getAll', () => {
     it('should return all teams', async () => {
-      await expect(teamRepository.getAll()).resolves.to.have.deep.members(Object.values(teams))
+      const result = await teamRepository.getAll()
+
+      expect(result._unsafeUnwrap()).to.have.deep.members(Object.values(teams))
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      await db.none('ALTER TABLE teams RENAME TO teams_renamed')
+
+      await expect(teamRepository.getAll()).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
@@ -71,59 +87,117 @@ describe('TeamRepository', () => {
         name: 'Design',
       })
 
-      await expect(teamRepository.create(team)).resolves.toEqual(team)
+      const result = await teamRepository.create(team)
 
-      await entity(Team).withId(team.id).andColumns({ name: team.name }).should.exist()
+      expect(result._unsafeUnwrap()).toEqual(team)
+
+      await expect(
+        db.oneOrNone('SELECT * FROM teams WHERE id=$(id)', { id: team.id }),
+      ).resolves.toMatchObject({
+        name: team.name,
+      })
     })
 
-    it('should throw if the id already exists', async () => {
-      const team = TeamBuilder.from(teams.platform).withName('Different').build()
+    it('should return DuplicateTeamIdError if the id already exists', async () => {
+      const team = TeamBuilder.from(teams.traffic).withName('Different').build()
 
-      await expect(teamRepository.create(team)).rejects.toThrow(DuplicateTeamIdError)
+      const result = await teamRepository.create(team)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateTeamIdError)
     })
 
-    it('should throw if the name already exists', async () => {
+    it('should return DuplicateTeamNameError if the name already exists', async () => {
       const team = TeamBuilder.create({
         id: '40000000-0002-4000-8000-0000000000bb',
-        name: teams.platform.name,
+        name: teams.traffic.name,
       })
 
-      await expect(teamRepository.create(team)).rejects.toThrow(DuplicateTeamNameError)
-      await entity(Team).withId('40000000-0002-4000-8000-0000000000bb').should.not.exist()
+      const result = await teamRepository.create(team)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateTeamNameError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      const team = TeamBuilder.create({
+        id: '40000000-0002-4000-8000-0000000000cc',
+        name: 'Design',
+      })
+
+      await db.none('ALTER TABLE teams RENAME TO teams_renamed')
+
+      await expect(teamRepository.create(team)).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
   describe('update', () => {
     it('should update a team', async () => {
-      const updated = TeamBuilder.from(teams.platform).withName('Platform Engineering').build()
+      const updated = TeamBuilder.from(teams.traffic).withName('Infrastructure').build()
 
-      await expect(teamRepository.update(updated)).resolves.toEqual(updated)
-      await entity(Team).withId(updated.id).andColumns({ name: updated.name }).should.exist()
+      const result = await teamRepository.update(updated)
+
+      expect(result._unsafeUnwrap()).toEqual(updated)
+
+      await expect(
+        db.oneOrNone('SELECT * FROM teams WHERE id=$(id)', { id: updated.id }),
+      ).resolves.toMatchObject({
+        name: updated.name,
+      })
     })
 
-    it('should throw if the team does not exist', async () => {
+    it('should return TeamNotFoundError if the team does not exist', async () => {
       const team = new TeamBuilder().withId(invalidId).build()
 
-      await expect(() => teamRepository.update(team)).rejects.toThrow(TeamNotFoundError)
+      const result = await teamRepository.update(team)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
+    })
+
+    it('should return DuplicateTeamNameError if the name is taken', async () => {
+      const updated = TeamBuilder.from(teams.traffic).withName(teams.testing.name).build()
+
+      const result = await teamRepository.update(updated)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateTeamNameError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      const updated = TeamBuilder.from(teams.traffic).withName('Infrastructure').build()
+
+      await db.none('ALTER TABLE teams RENAME TO teams_renamed')
+
+      await expect(teamRepository.update(updated)).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
   describe('delete', () => {
     it('should delete a team', async () => {
-      await expect(teamRepository.delete(teams.qa.id)).resolves.toBeUndefined()
+      const result = await teamRepository.delete(teams.testing.id)
 
-      await entity(Team).withId(teams.qa.id).should.not.exist()
+      expect(result._unsafeUnwrap()).toBeUndefined()
+
+      await expect(
+        db.oneOrNone('SELECT name FROM teams WHERE id=$(id)', { id: teams.testing.id }),
+      ).resolves.toBeNull()
     })
 
-    it('should throw if the team does not exist', async () => {
-      await expect(() => teamRepository.delete(invalidId)).rejects.toThrow(TeamNotFoundError)
+    it('should return TeamNotFoundError if the team does not exist', async () => {
+      const result = await teamRepository.delete(invalidId)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
     })
 
-    it('should throw when the team still has members', async () => {
-      await expect(() => teamRepository.delete(users.eddie.teamId)).rejects.toThrow(
-        TeamNotEmptyError,
+    it('should return TeamNotEmptyError when the team still has members', async () => {
+      const result = await teamRepository.delete(users.peter.teamId)
+
+      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotEmptyError)
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      await db.none('ALTER TABLE teams RENAME TO teams_renamed')
+
+      await expect(teamRepository.delete(teams.testing.id)).rejects.toThrow(
+        UnexpectedPersistenceError,
       )
-      await entity(Team).withId(users.eddie.teamId).should.exist()
     })
   })
 })

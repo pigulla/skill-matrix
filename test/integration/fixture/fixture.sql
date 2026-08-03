@@ -5,11 +5,15 @@ INSERT INTO
   teams (id, name)
 VALUES
   (
-    '40000000-0002-4000-8000-000000000001',
-    'Platform'
+    '22222222-0002-4000-8000-111111111111',
+    'Platform Engineering'
   ),
-  ('40000000-0002-4000-8000-000000000002', 'Product'),
-  ('40000000-0002-4000-8000-000000000003', 'QA');
+  ('22222222-0002-4000-8000-222222222222', 'Testing'),
+  ('22222222-0002-4000-8000-333333333333', 'Traffic'),
+  (
+    '22222222-0002-4000-8000-444444444444',
+    'Core Services'
+  );
 
 --
 -- Users
@@ -18,25 +22,53 @@ INSERT INTO
   users (id, first_name, last_name, email, team_id)
 VALUES
   (
-    '10000000-0001-4000-8000-edd1ebea1e00',
-    'Eddie',
-    'Beale',
-    'eddie.beale@example.com',
-    '40000000-0002-4000-8000-000000000001'
+    '11111111-0001-4000-8000-111111111111',
+    'Peter',
+    'Parker',
+    'peter.parker@example.com',
+    '22222222-0002-4000-8000-111111111111'
   ),
   (
-    '20000000-0001-4000-8000-7e555ad1e900',
+    '11111111-0001-4000-8000-222222222222',
+    'Priscilla',
+    'Potts',
+    'priscilla.potts@example.com',
+    '22222222-0002-4000-8000-111111111111'
+  ),
+  (
+    '11111111-0001-4000-8000-333333333333',
+    'Theodore',
+    'Trentin',
+    'theodore.trentin@example.com',
+    '22222222-0002-4000-8000-333333333333'
+  ),
+  (
+    '11111111-0001-4000-8000-444444444444',
     'Tess',
-    'Sadler',
-    'tess.sadler@example.com',
-    '40000000-0002-4000-8000-000000000001'
+    'Turner',
+    'tess.turner@example.com',
+    '22222222-0002-4000-8000-333333333333'
   ),
   (
-    '30000000-0001-4000-8000-da1e61a55000',
-    'Dale',
-    'Glass',
-    'dale.glass@example.com',
-    '40000000-0002-4000-8000-000000000002'
+    '11111111-0001-4000-8000-555555555555',
+    'Clemens',
+    'Cook',
+    'clemens.cook@example.com',
+    '22222222-0002-4000-8000-444444444444'
+  ),
+  (
+    '11111111-0001-4000-8000-666666666666',
+    'Cherie',
+    'Cooper',
+    'cherie.cooper@example.com',
+    '22222222-0002-4000-8000-444444444444'
+  ),
+  (
+    '11111111-0001-4000-8000-777777777777',
+    'Courtney',
+    'Cox',
+    'courtney.cox@example.com',
+    '22222222-0002-4000-8000-444444444444'
   );
 
 --
@@ -57,19 +89,24 @@ INSERT INTO
   skills (id, name, description)
 VALUES
   (
-    '10000000-0003-4000-8000-5c111a00a100',
-    'Backend Development',
-    'Designing and building server-side services.'
-  ),
-  (
-    '20000000-0003-4000-8000-5c111b00b200',
+    '33333333-0003-4000-8000-111111111111',
     'Frontend Development',
-    'Building modern web user interfaces.'
+    'Building and styling user-facing interfaces for the web.'
   ),
   (
-    '30000000-0003-4000-8000-5c111c00c300',
+    '33333333-0003-4000-8000-222222222222',
+    'Backend Development',
+    'Designing and building server-side services, APIs, and data persistence.'
+  ),
+  (
+    '33333333-0003-4000-8000-333333333333',
     'Software Architecture',
     'The high-level structure of a software system, including its components, relationships, and the key decisions guiding its design and evolution.'
+  ),
+  (
+    '33333333-0003-4000-8000-444444444444',
+    'Quality Assurance',
+    'Verifying software correctness and reliability through testing and process improvement.'
   );
 
 --
@@ -79,39 +116,93 @@ INSERT INTO
   examples (id, name, kind, url)
 VALUES
   (
-    'a0000000-0004-4000-8000-000000000001',
-    'NestJS',
+    '44444444-0004-4000-8000-111111111111',
+    'HTML',
     'technology',
-    'https://nestjs.com'
+    NULL
   ),
   (
-    'a0000000-0004-4000-8000-000000000002',
-    'PostgreSQL',
+    '44444444-0004-4000-8000-222222222222',
+    'CSS',
     'technology',
-    'https://www.postgresql.org'
+    NULL
   ),
   (
-    'a0000000-0004-4000-8000-000000000003',
+    '44444444-0004-4000-8000-333333333333',
     'React',
     'technology',
     'https://react.dev'
   ),
   (
-    'a0000000-0004-4000-8000-000000000004',
+    '44444444-0004-4000-8000-444444444444',
+    'Nest.js',
+    'technology',
+    'https://nestjs.com'
+  ),
+  (
+    '44444444-0004-4000-8000-555555555555',
+    'Vue.js',
+    'technology',
+    'https://vuejs.org'
+  ),
+  (
+    '44444444-0004-4000-8000-666666666666',
+    'PostgreSQL',
+    'technology',
+    'https://www.postgresql.org'
+  ),
+  (
+    '44444444-0004-4000-8000-777777777777',
     'SOLID',
+    'pattern',
+    NULL
+  ),
+  (
+    '44444444-0004-4000-8000-888888888888',
+    'Hexagonal Architecture',
+    'pattern',
+    'https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)'
+  ),
+  (
+    '44444444-0004-4000-8000-999999999999',
+    'COBOL',
+    'technology',
+    NULL
+  ),
+  (
+    '44444444-0004-4000-8000-aaaaaaaaaaaa',
+    'Infrastructure-as-Code',
     'methodology',
     NULL
   ),
   (
-    'a0000000-0004-4000-8000-000000000005',
-    'Next.js',
-    'technology',
-    'https://nextjs.org'
+    '44444444-0004-4000-8000-bbbbbbbbbbbb',
+    'Domain-Driven Design',
+    'methodology',
+    'https://en.wikipedia.org/wiki/Domain-driven_design'
   ),
   (
-    'a0000000-0004-4000-8000-000000000006',
-    'COBOL',
+    '44444444-0004-4000-8000-cccccccccccc',
+    'Circuit Breaker',
+    'pattern',
+    NULL
+  ),
+  (
+    '44444444-0004-4000-8000-dddddddddddd',
+    'Bulkhead',
+    'pattern',
+    NULL
+  ),
+  (
+    '44444444-0004-4000-8000-eeeeeeeeeeee',
+    'SQL',
     'technology',
+    NULL
+  ),
+  (
+    '44444444-0004-4000-8000-ffffffffffff',
+    'Factory',
+    'pattern',
     NULL
   );
 
@@ -122,49 +213,99 @@ INSERT INTO
   examples_to_skills (skill_id, example_id)
 VALUES
   (
-    '10000000-0003-4000-8000-5c111a00a100', -- Backend Development
-    'a0000000-0004-4000-8000-000000000001' -- NestJS
+    '33333333-0003-4000-8000-111111111111', -- Frontend Development
+    '44444444-0004-4000-8000-333333333333' -- React
   ),
   (
-    '10000000-0003-4000-8000-5c111a00a100', -- Backend Development
-    'a0000000-0004-4000-8000-000000000002' -- PostgreSQL
+    '33333333-0003-4000-8000-111111111111', -- Frontend Development
+    '44444444-0004-4000-8000-555555555555' -- Vue.js
   ),
   (
-    '20000000-0003-4000-8000-5c111b00b200', -- Frontend Development
-    'a0000000-0004-4000-8000-000000000003' -- React
+    '33333333-0003-4000-8000-111111111111', -- Frontend Development
+    '44444444-0004-4000-8000-111111111111' -- HTML
   ),
   (
-    '30000000-0003-4000-8000-5c111c00c300', -- Software Architecture
-    'a0000000-0004-4000-8000-000000000004' -- SOLID
+    '33333333-0003-4000-8000-111111111111', -- Frontend Development
+    '44444444-0004-4000-8000-222222222222' -- CSS
   ),
   (
-    '20000000-0003-4000-8000-5c111b00b200', -- Frontend Development
-    'a0000000-0004-4000-8000-000000000005' -- Next.js
+    '33333333-0003-4000-8000-111111111111', -- Frontend Development
+    '44444444-0004-4000-8000-ffffffffffff' -- Factory
+  ),
+  (
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    '44444444-0004-4000-8000-444444444444' -- Nest.js
+  ),
+  (
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    '44444444-0004-4000-8000-666666666666' -- PostgreSQL
+  ),
+  (
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    '44444444-0004-4000-8000-cccccccccccc' -- Circuit Breaker
+  ),
+  (
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    '44444444-0004-4000-8000-dddddddddddd' -- Bulkhead
+  ),
+  (
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    '44444444-0004-4000-8000-eeeeeeeeeeee' -- SQL
+  ),
+  (
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    '44444444-0004-4000-8000-ffffffffffff' -- Factory
+  ),
+  (
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    '44444444-0004-4000-8000-aaaaaaaaaaaa' -- Infrastructure-as-Code
+  ),
+  (
+    '33333333-0003-4000-8000-333333333333', -- Software Architecture
+    '44444444-0004-4000-8000-888888888888' -- Hexagonal Architecture
+  ),
+  (
+    '33333333-0003-4000-8000-333333333333', -- Software Architecture
+    '44444444-0004-4000-8000-777777777777' -- SOLID
+  ),
+  (
+    '33333333-0003-4000-8000-333333333333', -- Software Architecture
+    '44444444-0004-4000-8000-bbbbbbbbbbbb' -- Domain-Driven Design
   );
 
 --
 -- Teams <--> Skills
 --
 INSERT INTO
-  team_skills (team_id, skill_id, proficiency)
+  skills_to_teams (team_id, skill_id, proficiency)
 VALUES
   (
-    '40000000-0002-4000-8000-000000000001', -- Platform
-    '10000000-0003-4000-8000-5c111a00a100', -- Backend Development
+    '22222222-0002-4000-8000-111111111111', -- Platform Engineering
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    1
+  ),
+  (
+    '22222222-0002-4000-8000-333333333333', -- Traffic
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    2
+  ),
+  (
+    '22222222-0002-4000-8000-333333333333', -- Traffic
+    '33333333-0003-4000-8000-111111111111', -- Frontend Development
     3
   ),
   (
-    '40000000-0002-4000-8000-000000000001', -- Platform
-    '30000000-0003-4000-8000-5c111c00c300', -- Software Architecture
+    '22222222-0002-4000-8000-333333333333', -- Traffic
+    '33333333-0003-4000-8000-333333333333', -- Software Architecture
     2
   ),
   (
-    '40000000-0002-4000-8000-000000000002', -- Product
-    '30000000-0003-4000-8000-5c111c00c300', -- Software Architecture
-    2
+    '22222222-0002-4000-8000-444444444444', -- Core Services
+    '33333333-0003-4000-8000-222222222222', -- Backend Development
+    3
   ),
   (
-    '40000000-0002-4000-8000-000000000002', -- Product
-    '10000000-0003-4000-8000-5c111a00a100', -- Backend Development
-    1
+    '22222222-0002-4000-8000-444444444444', -- Core Services
+    '33333333-0003-4000-8000-333333333333', -- Software Architecture
+    3
   );
