@@ -30,7 +30,7 @@ import { CreateExampleDTO, ExampleDTO, fromDomain, UpdateExampleDTO } from './ex
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description:
-    'A query or route parameter, the payload or a header was malformed and did not pass validation.',
+    'A query or route parameter, the payload or a header is missing,  malformed or did not pass validation.',
 })
 @ApiResponse({
   status: HttpStatus.INTERNAL_SERVER_ERROR,

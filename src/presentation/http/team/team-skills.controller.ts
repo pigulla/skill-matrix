@@ -30,7 +30,8 @@ import { fromDomain, SetSkillProficiencyDTO, TeamSkillProficienciesDTO } from '.
 @ApiParam({ name: 'teamId', type: 'string', format: 'uuid' })
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
-  description: 'A route parameter or payload was malformed and did not pass validation.',
+  description:
+    'A query or route parameter, the payload or a header is missing,  malformed or did not pass validation.',
 })
 @ApiResponse({
   status: HttpStatus.INTERNAL_SERVER_ERROR,
