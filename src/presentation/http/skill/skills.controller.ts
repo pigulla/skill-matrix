@@ -44,7 +44,11 @@ export class SkillsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all skills.', description: 'Get all skills.' })
+  @ApiOperation({
+    operationId: 'skills.getAll',
+    summary: 'Get all skills.',
+    description: 'Get all skills.',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     type: [SkillDTO],
@@ -57,6 +61,7 @@ export class SkillsController {
 
   @Get(':id')
   @ApiOperation({
+    operationId: 'skills.getOne',
     summary: 'Get a skill.',
     description: 'Get the skill with the given id, if it exists.',
   })
@@ -81,6 +86,7 @@ export class SkillsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
+    operationId: 'skills.delete',
     summary: 'Delete a skill.',
     description: 'Delete the skill with the given id, if it exists.',
   })
@@ -107,6 +113,7 @@ export class SkillsController {
 
   @Post()
   @ApiOperation({
+    operationId: 'skills.create',
     summary: 'Create a new skill.',
     description: 'Create a new skill and return it.',
   })
@@ -142,6 +149,7 @@ export class SkillsController {
   @Put(':id')
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiOperation({
+    operationId: 'skills.update',
     summary: 'Update an existing skill.',
     description: 'Update an existing skill, if it exists, and return it.',
   })

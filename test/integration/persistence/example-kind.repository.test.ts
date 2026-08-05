@@ -11,13 +11,13 @@ import { IConnectionProvider } from '#/infrastructure/persistence/connection-pro
 import { ExampleKindRepository } from '#/infrastructure/persistence/example-kind/example-kind.repository.js'
 
 import { exampleKinds } from '../fixture/fixture.js'
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 const { TECHNOLOGY, CONCEPT } = exampleKinds
 
 describe('ExampleKindRepository', () => {
   const missingKind = asExampleKind('missing')
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let exampleKindRepository: ExampleKindRepository

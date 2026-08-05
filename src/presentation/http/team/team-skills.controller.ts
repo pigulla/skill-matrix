@@ -44,7 +44,7 @@ export class TeamSkillsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get skill proficiencies for a team.' })
+  @ApiOperation({ operationId: 'teamSkills.get', summary: 'Get skill proficiencies for a team.' })
   @ApiResponse({
     status: HttpStatus.OK,
     type: TeamSkillProficienciesDTO,
@@ -60,7 +60,7 @@ export class TeamSkillsController {
   }
 
   @Post(':skillId')
-  @ApiOperation({ summary: 'Add a skill proficiency to a team.' })
+  @ApiOperation({ operationId: 'teamSkills.add', summary: 'Add a skill proficiency to a team.' })
   @ApiParam({ name: 'skillId', type: 'string', format: 'uuid' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -94,7 +94,10 @@ export class TeamSkillsController {
 
   @Put(':skillId')
   @ApiParam({ name: 'skillId', type: 'string', format: 'uuid' })
-  @ApiOperation({ summary: 'Update a skill proficiency on a team.' })
+  @ApiOperation({
+    operationId: 'teamSkills.update',
+    summary: 'Update a skill proficiency on a team.',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     type: TeamSkillProficienciesDTO,
@@ -117,7 +120,10 @@ export class TeamSkillsController {
 
   @Delete(':skillId')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Remove a skill proficiency from a team.' })
+  @ApiOperation({
+    operationId: 'teamSkills.remove',
+    summary: 'Remove a skill proficiency from a team.',
+  })
   @ApiParam({ name: 'skillId', type: 'string', format: 'uuid' })
   @ApiResponse({
     status: HttpStatus.OK,

@@ -44,7 +44,11 @@ export class ExamplesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all examples.', description: 'Get all examples.' })
+  @ApiOperation({
+    operationId: 'examples.getAll',
+    summary: 'Get all examples.',
+    description: 'Get all examples.',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     type: [ExampleDTO],
@@ -57,6 +61,7 @@ export class ExamplesController {
 
   @Get(':id')
   @ApiOperation({
+    operationId: 'examples.getOne',
     summary: 'Get an example.',
     description: 'Get the example with the given id, if it exists.',
   })
@@ -81,6 +86,7 @@ export class ExamplesController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
+    operationId: 'examples.delete',
     summary: 'Delete an example.',
     description: 'Delete the example with the given id, if it exists.',
   })
@@ -107,6 +113,7 @@ export class ExamplesController {
 
   @Post()
   @ApiOperation({
+    operationId: 'examples.create',
     summary: 'Create a new example.',
     description: 'Create a new example and return it.',
   })
@@ -136,6 +143,7 @@ export class ExamplesController {
   @Put(':id')
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiOperation({
+    operationId: 'examples.update',
     summary: 'Update an existing example.',
     description: 'Update an existing example, if it exists, and return it.',
   })

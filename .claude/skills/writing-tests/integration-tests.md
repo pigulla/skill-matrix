@@ -33,10 +33,10 @@ it("returns 404 when the service throws", async () => {
 
 ## Persistence / repository tests
 
-Use the shared harness `test/integration/fixture/setup-database-integration-test.ts`. It starts one `postgres:18-alpine` Testcontainer per test file (`beforeAll`/`afterAll`). In `beforeAll` it also runs all migrations and seeds `fixture.sql` **once**, then marks that database as a Postgres template (`IS_TEMPLATE = true`). Each test's `beforeEach`/`afterEach` then just clones (`CREATE DATABASE ... TEMPLATE ...`) and drops a fresh per-test database — no migrations run per test. `createModule` wires `DatabaseModule` + the transactional CLS plugin and points the DB config at that test's database.
+Use the shared harness `../../../test/integration/fixture/setup-integration-test.ts`. It starts one `postgres:18-alpine` Testcontainer per test file (`beforeAll`/`afterAll`). In `beforeAll` it also runs all migrations and seeds `fixture.sql` **once**, then marks that database as a Postgres template (`IS_TEMPLATE = true`). Each test's `beforeEach`/`afterEach` then just clones (`CREATE DATABASE ... TEMPLATE ...`) and drops a fresh per-test database — no migrations run per test. `createModule` wires `DatabaseModule` + the transactional CLS plugin and points the DB config at that test's database.
 
 ```ts
-const integrationTest = setupDatabaseIntegrationTest();
+const integrationTest = setupIntegrationTest();
 beforeAll(integrationTest.beforeAll);
 afterAll(integrationTest.afterAll);
 
