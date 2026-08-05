@@ -15,6 +15,11 @@ The codebase follows Clean Architecture, enforced by architecture tests. See [AG
 
 Expected domain errors (not found, duplicate, still-in-use, missing reference, etc.) are returned as values using [`neverthrow`](https://github.com/supermacro/neverthrow) `Result`/`ResultAsync`, propagated from repository → service → controller; unexpected errors (bugs, infrastructure failures) are still thrown. See [AGENTS.md](AGENTS.md#error-handling) for the full pattern.
 
+## Decision records
+
+- [001 – Persistence Strategy](docs/001-persistence-strategy.md)
+- [002 – Error Handling Strategy](docs/002-error-handling-strategy.md)
+
 ## Setup
 
 ```bash
