@@ -10,12 +10,12 @@ import { UsersController } from '#/presentation/http/user/users.controller.js'
 import { UserBuilder } from '../../builder/user.builder.js'
 import { byId } from '../../util/sort-by-id.js'
 import { teams, users } from '../fixture/fixture.js'
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('UsersController', () => {
   const unknownUserId = asUserID('00000000-0001-4000-8000-000000000000')
   const unknownTeamId = asTeamID('00000000-0002-4000-8000-000000000000')
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
 
@@ -36,7 +36,7 @@ describe('UsersController', () => {
   })
 
   afterEach(async () => {
-    await app.close()
+    await app?.close()
     await integrationTest.afterEach()
   })
 

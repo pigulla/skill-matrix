@@ -1,6 +1,6 @@
 # Skill Matrix
 
-API for managing skill matrices for individual developers and teams, built for Retail Platform.
+API for managing skill matrices for individual developers and teams.
 
 ## Stack
 

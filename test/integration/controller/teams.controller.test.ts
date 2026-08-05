@@ -9,11 +9,11 @@ import { TeamsController } from '#/presentation/http/team/teams.controller.js'
 import { TeamBuilder } from '../../builder/team.builder.js'
 import { byId } from '../../util/sort-by-id.js'
 import { teams } from '../fixture/fixture.js'
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('TeamsController', () => {
   const unknownTeamId = asTeamID('00000000-0002-4000-8000-000000000000')
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
 
@@ -34,7 +34,7 @@ describe('TeamsController', () => {
   })
 
   afterEach(async () => {
-    await app.close()
+    await app?.close()
     await integrationTest.afterEach()
   })
 

@@ -1,23 +1,14 @@
 import { TransactionHost } from '@nestjs-cls/transactional'
 import type { TransactionalAdapterPgPromise } from '@nestjs-cls/transactional-adapter-pg-promise'
 import { copyMethodMetadata } from 'nestjs-cls'
-import { ResultAsync } from 'neverthrow'
+import { Result, ResultAsync } from 'neverthrow'
 
-class RollbackSignal<E> extends Error {
-  public readonly error: E
-
-  public constructor(error: E) {
-    super('RollbackSignal')
-
-    this.error = error
+class RollbackSignal extends Error {
+  public constructor(cause: Error) {
+    super(RollbackSignal.name, { cause })
   }
 }
 
-/**
- * Like `@Transactional()`, but for methods returning `ResultAsync<T, E>`: an
- * `Err(...)` triggers a real rollback (order-independent), instead of being a
- * resolved value that `@Transactional()` would happily commit.
- */
 export function ResultTransactional(connectionName?: string): MethodDecorator {
   return (_target, _propertyKey, descriptor) => {
     const original = descriptor.value as (...args: unknown[]) => ResultAsync<unknown, unknown>
@@ -27,7 +18,7 @@ export function ResultTransactional(connectionName?: string): MethodDecorator {
 
       return ResultAsync.fromPromise(
         txHost.withTransaction(async () => {
-          const result = await original.apply(this, args)
+          const result = (await original.apply(this, args)) as Result<unknown, Error>
 
           if (result.isErr()) {
             throw new RollbackSignal(result.error)
@@ -37,7 +28,7 @@ export function ResultTransactional(connectionName?: string): MethodDecorator {
         }),
         error => {
           if (error instanceof RollbackSignal) {
-            return error.error
+            return error.cause
           }
 
           throw error

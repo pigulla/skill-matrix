@@ -10,7 +10,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ResultTransactional } from '#/util/result-transactional.decorator.js'
 
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 class TestError extends Error {}
 
@@ -65,7 +65,7 @@ class ResultTransactionalTestService {
 }
 
 describe('ResultTransactional', () => {
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let testService: ResultTransactionalTestService

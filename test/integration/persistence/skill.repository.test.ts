@@ -14,14 +14,14 @@ import { SkillRepository } from '#/infrastructure/persistence/skill/skill.reposi
 import { SkillBuilder } from '../../builder/skill.builder.js'
 import { by } from '../../util/sort-by-id.js'
 import { examples, skills } from '../fixture/fixture.js'
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 const byExampleId = by('example_id')
 
 describe('SkillRepository', () => {
   const invalidId = asSkillID('00000000-0003-4000-8000-000000000000')
   const missingExampleId = asExampleID('b0000000-0004-4000-8000-000000000000')
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let skillRepository: SkillRepository

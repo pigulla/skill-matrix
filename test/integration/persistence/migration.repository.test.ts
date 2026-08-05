@@ -7,10 +7,10 @@ import { IConnectionProvider } from '#/infrastructure/persistence/connection-pro
 import { MissingMigrationsTableError } from '#/infrastructure/persistence/migration/error/missing-migrations-table.error.js'
 import { MigrationRepository } from '#/infrastructure/persistence/migration/migration-repository.js'
 
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('MigrationRepository', () => {
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let migrationRepository: MigrationRepository

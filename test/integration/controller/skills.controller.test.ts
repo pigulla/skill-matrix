@@ -10,12 +10,12 @@ import { SkillsController } from '#/presentation/http/skill/skills.controller.js
 import { SkillBuilder } from '../../builder/skill.builder.js'
 import { byId } from '../../util/sort-by-id.js'
 import { examples, skills } from '../fixture/fixture.js'
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('SkillsController', () => {
   const unknownSkillId = asSkillID('00000000-0003-4000-8000-000000000000')
   const unknownExampleId = asExampleID('00000000-0004-4000-8000-000000000000')
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
 
@@ -36,7 +36,7 @@ describe('SkillsController', () => {
   })
 
   afterEach(async () => {
-    await app.close()
+    await app?.close()
     await integrationTest.afterEach()
   })
 

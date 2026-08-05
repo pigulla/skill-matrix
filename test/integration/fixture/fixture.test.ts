@@ -10,10 +10,10 @@ import { UserRepository } from '#/infrastructure/persistence/user/user.repositor
 import { byId } from '../../util/sort-by-id.js'
 
 import { exampleKinds, examples, skills, teams, users } from './fixture.js'
-import { setupDatabaseIntegrationTest } from './setup-database-integration-test.js'
+import { setupIntegrationTest } from './setup-integration-test.js'
 
 describe('Data in the SQL fixture', () => {
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
 

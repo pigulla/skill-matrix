@@ -15,11 +15,11 @@ import { ExampleRepository } from '#/infrastructure/persistence/example/example.
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
 import { exampleKinds, examples } from '../fixture/fixture.js'
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('ExampleRepository', () => {
   const missingId = asExampleID('b0000000-0004-4000-8000-000000000000')
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let exampleRepository: ExampleRepository

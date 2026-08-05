@@ -13,7 +13,7 @@ export class HealthController {
 
   @Get()
   @HealthCheck()
-  @ApiOperation({ summary: 'Health check.' })
+  @ApiOperation({ operationId: 'health.check', summary: 'Health check.' })
   public check(): Promise<HealthCheckResult> {
     // No connectivity check to the database, a simple "service itself is up" suffices for now.
     return this.health.check([])

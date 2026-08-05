@@ -13,11 +13,11 @@ import { TeamRepository } from '#/infrastructure/persistence/team/team.repositor
 
 import { TeamBuilder } from '../../builder/team.builder.js'
 import { teams, users } from '../fixture/fixture.js'
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('TeamRepository', () => {
   const invalidId = asTeamID('00000000-0002-4000-8000-000000000000')
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let teamRepository: TeamRepository

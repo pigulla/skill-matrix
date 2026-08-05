@@ -28,7 +28,7 @@
     "openApi": {
         "server": "http://example.com",
         "title": "Skill Matrix API",
-        "description": "This is the API for the skill matrix of Retail Platform.",
+        "description": "This is the API for the skill matrix.",
         "version": "1.0",
         "swagger": {
             "enabled": false,
@@ -40,7 +40,7 @@
         },
         "contact": {
             "name": "Raphael Pigulla",
-            "email": "raphael.pigulla@holidaycheck.com",
+            "email": "raphael@pigul.la",
             "url": "https://www.linkedin.com/in/pigulla"
         }
     }

@@ -1,0 +1,13 @@
+{
+    "application": {
+        "isProduction": false
+    },
+    "database": {
+        "connection": {
+            "username": "<ignored>",
+            "password": "<ignored>"
+        },
+        "logQueries": false,
+        "disableWarnings": true
+    }
+}

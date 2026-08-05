@@ -23,15 +23,12 @@ import { DomainErrorsExceptionFilter } from '#/presentation/http/domain-errors-e
 
 import pgPromiseConfig from '../../../.pgmigrate.json' with { type: 'json' }
 
-// The container's own default database ("test") is migrated and seeded exactly
-// once in beforeAll, then flipped to a Postgres template database. Every test
-// clones it with `CREATE DATABASE ... TEMPLATE`, which copies files on disk
-// instead of replaying SQL — see
+// See here for some background information about this setup:
 // https://gajus.com/blog/setting-up-postgre-sql-for-running-integration-tests#what-worked
 
 const MAINTENANCE_DATABASE = 'postgres'
 
-export function setupDatabaseIntegrationTest(): {
+export function setupIntegrationTest(): {
   beforeAll: () => Promise<void>
   beforeEach: () => Promise<void>
   afterEach: () => Promise<void>

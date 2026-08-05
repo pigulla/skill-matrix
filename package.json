@@ -2,18 +2,18 @@
   "name": "skill-matrix",
   "version": "0.0.1",
   "private": true,
-  "description": "This is the API for the skill matrix of Retail Platform.",
+  "description": "This is the API for the skill matrix.",
   "bugs": {
-    "url": "https://github.hc.ag/rpigulla/skill-matrix/issues"
+    "url": "https://github.com/pigulla/skill-matrix/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.hc.ag:rpigulla/skill-matrix.git"
+    "url": "git@github.com:pigulla/skill-matrix.git"
   },
   "license": "ISC",
   "author": {
     "name": "Raphael Pigulla",
-    "email": "raphael.pigulla@holidaycheck.com",
+    "email": "raphael@pigul.la",
     "url": "https://www.linkedin.com/in/pigulla"
   },
   "type": "module",
@@ -51,11 +51,10 @@
     "openapi:lint": "redocly lint docs/openapi.json",
     "start": "NODE_OPTIONS='--conditions development' jiti src/index.ts",
     "start:dist": "NODE_OPTIONS='--conditions dist' node dist/src/index.js",
-    "test": "npm run lint && npm run vitest && npm run audit",
-    "test:ci": "npm run lint && npm run vitest:with-coverage && npm run audit && npm run openapi",
+    "test": "npm run lint && npm run vitest && npm run audit && npm run openapi",
     "vitest": "npm run vitest:unit && npm run vitest:integration && npm run vitest:architecture",
     "vitest:architecture": "vitest run --passWithNoTests --slowTestThreshold 30000 --testTimeout 30000 test/architecture",
-    "vitest:integration": "vitest run test/integration",
+    "vitest:integration": "vitest run --slowTestThreshold 10000 --testTimeout 15000 test/integration",
     "vitest:unit": "vitest run --passWithNoTests src",
     "vitest:with-coverage": "vitest run --coverage --exclude test/architecture"
   },
@@ -118,5 +117,8 @@
     "vite": "8.2.0",
     "vitest": "4.1.10",
     "yaml": "2.9.0"
+  },
+  "engines": {
+    "node": "26"
   }
 }

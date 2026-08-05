@@ -13,11 +13,11 @@ import { UserRepository } from '#/infrastructure/persistence/user/user.repositor
 
 import { UserBuilder } from '../../builder/user.builder.js'
 import { teams, users } from '../fixture/fixture.js'
-import { setupDatabaseIntegrationTest } from '../fixture/setup-database-integration-test.js'
+import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('UserRepository', () => {
   const invalidId = asUserID('00000000-0001-4000-8000-000000000000')
-  const integrationTest = setupDatabaseIntegrationTest()
+  const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let userRepository: UserRepository

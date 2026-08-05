@@ -44,6 +44,7 @@ export class UsersController {
 
   @Get()
   @ApiOperation({
+    operationId: 'users.getAll',
     summary: 'Get all users.',
     description: 'Get all users.',
   })
@@ -59,6 +60,7 @@ export class UsersController {
 
   @Get(':id')
   @ApiOperation({
+    operationId: 'users.getOne',
     summary: 'Get a user.',
     description: 'Get the user with the given id, if it exists.',
   })
@@ -83,6 +85,7 @@ export class UsersController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
+    operationId: 'users.delete',
     summary: 'Delete a user.',
     description: 'Delete the user with the given id, if it exists.',
   })
@@ -105,6 +108,7 @@ export class UsersController {
 
   @Post()
   @ApiOperation({
+    operationId: 'users.create',
     summary: 'Create a new user.',
     description: 'Create a new user and return it.',
   })
@@ -134,6 +138,7 @@ export class UsersController {
   @Put(':id')
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiOperation({
+    operationId: 'users.update',
     summary: 'Update an existing user.',
     description: 'Update an existing user, if it exists, and return it.',
   })

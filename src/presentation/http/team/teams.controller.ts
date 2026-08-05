@@ -43,7 +43,11 @@ export class TeamsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all teams.', description: 'Get all teams.' })
+  @ApiOperation({
+    operationId: 'teams.getAll',
+    summary: 'Get all teams.',
+    description: 'Get all teams.',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     type: [TeamDTO],
@@ -56,6 +60,7 @@ export class TeamsController {
 
   @Get(':id')
   @ApiOperation({
+    operationId: 'teams.getOne',
     summary: 'Get a team.',
     description: 'Get the team with the given id, if it exists.',
   })
@@ -80,6 +85,7 @@ export class TeamsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
+    operationId: 'teams.delete',
     summary: 'Delete a team.',
     description: 'Delete the team with the given id, if it exists.',
   })
@@ -105,7 +111,11 @@ export class TeamsController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a new team.', description: 'Create a new team and return it.' })
+  @ApiOperation({
+    operationId: 'teams.create',
+    summary: 'Create a new team.',
+    description: 'Create a new team and return it.',
+  })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'The operation completed successfully.',
@@ -125,6 +135,7 @@ export class TeamsController {
   @Put(':id')
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiOperation({
+    operationId: 'teams.update',
     summary: 'Update an existing team.',
     description: 'Update an existing team, if it exists, and return it.',
   })
