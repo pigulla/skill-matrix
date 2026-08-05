@@ -41,7 +41,3 @@ export function fromDomain(skill: Skill): SkillDTO {
     exampleIds: [...skill.exampleIds],
   })
 }
-
-export function toDomain(skill: SkillDTO | UpdateSkillDTO): Skill {
-  return new Skill({ ...skill, exampleIds: new Set(skill.exampleIds) })
-}

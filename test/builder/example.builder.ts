@@ -1,7 +1,8 @@
 import { Example } from '#/domain/example/example.js'
 import { asExampleID } from '#/domain/example/example-id.js'
 import { asExampleKind } from '#/domain/example-kind/example-kind.js'
-import { EntityIdMarker } from '#/domain/id-markers.js'
+
+import { UNKNOWN_EXAMPLE_ID } from '../util/entity-ids.js'
 
 export type ExampleProperties = {
   id: string
@@ -12,7 +13,7 @@ export type ExampleProperties = {
 
 export class ExampleBuilder {
   private properties: ExampleProperties = {
-    id: `00000000-${EntityIdMarker.EXAMPLE}-4000-8000-000000000000`,
+    id: UNKNOWN_EXAMPLE_ID,
     name: 'TypeScript',
     kind: 'technology',
     url: null,
@@ -43,8 +44,12 @@ export class ExampleBuilder {
     return this
   }
 
-  public static create(properties?: Partial<ExampleProperties>): Example {
-    return new ExampleBuilder().with(properties ?? {}).build()
+  public static create<Full extends boolean = false>(
+    ...args: Full extends true
+      ? [properties: ExampleProperties]
+      : [properties?: Partial<ExampleProperties>]
+  ): Example {
+    return new ExampleBuilder().with(args[0] ?? {}).build()
   }
 
   public static from(example: Example): ExampleBuilder {

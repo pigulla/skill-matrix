@@ -2,17 +2,16 @@ import { HttpStatus, type INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { asTeamID } from '#/domain/team/team-id.js'
 import { TeamModule } from '#/module/team.module.js'
 import { TeamsController } from '#/presentation/http/team/teams.controller.js'
 
 import { TeamBuilder } from '../../builder/team.builder.js'
+import { UNKNOWN_TEAM_ID } from '../../util/entity-ids.js'
 import { byId } from '../../util/sort-by-id.js'
 import { teams } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('TeamsController', () => {
-  const unknownTeamId = asTeamID('00000000-0002-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -58,7 +57,7 @@ describe('TeamsController', () => {
         .expect(teams.traffic.toJSON()))
 
     it('should return 404 Not Found', () =>
-      request(app.getHttpServer()).get(`/teams/${unknownTeamId}`).expect(HttpStatus.NOT_FOUND))
+      request(app.getHttpServer()).get(`/teams/${UNKNOWN_TEAM_ID}`).expect(HttpStatus.NOT_FOUND))
   })
 
   describe('DELETE /teams/:id', () => {
@@ -68,7 +67,7 @@ describe('TeamsController', () => {
         .expect(HttpStatus.NO_CONTENT))
 
     it('should return 404 Not Found', () =>
-      request(app.getHttpServer()).get(`/teams/${unknownTeamId}`).expect(HttpStatus.NOT_FOUND))
+      request(app.getHttpServer()).get(`/teams/${UNKNOWN_TEAM_ID}`).expect(HttpStatus.NOT_FOUND))
   })
 
   describe('POST /teams', () => {
@@ -140,8 +139,8 @@ describe('TeamsController', () => {
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
-        .put(`/teams/${unknownTeamId}`)
-        .send({ ...expected.toJSON(), id: unknownTeamId })
+        .put(`/teams/${UNKNOWN_TEAM_ID}`)
+        .send({ ...expected.toJSON(), id: UNKNOWN_TEAM_ID })
         .expect(HttpStatus.NOT_FOUND))
   })
 })

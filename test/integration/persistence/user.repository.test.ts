@@ -7,16 +7,15 @@ import { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-n
 import { DuplicateUserEmailError } from '#/domain/user/error/duplicate-user-email.error.js'
 import { DuplicateUserIdError } from '#/domain/user/error/duplicate-user-id.error.js'
 import { UserNotFoundError } from '#/domain/user/error/user-not-found.error.js'
-import { asUserID } from '#/domain/user/user-id.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { UserRepository } from '#/infrastructure/persistence/user/user.repository.js'
 
 import { UserBuilder } from '../../builder/user.builder.js'
+import { UNKNOWN_TEAM_ID, UNKNOWN_USER_ID } from '../../util/entity-ids.js'
 import { teams, users } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('UserRepository', () => {
-  const invalidId = asUserID('00000000-0001-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -54,7 +53,7 @@ describe('UserRepository', () => {
     })
 
     it('should return UserNotFoundError', async () => {
-      const result = await userRepository.get(invalidId)
+      const result = await userRepository.get(UNKNOWN_USER_ID)
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(UserNotFoundError)
     })
@@ -103,7 +102,7 @@ describe('UserRepository', () => {
     })
 
     it('should return UserNotFoundError if the user does not exist', async () => {
-      const nonexistentUser = new UserBuilder().withId(invalidId).build()
+      const nonexistentUser = UserBuilder.create()
 
       const result = await userRepository.update(nonexistentUser)
 
@@ -149,7 +148,7 @@ describe('UserRepository', () => {
     })
 
     it('should return UserNotFoundError if the user does not exist', async () => {
-      const result = await userRepository.delete(invalidId)
+      const result = await userRepository.delete(UNKNOWN_USER_ID)
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(UserNotFoundError)
     })
@@ -167,7 +166,6 @@ describe('UserRepository', () => {
     it('should create a user', async () => {
       const created = new UserBuilder()
         .with({
-          id: '12345678-0001-4000-8000-000000000000',
           firstName: 'Bob',
           lastName: 'Farrell',
           email: 'bob.farrell@example.com',
@@ -197,15 +195,7 @@ describe('UserRepository', () => {
     })
 
     it('should return TeamReferenceNotFoundError if the team does not exist', async () => {
-      const user = new UserBuilder()
-        .with({
-          id: '12345678-0001-4000-8000-000000000001',
-          firstName: 'Bob',
-          lastName: 'Farrell',
-          email: 'bob.farrell@example.com',
-          teamId: '99999999-0002-4000-8000-000000000000',
-        })
-        .build()
+      const user = new UserBuilder().withTeamId(UNKNOWN_TEAM_ID).build()
 
       const result = await userRepository.create(user)
 
@@ -213,15 +203,7 @@ describe('UserRepository', () => {
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
-      const user = new UserBuilder()
-        .with({
-          id: '12345678-0001-4000-8000-000000000002',
-          firstName: 'Bob',
-          lastName: 'Farrell',
-          email: 'bob.farrell.2@example.com',
-          teamId: teams.traffic.id,
-        })
-        .build()
+      const user = UserBuilder.create()
 
       await db.none('ALTER TABLE users RENAME TO users_renamed')
 

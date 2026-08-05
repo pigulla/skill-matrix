@@ -83,7 +83,6 @@ describe('TeamRepository', () => {
   describe('create', () => {
     it('should create a team', async () => {
       const team = TeamBuilder.create({
-        id: '40000000-0002-4000-8000-0000000000aa',
         name: 'Design',
       })
 
@@ -108,7 +107,6 @@ describe('TeamRepository', () => {
 
     it('should return DuplicateTeamNameError if the name already exists', async () => {
       const team = TeamBuilder.create({
-        id: '40000000-0002-4000-8000-0000000000bb',
         name: teams.traffic.name,
       })
 
@@ -119,7 +117,6 @@ describe('TeamRepository', () => {
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
       const team = TeamBuilder.create({
-        id: '40000000-0002-4000-8000-0000000000cc',
         name: 'Design',
       })
 

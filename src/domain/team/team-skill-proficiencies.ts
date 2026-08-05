@@ -7,7 +7,7 @@ import { SkillProficiency, skillProficiencySchema } from '../skill/skill-profici
 import { InvalidTeamSkillProficienciesError } from './error/invalid-team-skill-proficiencies.error.js'
 import { type TeamID, teamIdSchema } from './team-id.js'
 
-export const teamSkillProficienciesSchema = z.object({
+const teamSkillProficienciesSchema = z.object({
   teamId: teamIdSchema,
   skills: z
     .array(skillProficiencySchema)
@@ -16,7 +16,7 @@ export const teamSkillProficienciesSchema = z.object({
     }),
 })
 
-export type TeamSkillProficienciesProperties = {
+type Properties = {
   teamId: TeamID
   items: Iterable<SkillProficiency>
 }
@@ -28,7 +28,7 @@ export class TeamSkillProficiencies {
   public readonly teamId: TeamID
   public readonly skills: ReadonlyMap<SkillID, SkillProficiency>
 
-  public constructor(data: TeamSkillProficienciesProperties) {
+  public constructor(data: Properties) {
     const items = [...data.items]
     const result = teamSkillProficienciesSchema.safeParse({ teamId: data.teamId, skills: items })
 

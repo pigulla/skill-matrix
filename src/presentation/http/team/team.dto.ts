@@ -21,7 +21,3 @@ export function fromDomain(team: Team): TeamDTO {
     name: team.name,
   })
 }
-
-export function toDomain(team: TeamDTO | UpdateTeamDTO): Team {
-  return new Team(team)
-}

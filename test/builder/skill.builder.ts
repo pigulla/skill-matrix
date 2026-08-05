@@ -1,7 +1,8 @@
-import { asExampleID, type ExampleID } from '#/domain/example/example-id.js'
-import { EntityIdMarker } from '#/domain/id-markers.js'
+import type { ExampleID } from '#/domain/example/example-id.js'
 import { Skill } from '#/domain/skill/skill.js'
 import { asSkillID } from '#/domain/skill/skill-id.js'
+
+import { UNKNOWN_SKILL_ID } from '../util/entity-ids.js'
 
 export type SkillProperties = {
   id: string
@@ -12,13 +13,10 @@ export type SkillProperties = {
 
 export class SkillBuilder {
   private properties: SkillProperties = {
-    id: `deadbeef-${EntityIdMarker.SKILL}-4000-8000-000000000000`,
+    id: UNKNOWN_SKILL_ID,
     name: 'Frontend Development',
     description: 'Building modern web user interfaces.',
-    exampleIds: [
-      asExampleID(`a0000000-${EntityIdMarker.EXAMPLE}-4000-8000-000000000003`),
-      asExampleID(`a0000000-${EntityIdMarker.EXAMPLE}-4000-8000-000000000004`),
-    ],
+    exampleIds: [],
   }
 
   public withId(id: string): this {
@@ -46,8 +44,12 @@ export class SkillBuilder {
     return this
   }
 
-  public static create(properties?: Partial<SkillProperties>): Skill {
-    return new SkillBuilder().with(properties ?? {}).build()
+  public static create<Full extends boolean = false>(
+    ...args: Full extends true
+      ? [properties: SkillProperties]
+      : [properties?: Partial<SkillProperties>]
+  ): Skill {
+    return new SkillBuilder().with(args[0] ?? {}).build()
   }
 
   public static from(skill: Skill): SkillBuilder {

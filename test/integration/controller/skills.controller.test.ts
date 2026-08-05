@@ -2,19 +2,16 @@ import { HttpStatus, type INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { asExampleID } from '#/domain/example/example-id.js'
-import { asSkillID } from '#/domain/skill/skill-id.js'
 import { SkillModule } from '#/module/skill.module.js'
 import { SkillsController } from '#/presentation/http/skill/skills.controller.js'
 
 import { SkillBuilder } from '../../builder/skill.builder.js'
+import { UNKNOWN_EXAMPLE_ID, UNKNOWN_SKILL_ID } from '../../util/entity-ids.js'
 import { byId } from '../../util/sort-by-id.js'
 import { examples, skills } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('SkillsController', () => {
-  const unknownSkillId = asSkillID('00000000-0003-4000-8000-000000000000')
-  const unknownExampleId = asExampleID('00000000-0004-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -60,7 +57,7 @@ describe('SkillsController', () => {
         .expect(skills.backendDevelopment.toJSON()))
 
     it('should return 404 Not Found', () =>
-      request(app.getHttpServer()).get(`/skills/${unknownSkillId}`).expect(HttpStatus.NOT_FOUND))
+      request(app.getHttpServer()).get(`/skills/${UNKNOWN_SKILL_ID}`).expect(HttpStatus.NOT_FOUND))
   })
 
   describe('DELETE /skills/:id', () => {
@@ -70,7 +67,9 @@ describe('SkillsController', () => {
         .expect(HttpStatus.NO_CONTENT))
 
     it('should return 404 Not Found', () =>
-      request(app.getHttpServer()).delete(`/skills/${unknownSkillId}`).expect(HttpStatus.NOT_FOUND))
+      request(app.getHttpServer())
+        .delete(`/skills/${UNKNOWN_SKILL_ID}`)
+        .expect(HttpStatus.NOT_FOUND))
 
     it('should return 409 Conflict', () =>
       request(app.getHttpServer())
@@ -134,7 +133,7 @@ describe('SkillsController', () => {
         .send({
           name: 'Legacy',
           description: `Things we don't need anymore`,
-          exampleIds: [examples.cobol.id, unknownExampleId],
+          exampleIds: [examples.cobol.id, UNKNOWN_EXAMPLE_ID],
         })
         .expect(HttpStatus.UNPROCESSABLE_ENTITY))
   })
@@ -172,8 +171,8 @@ describe('SkillsController', () => {
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
-        .put(`/skills/${unknownSkillId}`)
-        .send({ ...skills.backendDevelopment.toJSON(), id: unknownSkillId })
+        .put(`/skills/${UNKNOWN_SKILL_ID}`)
+        .send({ ...skills.backendDevelopment.toJSON(), id: UNKNOWN_SKILL_ID })
         .expect(HttpStatus.NOT_FOUND))
 
     it('should return 409 Conflict if the name is not unique', () =>

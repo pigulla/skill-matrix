@@ -2,17 +2,14 @@ import { HttpStatus, type INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest'
 
-import { asSkillID } from '#/domain/skill/skill-id.js'
-import { asTeamID } from '#/domain/team/team-id.js'
 import { TeamModule } from '#/module/team.module.js'
 import { TeamSkillsController } from '#/presentation/http/team/team-skills.controller.js'
 
+import { UNKNOWN_SKILL_ID, UNKNOWN_TEAM_ID } from '../../util/entity-ids.js'
 import { skills, teamSkillProficiencies, teams } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('TeamSkillsController', () => {
-  const unknownTeamId = asTeamID('00000000-0002-4000-8000-000000000000')
-  const unknownSkillId = asSkillID('00000000-0003-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -53,7 +50,7 @@ describe('TeamSkillsController', () => {
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
-        .get(`/teams/${unknownTeamId}/skills`)
+        .get(`/teams/${UNKNOWN_TEAM_ID}/skills`)
         .expect(HttpStatus.NOT_FOUND))
   })
 
@@ -93,13 +90,13 @@ describe('TeamSkillsController', () => {
 
     it('should return 422 Unprocessable Entity if the skill does not exist', () =>
       request(app.getHttpServer())
-        .post(`/teams/${teams.traffic.id}/skills/${unknownSkillId}`)
+        .post(`/teams/${teams.traffic.id}/skills/${UNKNOWN_SKILL_ID}`)
         .send({ proficiency: 2 })
         .expect(HttpStatus.UNPROCESSABLE_ENTITY))
 
     it('should return 422 Unprocessable Entity if the team does not exist', () =>
       request(app.getHttpServer())
-        .post(`/teams/${unknownTeamId}/skills/${skills.qualityAssurance.id}`)
+        .post(`/teams/${UNKNOWN_TEAM_ID}/skills/${skills.qualityAssurance.id}`)
         .send({ proficiency: 2 })
         .expect(HttpStatus.UNPROCESSABLE_ENTITY))
   })

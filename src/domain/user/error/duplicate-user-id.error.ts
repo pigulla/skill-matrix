@@ -1,5 +1,5 @@
 import { DuplicateEntityIdError } from '../../error/duplicate-entity-id.error.js'
-import { User } from '../user.ts'
+import { User } from '../user.js'
 import type { UserID } from '../user-id.js'
 
 export class DuplicateUserIdError extends DuplicateEntityIdError<UserID> {

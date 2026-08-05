@@ -4,14 +4,13 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
 import { ExampleReferenceNotFoundError } from '#/domain/example/error/example-reference-not-found.error.js'
-import { asExampleID } from '#/domain/example/example-id.js'
 import { DuplicateSkillIdError } from '#/domain/skill/error/duplicate-skill-id.error.js'
 import { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
-import { asSkillID } from '#/domain/skill/skill-id.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { SkillRepository } from '#/infrastructure/persistence/skill/skill.repository.js'
 
 import { SkillBuilder } from '../../builder/skill.builder.js'
+import { UNKNOWN_EXAMPLE_ID, UNKNOWN_SKILL_ID } from '../../util/entity-ids.js'
 import { by } from '../../util/sort-by-id.js'
 import { examples, skills } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
@@ -19,8 +18,6 @@ import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 const byExampleId = by('example_id')
 
 describe('SkillRepository', () => {
-  const invalidId = asSkillID('00000000-0003-4000-8000-000000000000')
-  const missingExampleId = asExampleID('b0000000-0004-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -55,7 +52,7 @@ describe('SkillRepository', () => {
     })
 
     it('should return SkillNotFoundError when the skill does not exist', async () => {
-      const result = await skillRepository.get(invalidId)
+      const result = await skillRepository.get(UNKNOWN_SKILL_ID)
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(SkillNotFoundError)
     })
@@ -90,7 +87,6 @@ describe('SkillRepository', () => {
   describe('create', () => {
     it('should insert the skills row and the example associations', async () => {
       const skill = SkillBuilder.create({
-        id: '12345678-0003-4000-8000-000000000000',
         name: 'Data Modelling',
         description: 'Model data efficiently in various databases.',
         exampleIds: [examples.postgresql.id],
@@ -121,7 +117,7 @@ describe('SkillRepository', () => {
     })
 
     it('should return DuplicateSkillIdError if the id already exists', async () => {
-      const skill = SkillBuilder.create({ id: '33333333-0003-4000-8000-222222222222' })
+      const skill = new SkillBuilder().withId(skills.frontendDevelopment.id).build()
 
       const result = await skillRepository.create(skill)
 
@@ -130,9 +126,8 @@ describe('SkillRepository', () => {
 
     it('should return ExampleReferenceNotFoundError if a referenced example does not exist', async () => {
       const skill = SkillBuilder.create({
-        id: '12345678-0003-4000-8000-000000000000',
         name: 'A very important skill',
-        exampleIds: [missingExampleId],
+        exampleIds: [UNKNOWN_EXAMPLE_ID],
       })
 
       const result = await skillRepository.create(skill)
@@ -141,7 +136,7 @@ describe('SkillRepository', () => {
     })
 
     it('should throw UnexpectedPersistenceError when the skill insert fails', async () => {
-      const skill = SkillBuilder.create({ id: '12345678-0003-4000-8000-000000000000' })
+      const skill = SkillBuilder.create({ id: UNKNOWN_SKILL_ID })
 
       await db.none('ALTER TABLE skills RENAME TO skills_renamed')
 
@@ -150,7 +145,7 @@ describe('SkillRepository', () => {
 
     it('should throw UnexpectedPersistenceError when clearing the example associations fails', async () => {
       const skill = SkillBuilder.create({
-        id: '12345678-0003-4000-8000-000000000000',
+        id: UNKNOWN_SKILL_ID,
         name: 'A brand new skill',
       })
 
@@ -196,7 +191,7 @@ describe('SkillRepository', () => {
     })
 
     it('should return SkillNotFoundError if the skill does not exist', async () => {
-      const skill = SkillBuilder.create({ id: invalidId })
+      const skill = SkillBuilder.create({ id: UNKNOWN_SKILL_ID })
 
       const result = await skillRepository.update(skill)
 
@@ -205,7 +200,7 @@ describe('SkillRepository', () => {
 
     it('should return ExampleReferenceNotFoundError if a referenced example does not exist', async () => {
       const skill = SkillBuilder.from(skills.frontendDevelopment)
-        .withExamples([missingExampleId])
+        .withExamples([UNKNOWN_EXAMPLE_ID])
         .build()
 
       const result = await skillRepository.update(skill)
@@ -253,7 +248,7 @@ describe('SkillRepository', () => {
     })
 
     it('should return SkillNotFoundError when the skill does not exist', async () => {
-      const result = await skillRepository.delete(invalidId)
+      const result = await skillRepository.delete(UNKNOWN_SKILL_ID)
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(SkillNotFoundError)
     })

@@ -22,7 +22,7 @@ import type { UserNotFoundError } from '#/domain/user/error/user-not-found.error
 import type { UserID } from '#/domain/user/user-id.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
-import { CreateUserDTO, fromDomain, toDomain, UpdateUserDTO, UserDTO } from './user.dto.js'
+import { CreateUserDTO, fromDomain, UpdateUserDTO, UserDTO } from './user.dto.js'
 
 @Controller('users')
 @ApiTags('Users')
@@ -168,6 +168,6 @@ export class UsersController {
       throw new BadRequestException('The id in the payload does not match the id in the route.')
     }
 
-    return this.service.update(toDomain(dto)).map(fromDomain)
+    return this.service.update(dto).map(fromDomain)
   }
 }

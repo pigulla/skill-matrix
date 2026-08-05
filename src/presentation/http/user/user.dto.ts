@@ -34,7 +34,3 @@ export function fromDomain(user: User): UserDTO {
     teamId: user.teamId,
   })
 }
-
-export function toDomain(user: UserDTO | UpdateUserDTO): User {
-  return new User(user)
-}

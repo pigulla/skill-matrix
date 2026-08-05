@@ -1,7 +1,8 @@
-import { EntityIdMarker } from '#/domain/id-markers.js'
 import { asTeamID } from '#/domain/team/team-id.js'
 import { User } from '#/domain/user/user.js'
 import { asUserID } from '#/domain/user/user-id.js'
+
+import { UNKNOWN_TEAM_ID, UNKNOWN_USER_ID } from '../util/entity-ids.js'
 
 export type UserProperties = {
   id: string
@@ -13,11 +14,11 @@ export type UserProperties = {
 
 export class UserBuilder {
   private properties: UserProperties = {
-    id: `00000000-${EntityIdMarker.USER}-4000-8000-000000000000`,
+    id: UNKNOWN_USER_ID,
     firstName: 'Peter',
     lastName: 'Pan',
     email: 'peter.pan@example.com',
-    teamId: `00000000-${EntityIdMarker.TEAM}-4000-8000-000000000000`,
+    teamId: UNKNOWN_TEAM_ID,
   }
 
   public withId(id: string): this {
@@ -50,8 +51,12 @@ export class UserBuilder {
     return this
   }
 
-  public static create(properties?: Partial<UserProperties>): User {
-    return new UserBuilder().with(properties ?? {}).build()
+  public static create<Full extends boolean = false>(
+    ...args: Full extends true
+      ? [properties: UserProperties]
+      : [properties?: Partial<UserProperties>]
+  ): User {
+    return new UserBuilder().with(args[0] ?? {}).build()
   }
 
   public static from(user: User): UserBuilder {

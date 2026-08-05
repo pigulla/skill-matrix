@@ -1,23 +1,24 @@
-import { EntityIdMarker } from '#/domain/id-markers.js'
 import { asProficiency } from '#/domain/skill/proficiency.js'
 import { asSkillID } from '#/domain/skill/skill-id.js'
 import { SkillProficiency } from '#/domain/skill/skill-proficiency.js'
 import { asTeamID } from '#/domain/team/team-id.js'
 import { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 
+import { teams } from '../integration/fixture/fixture.js'
+
 type SkillProperties = {
   skillId: string
   proficiency: number
 }
 
-type BuilderProperties = {
+type TeamSkillProficiencyProperties = {
   teamId: string
   skills: SkillProperties[]
 }
 
 export class TeamSkillProficienciesBuilder {
-  private properties: BuilderProperties = {
-    teamId: `40000000-${EntityIdMarker.TEAM}-4000-8000-000000000001`,
+  private properties: TeamSkillProficiencyProperties = {
+    teamId: teams.platformEngineering.id,
     skills: [],
   }
 
@@ -27,17 +28,21 @@ export class TeamSkillProficienciesBuilder {
   }
 
   public withSkills(skills: SkillProperties[]): this {
-    this.properties.skills = skills
+    this.properties.skills = [...skills]
     return this
   }
 
-  public with(properties: Partial<BuilderProperties>): this {
+  public with(properties: Partial<TeamSkillProficiencyProperties>): this {
     this.properties = { ...this.properties, ...properties }
     return this
   }
 
-  public static create(properties?: Partial<BuilderProperties>): TeamSkillProficiencies {
-    return new TeamSkillProficienciesBuilder().with(properties ?? {}).build()
+  public static create<Full extends boolean = false>(
+    ...args: Full extends true
+      ? [properties: TeamSkillProficiencyProperties]
+      : [properties?: Partial<TeamSkillProficiencyProperties>]
+  ): TeamSkillProficiencies {
+    return new TeamSkillProficienciesBuilder().with(args[0] ?? {}).build()
   }
 
   public static from(tsp: TeamSkillProficiencies): TeamSkillProficienciesBuilder {

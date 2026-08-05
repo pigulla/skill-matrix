@@ -14,7 +14,7 @@ const updateExampleDTOSchema = createExampleDTOSchema
   })
   .brand('update-example-dto')
 
-export const exampleDTOSchema = updateExampleDTOSchema.brand('example-dto')
+const exampleDTOSchema = updateExampleDTOSchema.brand('example-dto')
 
 export class CreateExampleDTO extends createZodDto(createExampleDTOSchema) {}
 
@@ -29,8 +29,4 @@ export function fromDomain(example: Example): ExampleDTO {
     kind: example.kind,
     url: example.url,
   })
-}
-
-export function toDomain(example: ExampleDTO | UpdateExampleDTO): Example {
-  return new Example(example)
 }

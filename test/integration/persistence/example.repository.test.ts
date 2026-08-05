@@ -7,18 +7,18 @@ import { DuplicateExampleIdError } from '#/domain/example/error/duplicate-exampl
 import { DuplicateExampleNameError } from '#/domain/example/error/duplicate-example-name.error.js'
 import { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
 import { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
-import { asExampleID, type ExampleID } from '#/domain/example/example-id.js'
+import type { ExampleID } from '#/domain/example/example-id.js'
 import { ExampleKindReferenceNotFoundError } from '#/domain/example-kind/error/example-kind-reference-not-found.error.js'
 import { asExampleKind } from '#/domain/example-kind/example-kind.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ExampleRepository } from '#/infrastructure/persistence/example/example.repository.js'
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
+import { UNKNOWN_EXAMPLE_ID } from '../../util/entity-ids.js'
 import { exampleKinds, examples } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('ExampleRepository', () => {
-  const missingId = asExampleID('b0000000-0004-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -57,7 +57,7 @@ describe('ExampleRepository', () => {
     })
 
     it('should return ExampleNotFoundError when the example does not exist', async () => {
-      const result = await exampleRepository.get(missingId)
+      const result = await exampleRepository.get(UNKNOWN_EXAMPLE_ID)
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleNotFoundError)
     })
@@ -101,7 +101,9 @@ describe('ExampleRepository', () => {
     })
 
     it('should return ExampleNotFoundError when any requested example does not exist', async () => {
-      const result = await exampleRepository.getMany(new Set([examples.nestjs.id, missingId]))
+      const result = await exampleRepository.getMany(
+        new Set([examples.nestjs.id, UNKNOWN_EXAMPLE_ID]),
+      )
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleNotFoundError)
     })
@@ -118,7 +120,6 @@ describe('ExampleRepository', () => {
   describe('create', () => {
     it('should insert the example', async () => {
       const graphql = ExampleBuilder.create({
-        id: '12345678-0004-4000-8000-000000000000',
         name: 'GraphQL',
         kind: exampleKinds.TECHNOLOGY,
         url: 'https://graphql.org',
@@ -145,7 +146,6 @@ describe('ExampleRepository', () => {
 
     it('should return DuplicateExampleNameError if the name already exists', async () => {
       const duplicate = ExampleBuilder.create({
-        id: '12345678-0004-4000-8000-000000000001',
         name: examples.nestjs.name,
         kind: exampleKinds.TECHNOLOGY,
       })
@@ -157,7 +157,6 @@ describe('ExampleRepository', () => {
 
     it('should return ExampleKindReferenceNotFoundError if the kind does not exists', async () => {
       const graphql = ExampleBuilder.create({
-        id: '12345678-0004-4000-8000-000000000000',
         name: 'GraphQL',
         kind: asExampleKind('invalid'),
         url: 'https://graphql.org',
@@ -170,7 +169,6 @@ describe('ExampleRepository', () => {
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
       const graphql = ExampleBuilder.create({
-        id: '12345678-0004-4000-8000-000000000000',
         name: 'GraphQL',
         kind: exampleKinds.TECHNOLOGY,
       })
@@ -209,7 +207,11 @@ describe('ExampleRepository', () => {
     })
 
     it('should return ExampleNotFoundError if the example does not exist', async () => {
-      const ghost = ExampleBuilder.create({ id: missingId, name: 'Ghost', kind: 'concept' })
+      const ghost = ExampleBuilder.create({
+        id: UNKNOWN_EXAMPLE_ID,
+        name: 'Ghost',
+        kind: 'concept',
+      })
 
       const result = await exampleRepository.update(ghost)
 
@@ -251,7 +253,7 @@ describe('ExampleRepository', () => {
     })
 
     it('should return ExampleNotFoundError if the example does not exist', async () => {
-      const result = await exampleRepository.delete(missingId)
+      const result = await exampleRepository.delete(UNKNOWN_EXAMPLE_ID)
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleNotFoundError)
     })

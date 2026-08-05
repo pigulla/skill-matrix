@@ -1,6 +1,7 @@
-import { EntityIdMarker } from '#/domain/id-markers.js'
 import { Team } from '#/domain/team/team.js'
 import { asTeamID } from '#/domain/team/team-id.js'
+
+import { UNKNOWN_TEAM_ID } from '../util/entity-ids.js'
 
 export type TeamProperties = {
   id: string
@@ -9,7 +10,7 @@ export type TeamProperties = {
 
 export class TeamBuilder {
   private properties: TeamProperties = {
-    id: `deadbeef-${EntityIdMarker.TEAM}-4000-8000-000000000001`,
+    id: UNKNOWN_TEAM_ID,
     name: 'Platform',
   }
 
@@ -28,8 +29,12 @@ export class TeamBuilder {
     return this
   }
 
-  public static create(properties?: Partial<TeamProperties>): Team {
-    return new TeamBuilder().with(properties ?? {}).build()
+  public static create<Full extends boolean = false>(
+    ...args: Full extends true
+      ? [properties: TeamProperties]
+      : [properties?: Partial<TeamProperties>]
+  ): Team {
+    return new TeamBuilder().with(args[0] ?? {}).build()
   }
 
   public static from(team: Team): TeamBuilder {

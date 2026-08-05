@@ -2,19 +2,16 @@ import { HttpStatus, type INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { asTeamID } from '#/domain/team/team-id.js'
-import { asUserID } from '#/domain/user/user-id.js'
 import { UserModule } from '#/module/user.module.js'
 import { UsersController } from '#/presentation/http/user/users.controller.js'
 
 import { UserBuilder } from '../../builder/user.builder.js'
+import { UNKNOWN_TEAM_ID, UNKNOWN_USER_ID } from '../../util/entity-ids.js'
 import { byId } from '../../util/sort-by-id.js'
 import { teams, users } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('UsersController', () => {
-  const unknownUserId = asUserID('00000000-0001-4000-8000-000000000000')
-  const unknownTeamId = asTeamID('00000000-0002-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -60,7 +57,7 @@ describe('UsersController', () => {
         .expect(users.peter.toJSON()))
 
     it('should return 404 Not Found', () =>
-      request(app.getHttpServer()).get(`/users/${unknownUserId}`).expect(HttpStatus.NOT_FOUND))
+      request(app.getHttpServer()).get(`/users/${UNKNOWN_USER_ID}`).expect(HttpStatus.NOT_FOUND))
   })
 
   describe('DELETE /users/:id', () => {
@@ -68,7 +65,7 @@ describe('UsersController', () => {
       request(app.getHttpServer()).delete(`/users/${users.peter.id}`).expect(HttpStatus.NO_CONTENT))
 
     it('should return 404 Not Found', () =>
-      request(app.getHttpServer()).get(`/users/${unknownUserId}`).expect(HttpStatus.NOT_FOUND))
+      request(app.getHttpServer()).get(`/users/${UNKNOWN_USER_ID}`).expect(HttpStatus.NOT_FOUND))
   })
 
   describe('POST /users', () => {
@@ -133,7 +130,7 @@ describe('UsersController', () => {
           email: 'hairy@potter.com',
           firstName: 'Hairy',
           lastName: 'Potter',
-          teamId: asTeamID('00000000-0002-4000-8000-000000000000'),
+          teamId: UNKNOWN_TEAM_ID,
         })
         .expect(HttpStatus.UNPROCESSABLE_ENTITY))
   })
@@ -173,8 +170,8 @@ describe('UsersController', () => {
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
-        .put(`/users/${unknownUserId}`)
-        .send({ ...body, id: unknownUserId })
+        .put(`/users/${UNKNOWN_USER_ID}`)
+        .send({ ...body, id: UNKNOWN_USER_ID })
         .expect(HttpStatus.NOT_FOUND))
 
     it('should return 409 Conflict if the email is taken', () =>
@@ -189,7 +186,7 @@ describe('UsersController', () => {
     it('should return 422 Unprocessable Entity if the team does not exist', () =>
       request(app.getHttpServer())
         .put(`/users/${updated.id}`)
-        .send({ ...body, teamId: unknownTeamId })
+        .send({ ...body, teamId: UNKNOWN_TEAM_ID })
         .expect(HttpStatus.UNPROCESSABLE_ENTITY))
   })
 })

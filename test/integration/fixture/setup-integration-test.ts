@@ -28,7 +28,9 @@ import pgPromiseConfig from '../../../.pgmigrate.json' with { type: 'json' }
 
 const MAINTENANCE_DATABASE = 'postgres'
 
-export function setupIntegrationTest(): {
+export function setupIntegrationTest(
+  { postgresVersion }: { postgresVersion: number } = { postgresVersion: 18 },
+): {
   beforeAll: () => Promise<void>
   beforeEach: () => Promise<void>
   afterEach: () => Promise<void>
@@ -46,7 +48,7 @@ export function setupIntegrationTest(): {
   let currentTestDatabase: string
 
   async function beforeAll(): Promise<void> {
-    postgresContainer = await new PostgreSqlContainer('postgres:18-alpine')
+    postgresContainer = await new PostgreSqlContainer(`postgres:${postgresVersion}-alpine`)
       .withCopyFilesToContainer([
         {
           source: join(import.meta.dirname, 'fixture.sql'),

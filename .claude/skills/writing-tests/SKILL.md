@@ -17,18 +17,18 @@ Tests run on **Vitest**. There are three categories, each with its own location 
 | Category | Location | Command | What it covers |
 | --- | --- | --- | --- |
 | Unit | `src/**/*.test.ts` (colocated with source) | `npm run vitest:unit` | Logic in isolation, collaborators mocked |
-| Integration | `test/integration/**/*.test.ts` | `npm run vitest:integration` | Real wiring: HTTP (supertest) or real PostgreSQL (Testcontainers) |
+| Integration | `test/integration/**/*.test.ts` | `npm run vitest:integration` | Real wiring against a real PostgreSQL (Testcontainers): HTTP via supertest (real service + real repository) or a repository in isolation |
 | Architecture | `test/architecture/` | `npm run vitest:architecture` | Clean-architecture import rules (TSArch, driven by `rules.json`) |
 
 Run everything with `npm run vitest`; a single file with `npx vitest run path/to/file.test.ts`.
 
 ## General rules (apply to all tests)
 
-- **Don't test what has no logic.** Domain objects are immutable Zod-validated value objects with no behavior — do not write tests for them. Do not write tests for mocks either. Controllers are integration-tested only (no unit tests).
+- **Don't test what has no logic.** Domain objects are immutable Zod-validated value objects with no behavior — do not write tests for them. Do not write tests for mocks either. Controllers and repositories are integration-tested only (no unit tests), against a real database — never with a mocked service or a mocked repository.
 - **Import test globals explicitly** from `vitest` (`describe`, `it`, `expect`, `beforeEach`, …). Globals are not enabled.
 - **Never reuse a mock across test cases.** Create a fresh instance for every test — typically in a `beforeEach` (see the controller test) — so state never leaks between cases.
 - **Build domain objects with builders,** not by hand. Fluent builders live in `test/builder/` (e.g. `UserBuilder.create({...})`, `UserBuilder.from(user).withEmail(...).build()`).
-- **Assert with promise matchers:** `await expect(fn()).resolves.toEqual(...)` / `.rejects.toThrow(SomeError)`. Use `it.each` for table-driven cases and `toHaveBeenCalledExactlyOnceWith(...)` to assert collaborator calls.
+- **Assert `Result`-returning calls by unwrapping, not by `.resolves`/`.rejects`.** Most repository/service methods return `ResultAsync<T, E>` (see `AGENTS.md` § Error handling) — `await` it to get a `Result`, then assert with `result._unsafeUnwrap()` (success) or `result._unsafeUnwrapErr()` (expected domain error). Configure a mocked collaborator's return value with `okAsync(...)`/`errAsync(...)` (from `neverthrow`), not `mockResolvedValue`/`mockRejectedValue`. Reserve `await expect(fn()).resolves.toEqual(...)` / `.rejects.toThrow(SomeError)` for code that genuinely still throws — unexpected errors (e.g. `UnexpectedPersistenceError`) and any non-`Result` API. Use `it.each` for table-driven cases and `toHaveBeenCalledExactlyOnceWith(...)` to assert collaborator calls.
 
 ## The mock pattern
 
@@ -60,6 +60,7 @@ export function mockUserRepository(): UserRepositoryMock {
 ## Common mistakes
 
 - Writing tests for domain value objects or for mocks.
+- Mocking the application service (or repository) in a controller integration test instead of booting the real feature module against the real Testcontainers database.
 - Sharing one mock instance across test cases instead of recreating it per test.
 - Constructing domain objects inline instead of using a builder from `test/builder/`.
 - Putting a unit test under `test/` or an integration test in `src/` (wrong runner picks it up).

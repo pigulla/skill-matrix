@@ -1,35 +1,39 @@
 # Integration Tests
 
-Live under `test/integration/**/*.test.ts`. Runner: `npm run vitest:integration` (`vitest run test/integration`). Two flavors: **HTTP/controller** (real Nest app, mocked service) and **persistence/repository** (real PostgreSQL via Testcontainers — Docker required).
+Live under `test/integration/**/*.test.ts`. Runner: `npm run vitest:integration` (`vitest run test/integration`). Two flavors, both run against a real `postgres:18-alpine` Testcontainer — Docker required: **HTTP/controller** (real Nest app, real service, real repository) and **persistence/repository** (repository under test in isolation).
 
 ## HTTP / controller tests
 
-Boot a real NestJS app with `Test.createTestingModule`, mock the application service (from `#/mocks.js`), wire the global pipe/filter/interceptor, and drive it with **supertest**. Assert status code + response body, and assert how the service was called.
+Boot the real feature module — not a hand-picked list of providers — via the shared harness `../../../test/integration/fixture/setup-integration-test.ts` (see "Persistence / repository tests" below for what it sets up), wire the global pipe/filter/interceptor, and drive it with **supertest**. Nothing is mocked: the application service and repository are real, backed by the real database. Assert status code + response body against actual database state.
 
 ```ts
+const integrationTest = setupIntegrationTest();
+let app: INestApplication;
+
+beforeAll(integrationTest.beforeAll);
+afterAll(integrationTest.afterAll);
+
 beforeEach(async () => {
-    userServiceMock = mockUserService(); // fresh per test
-    const module = await Test.createTestingModule({
-        controllers: [UsersController],
-        providers: [
-            { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
-            { provide: APP_FILTER, useClass: DomainErrorsExceptionFilter },
-            { provide: APP_PIPE, useClass: ZodValidationPipe },
-            { provide: IUserService, useValue: userServiceMock },
-        ],
-    }).compile();
+    await integrationTest.beforeEach();
+
+    const module = await integrationTest
+        .createModule({ testName: UsersController.name, imports: [UserModule] })
+        .compile();
+
     app = await module.createNestApplication({ logger: false }).enableShutdownHooks().init();
 });
-afterEach(() => app.close());
-
-it("returns 404 when the service throws", async () => {
-    userServiceMock.get.mockRejectedValue(new UserNotFoundError(user.id));
-    await request(app.getHttpServer()).get(`/users/${user.id}`).expect(HttpStatus.NOT_FOUND);
+afterEach(async () => {
+    await app?.close();
+    await integrationTest.afterEach();
 });
+
+it("returns 404 when the user doesn't exist", () =>
+    request(app.getHttpServer()).get(`/users/${unknownUserId}`).expect(HttpStatus.NOT_FOUND));
 ```
 
-- Test the HTTP contract: success bodies, validation failures (`it.each` over bad payloads → `400`), domain errors mapped to status codes, and `500` for unexpected errors.
-- The controller has no business logic, so the service is always a mock here — the real service is exercised by its own unit test.
+- Test the HTTP contract: success bodies, validation failures (`it.each` over bad payloads → `400`), domain errors mapped to status codes (`404`/`409`/`422`/...), and `500` for unexpected errors.
+- Controllers have no business logic and are never unit-tested — this is their only test coverage, so it must exercise the real service and real repository against the real database rather than a mocked service. There is no `mockUserService`/`useValue` override here, and no `*.mock.ts` factory for application services is used in these tests.
+- Use the existing fixture rows (`../fixture/fixture.js`) for read/update/delete cases and craft new payloads for creation cases — same template database described below.
 
 ## Persistence / repository tests
 

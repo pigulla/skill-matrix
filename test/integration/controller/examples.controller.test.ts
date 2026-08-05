@@ -2,17 +2,16 @@ import { HttpStatus, type INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { asExampleID } from '#/domain/example/example-id.js'
 import { ExampleModule } from '#/module/example.module.js'
 import { ExamplesController } from '#/presentation/http/example/examples.controller.js'
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
+import { UNKNOWN_EXAMPLE_ID } from '../../util/entity-ids.js'
 import { byId } from '../../util/sort-by-id.js'
 import { exampleKinds, examples } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('ExamplesController', () => {
-  const unknownExampleId = asExampleID('00000000-0004-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -59,7 +58,7 @@ describe('ExamplesController', () => {
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
-        .get(`/examples/${unknownExampleId}`)
+        .get(`/examples/${UNKNOWN_EXAMPLE_ID}`)
         .expect(HttpStatus.NOT_FOUND))
   })
 
@@ -71,7 +70,7 @@ describe('ExamplesController', () => {
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
-        .get(`/examples/${unknownExampleId}`)
+        .get(`/examples/${UNKNOWN_EXAMPLE_ID}`)
         .expect(HttpStatus.NOT_FOUND))
   })
 
@@ -93,7 +92,7 @@ describe('ExamplesController', () => {
     it('should return 400 Bad Request if a property is malformed', () =>
       request(app.getHttpServer())
         .post('/examples')
-        .send({ name: 42, kind: unknownExampleId, url: null })
+        .send({ name: 42, kind: UNKNOWN_EXAMPLE_ID, url: null })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the payload contains an unknown property', () =>
@@ -110,7 +109,7 @@ describe('ExamplesController', () => {
     it('should return 422 Unprocessable Entity if the kind does not exist', () =>
       request(app.getHttpServer())
         .post('/examples')
-        .send({ name: 'TypeScript', kind: unknownExampleId, url: null })
+        .send({ name: 'TypeScript', kind: UNKNOWN_EXAMPLE_ID, url: null })
         .expect(HttpStatus.UNPROCESSABLE_ENTITY))
   })
 
@@ -145,8 +144,8 @@ describe('ExamplesController', () => {
 
     it('should return 404 Not Found', () =>
       request(app.getHttpServer())
-        .put(`/examples/${unknownExampleId}`)
-        .send(ExampleBuilder.from(examples.cobol).withId(unknownExampleId).build().toJSON())
+        .put(`/examples/${UNKNOWN_EXAMPLE_ID}`)
+        .send(ExampleBuilder.from(examples.cobol).withId(UNKNOWN_EXAMPLE_ID).build().toJSON())
         .expect(HttpStatus.NOT_FOUND))
 
     it('should return 422 Unprocessable Entity if the kind does not exist', () =>

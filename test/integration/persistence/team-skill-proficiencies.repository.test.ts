@@ -4,17 +4,15 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
 import { SkillReferenceNotFoundError } from '#/domain/skill/error/skill-reference-not-found.error.js'
-import { asProficiency } from '#/domain/skill/proficiency.js'
-import { asSkillID } from '#/domain/skill/skill-id.js'
-import { SkillProficiency } from '#/domain/skill/skill-proficiency.js'
 import { DuplicateTeamSkillError } from '#/domain/team/error/duplicate-team-skill.error.js'
 import { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
 import { TeamSkillNotFoundError } from '#/domain/team/error/team-skill-not-found.error.js'
-import { asTeamID } from '#/domain/team/team-id.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { TeamSkillProficienciesRepository } from '#/infrastructure/persistence/team/team-skill-proficiencies.repository.js'
 
+import { SkillProficiencyBuilder } from '../../builder/skill-proficiency.builder.js'
+import { UNKNOWN_SKILL_ID, UNKNOWN_TEAM_ID } from '../../util/entity-ids.js'
 import { by } from '../../util/sort-by-id.js'
 import { skills, teamSkillProficiencies, teams } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
@@ -22,8 +20,6 @@ import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 const bySkillId = by('skill_id')
 
 describe('TeamSkillProficienciesRepository', () => {
-  const invalidTeamId = asTeamID('00000000-0002-4000-8000-000000000000')
-  const invalidSkillId = asSkillID('00000000-0003-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -67,7 +63,7 @@ describe('TeamSkillProficienciesRepository', () => {
     })
 
     it('should return TeamNotFoundError when the team does not exist', async () => {
-      const result = await repository.get(invalidTeamId)
+      const result = await repository.get(UNKNOWN_TEAM_ID)
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
     })
@@ -83,9 +79,9 @@ describe('TeamSkillProficienciesRepository', () => {
 
   describe('add', () => {
     it('should add a skill proficiency', async () => {
-      const created = new SkillProficiency({
+      const created = SkillProficiencyBuilder.create({
         skillId: skills.qualityAssurance.id,
-        proficiency: asProficiency(2),
+        proficiency: 2,
       })
 
       const result = await repository.add(teams.traffic.id, created)
@@ -122,9 +118,9 @@ describe('TeamSkillProficienciesRepository', () => {
     })
 
     it('should return DuplicateTeamSkillError when the skill is already associated', async () => {
-      const duplicate = new SkillProficiency({
+      const duplicate = SkillProficiencyBuilder.create({
         skillId: skills.backendDevelopment.id,
-        proficiency: asProficiency(1),
+        proficiency: 1,
       })
 
       const result = await repository.add(teams.traffic.id, duplicate)
@@ -133,9 +129,9 @@ describe('TeamSkillProficienciesRepository', () => {
     })
 
     it('should return SkillReferenceNotFoundError when the skill does not exist', async () => {
-      const proficiency = new SkillProficiency({
-        skillId: invalidSkillId,
-        proficiency: asProficiency(1),
+      const proficiency = SkillProficiencyBuilder.create({
+        skillId: UNKNOWN_SKILL_ID,
+        proficiency: 1,
       })
 
       const result = await repository.add(teams.traffic.id, proficiency)
@@ -144,20 +140,20 @@ describe('TeamSkillProficienciesRepository', () => {
     })
 
     it('should return TeamReferenceNotFoundError when the team does not exist', async () => {
-      const proficiency = new SkillProficiency({
+      const proficiency = SkillProficiencyBuilder.create({
         skillId: skills.qualityAssurance.id,
-        proficiency: asProficiency(1),
+        proficiency: 1,
       })
 
-      const result = await repository.add(invalidTeamId, proficiency)
+      const result = await repository.add(UNKNOWN_TEAM_ID, proficiency)
 
       expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamReferenceNotFoundError)
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
-      const proficiency = new SkillProficiency({
+      const proficiency = SkillProficiencyBuilder.create({
         skillId: skills.qualityAssurance.id,
-        proficiency: asProficiency(2),
+        proficiency: 2,
       })
 
       await db.none('ALTER TABLE skills_to_teams RENAME TO skills_to_teams_renamed')
@@ -170,9 +166,9 @@ describe('TeamSkillProficienciesRepository', () => {
 
   describe('update', () => {
     it('should update the proficiency level', async () => {
-      const updated = new SkillProficiency({
+      const updated = SkillProficiencyBuilder.create({
         skillId: skills.backendDevelopment.id,
-        proficiency: asProficiency(4),
+        proficiency: 4,
       })
 
       const result = await repository.update(teams.traffic.id, updated)
@@ -190,9 +186,9 @@ describe('TeamSkillProficienciesRepository', () => {
     })
 
     it('should return TeamSkillNotFoundError when the association does not exist', async () => {
-      const proficiency = new SkillProficiency({
+      const proficiency = SkillProficiencyBuilder.create({
         skillId: skills.qualityAssurance.id,
-        proficiency: asProficiency(1),
+        proficiency: 1,
       })
 
       const result = await repository.update(teams.traffic.id, proficiency)
@@ -201,9 +197,9 @@ describe('TeamSkillProficienciesRepository', () => {
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
-      const updated = new SkillProficiency({
+      const updated = SkillProficiencyBuilder.create({
         skillId: skills.backendDevelopment.id,
-        proficiency: asProficiency(4),
+        proficiency: 4,
       })
 
       await db.none('ALTER TABLE skills_to_teams RENAME TO skills_to_teams_renamed')
