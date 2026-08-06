@@ -1,9 +1,9 @@
 INSERT INTO
-  examples (id, name, kind, url)
+  examples (id, name, example_kind_id, url)
 VALUES
-  ($(id), $(name), $(kind), $(url))
+  ($(id), $(name), $(exampleKindId), $(url))
 RETURNING
   id,
   name,
-  kind,
+  example_kind_id,
   url;

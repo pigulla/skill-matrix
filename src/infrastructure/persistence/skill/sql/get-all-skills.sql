@@ -2,6 +2,6 @@ SELECT
   id,
   name,
   description,
-  examples
+  example_ids
 FROM
   view_skills_with_examples;

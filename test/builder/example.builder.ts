@@ -1,13 +1,13 @@
 import { Example } from '#/domain/example/example.js'
 import { asExampleID } from '#/domain/example/example-id.js'
-import { asExampleKind } from '#/domain/example-kind/example-kind.js'
+import { asExampleKindID } from '#/domain/example/kind/example-kind-id.js'
 
-import { UNKNOWN_EXAMPLE_ID } from '../util/entity-ids.js'
+import { UNKNOWN_EXAMPLE_ID, UNKNOWN_EXAMPLE_KIND_ID } from '../util/entity-ids.js'
 
 export type ExampleProperties = {
   id: string
   name: string
-  kind: string
+  exampleKindId: string
   url: string | null
 }
 
@@ -15,7 +15,7 @@ export class ExampleBuilder {
   private properties: ExampleProperties = {
     id: UNKNOWN_EXAMPLE_ID,
     name: 'TypeScript',
-    kind: 'technology',
+    exampleKindId: UNKNOWN_EXAMPLE_KIND_ID,
     url: null,
   }
 
@@ -29,8 +29,8 @@ export class ExampleBuilder {
     return this
   }
 
-  public withKind(kind: string): this {
-    this.properties.kind = kind
+  public withExampleKindId(exampleKindId: string): this {
+    this.properties.exampleKindId = exampleKindId
     return this
   }
 
@@ -56,7 +56,7 @@ export class ExampleBuilder {
     return new ExampleBuilder().with({
       id: example.id,
       name: example.name,
-      kind: example.kind,
+      exampleKindId: example.exampleKindId,
       url: example.url,
     })
   }
@@ -65,7 +65,7 @@ export class ExampleBuilder {
     return new Example({
       id: asExampleID(this.properties.id),
       name: this.properties.name,
-      kind: asExampleKind(this.properties.kind),
+      exampleKindId: asExampleKindID(this.properties.exampleKindId),
       url: this.properties.url,
     })
   }

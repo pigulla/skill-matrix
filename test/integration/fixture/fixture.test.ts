@@ -56,7 +56,7 @@ describe('Data in the SQL fixture', () => {
 
   it('should match the modeled example kinds', async () => {
     const all = (await app.get(ExampleKindRepository).getAll())._unsafeUnwrap()
-    expect(all.sort()).toEqual(Object.values(exampleKinds).sort())
+    expect(all.sort(byId)).toEqual(Object.values(exampleKinds).sort(byId))
   })
 
   it('should match the modeled users', async () => {

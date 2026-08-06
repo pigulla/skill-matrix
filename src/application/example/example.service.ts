@@ -9,7 +9,7 @@ import type { ExampleNotFoundError } from '#/domain/example/error/example-not-fo
 import { Example, type Properties } from '#/domain/example/example.js'
 import { IExampleRepository } from '#/domain/example/example.repository.interface.js'
 import type { ExampleID } from '#/domain/example/example-id.js'
-import type { ExampleKindReferenceNotFoundError } from '#/domain/example-kind/error/example-kind-reference-not-found.error.js'
+import type { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 import { ResultTransactional } from '#/util/result-transactional.decorator.js'
 
 import { IExampleService } from './example.service.interface.js'

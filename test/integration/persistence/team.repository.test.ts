@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
+import { err } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
@@ -7,16 +8,15 @@ import { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.erro
 import { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
 import { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
 import { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
-import { asTeamID } from '#/domain/team/team-id.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { TeamRepository } from '#/infrastructure/persistence/team/team.repository.js'
 
 import { TeamBuilder } from '../../builder/team.builder.js'
+import { UNKNOWN_TEAM_ID } from '../../util/entity-ids.js'
 import { teams, users } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 describe('TeamRepository', () => {
-  const invalidId = asTeamID('00000000-0002-4000-8000-000000000000')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -54,9 +54,9 @@ describe('TeamRepository', () => {
     })
 
     it('should return TeamNotFoundError', async () => {
-      const result = await teamRepository.get(invalidId)
+      const result = await teamRepository.get(UNKNOWN_TEAM_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
+      expect(result).toEqual(err(new TeamNotFoundError(UNKNOWN_TEAM_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -102,7 +102,7 @@ describe('TeamRepository', () => {
 
       const result = await teamRepository.create(team)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateTeamIdError)
+      expect(result).toEqual(err(new DuplicateTeamIdError(teams.traffic.id)))
     })
 
     it('should return DuplicateTeamNameError if the name already exists', async () => {
@@ -112,7 +112,7 @@ describe('TeamRepository', () => {
 
       const result = await teamRepository.create(team)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateTeamNameError)
+      expect(result).toEqual(err(new DuplicateTeamNameError(teams.traffic.name)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -142,11 +142,11 @@ describe('TeamRepository', () => {
     })
 
     it('should return TeamNotFoundError if the team does not exist', async () => {
-      const team = new TeamBuilder().withId(invalidId).build()
+      const team = new TeamBuilder().withId(UNKNOWN_TEAM_ID).build()
 
       const result = await teamRepository.update(team)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
+      expect(result).toEqual(err(new TeamNotFoundError(UNKNOWN_TEAM_ID)))
     })
 
     it('should return DuplicateTeamNameError if the name is taken', async () => {
@@ -154,7 +154,7 @@ describe('TeamRepository', () => {
 
       const result = await teamRepository.update(updated)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateTeamNameError)
+      expect(result).toEqual(err(new DuplicateTeamNameError(teams.testing.name)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -170,7 +170,7 @@ describe('TeamRepository', () => {
     it('should delete a team', async () => {
       const result = await teamRepository.delete(teams.testing.id)
 
-      expect(result._unsafeUnwrap()).toBeUndefined()
+      expect(result.isOk()).toBe(true)
 
       await expect(
         db.oneOrNone('SELECT name FROM teams WHERE id=$(id)', { id: teams.testing.id }),
@@ -178,15 +178,15 @@ describe('TeamRepository', () => {
     })
 
     it('should return TeamNotFoundError if the team does not exist', async () => {
-      const result = await teamRepository.delete(invalidId)
+      const result = await teamRepository.delete(UNKNOWN_TEAM_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
+      expect(result).toEqual(err(new TeamNotFoundError(UNKNOWN_TEAM_ID)))
     })
 
     it('should return TeamNotEmptyError when the team still has members', async () => {
       const result = await teamRepository.delete(users.peter.teamId)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotEmptyError)
+      expect(result).toEqual(err(new TeamNotEmptyError(users.peter.teamId)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {

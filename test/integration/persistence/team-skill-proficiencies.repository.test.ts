@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
+import { err } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
@@ -65,7 +66,7 @@ describe('TeamSkillProficienciesRepository', () => {
     it('should return TeamNotFoundError when the team does not exist', async () => {
       const result = await repository.get(UNKNOWN_TEAM_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamNotFoundError)
+      expect(result).toEqual(err(new TeamNotFoundError(UNKNOWN_TEAM_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -86,7 +87,7 @@ describe('TeamSkillProficienciesRepository', () => {
 
       const result = await repository.add(teams.traffic.id, created)
 
-      expect(result._unsafeUnwrap()).toBeUndefined()
+      expect(result.isOk()).toBe(true)
 
       await expect(
         db.manyOrNone(
@@ -125,7 +126,14 @@ describe('TeamSkillProficienciesRepository', () => {
 
       const result = await repository.add(teams.traffic.id, duplicate)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateTeamSkillError)
+      expect(result).toEqual(
+        err(
+          new DuplicateTeamSkillError({
+            teamId: teams.traffic.id,
+            skillId: skills.backendDevelopment.id,
+          }),
+        ),
+      )
     })
 
     it('should return SkillReferenceNotFoundError when the skill does not exist', async () => {
@@ -136,7 +144,7 @@ describe('TeamSkillProficienciesRepository', () => {
 
       const result = await repository.add(teams.traffic.id, proficiency)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(SkillReferenceNotFoundError)
+      expect(result).toEqual(err(new SkillReferenceNotFoundError(UNKNOWN_SKILL_ID)))
     })
 
     it('should return TeamReferenceNotFoundError when the team does not exist', async () => {
@@ -147,7 +155,7 @@ describe('TeamSkillProficienciesRepository', () => {
 
       const result = await repository.add(UNKNOWN_TEAM_ID, proficiency)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamReferenceNotFoundError)
+      expect(result).toEqual(err(new TeamReferenceNotFoundError(UNKNOWN_TEAM_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -173,7 +181,7 @@ describe('TeamSkillProficienciesRepository', () => {
 
       const result = await repository.update(teams.traffic.id, updated)
 
-      expect(result._unsafeUnwrap()).toBeUndefined()
+      expect(result.isOk()).toBe(true)
 
       await expect(
         db.oneOrNone(
@@ -193,7 +201,14 @@ describe('TeamSkillProficienciesRepository', () => {
 
       const result = await repository.update(teams.traffic.id, proficiency)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamSkillNotFoundError)
+      expect(result).toEqual(
+        err(
+          new TeamSkillNotFoundError({
+            teamId: teams.traffic.id,
+            skillId: skills.qualityAssurance.id,
+          }),
+        ),
+      )
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -214,7 +229,7 @@ describe('TeamSkillProficienciesRepository', () => {
     it('should remove the skill association', async () => {
       const result = await repository.remove(teams.traffic.id, skills.backendDevelopment.id)
 
-      expect(result._unsafeUnwrap()).toBeUndefined()
+      expect(result.isOk()).toBe(true)
 
       await expect(
         db.manyOrNone(
@@ -240,7 +255,14 @@ describe('TeamSkillProficienciesRepository', () => {
     it('should return TeamSkillNotFoundError when the association does not exist', async () => {
       const result = await repository.remove(teams.traffic.id, skills.qualityAssurance.id)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(TeamSkillNotFoundError)
+      expect(result).toEqual(
+        err(
+          new TeamSkillNotFoundError({
+            teamId: teams.traffic.id,
+            skillId: skills.qualityAssurance.id,
+          }),
+        ),
+      )
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {

@@ -10,5 +10,6 @@ export function mockExampleKindService(): ExampleKindServiceMock {
     delete: vi.fn(),
     get: vi.fn(),
     getAll: vi.fn(),
+    update: vi.fn(),
   }
 }

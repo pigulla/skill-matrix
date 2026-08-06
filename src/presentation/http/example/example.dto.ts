@@ -5,7 +5,7 @@ import { Example, exampleSchema } from '#/domain/example/example.js'
 import { exampleIdSchema } from '#/domain/example/example-id.js'
 
 const createExampleDTOSchema = z
-  .strictObject(exampleSchema.pick({ name: true, kind: true, url: true }).shape)
+  .strictObject(exampleSchema.pick({ name: true, exampleKindId: true, url: true }).shape)
   .brand('create-example-dto')
 
 const updateExampleDTOSchema = createExampleDTOSchema
@@ -26,7 +26,7 @@ export function fromDomain(example: Example): ExampleDTO {
   return exampleDTOSchema.parse({
     id: example.id,
     name: example.name,
-    kind: example.kind,
+    exampleKindId: example.exampleKindId,
     url: example.url,
   })
 }

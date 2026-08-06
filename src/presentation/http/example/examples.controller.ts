@@ -11,7 +11,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common'
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import type { ResultAsync } from 'neverthrow'
 
 import { IExampleService } from '#/application/example/example.service.interface.js'
@@ -19,8 +19,8 @@ import type { DuplicateExampleIdError } from '#/domain/example/error/duplicate-e
 import type { DuplicateExampleNameError } from '#/domain/example/error/duplicate-example-name.error.js'
 import type { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
 import type { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
-import type { ExampleID } from '#/domain/example/example-id.js'
-import type { ExampleKindReferenceNotFoundError } from '#/domain/example-kind/error/example-kind-reference-not-found.error.js'
+import { EXAMPLE_EXAMPLE_ID, type ExampleID } from '#/domain/example/example-id.js'
+import type { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { CreateExampleDTO, ExampleDTO, fromDomain, UpdateExampleDTO } from './example.dto.js'
@@ -65,7 +65,7 @@ export class ExamplesController {
     summary: 'Get an example.',
     description: 'Get the example with the given id, if it exists.',
   })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_EXAMPLE_ID })
   @ApiResponse({
     status: HttpStatus.OK,
     type: ExampleDTO,
@@ -90,7 +90,7 @@ export class ExamplesController {
     summary: 'Delete an example.',
     description: 'Delete the example with the given id, if it exists.',
   })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_EXAMPLE_ID })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'The operation completed successfully.',
@@ -128,8 +128,9 @@ export class ExamplesController {
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
-    description: 'The referenced skill does not exist.',
+    description: 'The referenced example kind does not exist.',
   })
+  @ApiBody({ type: CreateExampleDTO })
   @UnwrapResult()
   public create(
     @Body() dto: CreateExampleDTO,
@@ -141,7 +142,7 @@ export class ExamplesController {
   }
 
   @Put(':id')
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_EXAMPLE_ID })
   @ApiOperation({
     operationId: 'examples.update',
     summary: 'Update an existing example.',
@@ -162,8 +163,9 @@ export class ExamplesController {
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
-    description: 'The referenced skill does not exist.',
+    description: 'The referenced example kind does not exist.',
   })
+  @ApiBody({ type: UpdateExampleDTO })
   @UnwrapResult()
   public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))

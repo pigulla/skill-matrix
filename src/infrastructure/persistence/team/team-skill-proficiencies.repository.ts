@@ -66,7 +66,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
       }),
       error => {
         if (isUniqueConstraintViolation('skills_to_teams_pkey', error)) {
-          return new DuplicateTeamSkillError(teamId, skillId)
+          return new DuplicateTeamSkillError({ teamId, skillId })
         }
         if (isForeignKeyViolation('skills_to_teams_skill_fkey', error)) {
           return new SkillReferenceNotFoundError(skillId)
@@ -96,7 +96,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
         throw new UnexpectedPersistenceError(error as Error)
       },
     ).andThen(row =>
-      row === null ? errAsync(new TeamSkillNotFoundError(teamId, skillId)) : okAsync(undefined),
+      row === null ? errAsync(new TeamSkillNotFoundError({ teamId, skillId })) : okAsync(undefined),
     )
   }
 
@@ -110,7 +110,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
         throw new UnexpectedPersistenceError(error as Error)
       },
     ).andThen(row =>
-      row === null ? errAsync(new TeamSkillNotFoundError(teamId, skillId)) : okAsync(undefined),
+      row === null ? errAsync(new TeamSkillNotFoundError({ teamId, skillId })) : okAsync(undefined),
     )
   }
 }

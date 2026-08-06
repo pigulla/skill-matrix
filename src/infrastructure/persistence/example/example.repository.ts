@@ -11,7 +11,7 @@ import { ExampleNotFoundError } from '#/domain/example/error/example-not-found.e
 import type { Example } from '#/domain/example/example.js'
 import { IExampleRepository } from '#/domain/example/example.repository.interface.js'
 import type { ExampleID } from '#/domain/example/example-id.js'
-import { ExampleKindReferenceNotFoundError } from '#/domain/example-kind/error/example-kind-reference-not-found.error.js'
+import { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 
 import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
 import { isRestrictViolation } from '../error/is-restrict-violation.js'
@@ -73,10 +73,10 @@ export class ExampleRepository implements IExampleRepository {
     Example,
     DuplicateExampleIdError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
   > {
-    const { id, name, kind, url } = example
+    const { id, name, exampleKindId, url } = example
 
     return ResultAsync.fromPromise(
-      this.txHost.tx.one<unknown>(INSERT, { id, name, kind, url }),
+      this.txHost.tx.one<unknown>(INSERT, { id, name, exampleKindId, url }),
       error => {
         if (isUniqueConstraintViolation('examples_pkey', error)) {
           return new DuplicateExampleIdError(id)
@@ -84,8 +84,8 @@ export class ExampleRepository implements IExampleRepository {
         if (isUniqueConstraintViolation('examples_name', error)) {
           return new DuplicateExampleNameError(name)
         }
-        if (isForeignKeyViolation('examples_kind_fkey', error)) {
-          return new ExampleKindReferenceNotFoundError(kind)
+        if (isForeignKeyViolation('examples_example_kind_id_fkey', error)) {
+          return new ExampleKindReferenceNotFoundError(exampleKindId)
         }
 
         throw new UnexpectedPersistenceError(error as Error)
@@ -99,16 +99,16 @@ export class ExampleRepository implements IExampleRepository {
     Example,
     ExampleNotFoundError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
   > {
-    const { id, name, kind, url } = example
+    const { id, name, exampleKindId, url } = example
 
     return ResultAsync.fromPromise(
-      this.txHost.tx.oneOrNone<unknown>(UPDATE, { id, name, kind, url }),
+      this.txHost.tx.oneOrNone<unknown>(UPDATE, { id, name, exampleKindId, url }),
       error => {
         if (isUniqueConstraintViolation('examples_name', error)) {
           return new DuplicateExampleNameError(name)
         }
-        if (isForeignKeyViolation('examples_kind_fkey', error)) {
-          return new ExampleKindReferenceNotFoundError(kind)
+        if (isForeignKeyViolation('examples_example_kind_id_fkey', error)) {
+          return new ExampleKindReferenceNotFoundError(exampleKindId)
         }
 
         throw new UnexpectedPersistenceError(error as Error)

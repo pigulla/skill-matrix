@@ -4,19 +4,21 @@ import { TransactionalAdapterPgPromise } from '@nestjs-cls/transactional-adapter
 import { errAsync, okAsync, ResultAsync } from 'neverthrow'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
-import { DuplicateExampleKindError } from '#/domain/example-kind/error/duplicate-example-kind.error.js'
-import { ExampleKindInUseError } from '#/domain/example-kind/error/example-kind-in-use.error.js'
-import { ExampleKindNotFoundError } from '#/domain/example-kind/error/example-kind-not-found.error.js'
-import type { ExampleKind } from '#/domain/example-kind/example-kind.js'
-import { IExampleKindRepository } from '#/domain/example-kind/example-kind.repository.interface.js'
+import { DuplicateExampleKindIdError } from '#/domain/example/kind/error/duplicate-example-kind-id.error.js'
+import { DuplicateExampleKindNameError } from '#/domain/example/kind/error/duplicate-example-kind-name.error.js'
+import { ExampleKindInUseError } from '#/domain/example/kind/error/example-kind-in-use.error.js'
+import { ExampleKindNotFoundError } from '#/domain/example/kind/error/example-kind-not-found.error.js'
+import type { ExampleKind } from '#/domain/example/kind/example-kind.js'
+import { IExampleKindRepository } from '#/domain/example/kind/example-kind.repository.interface.js'
+import type { ExampleKindID } from '#/domain/example/kind/example-kind-id.js'
 
 import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
 import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
 
-import { exampleKindRow } from './sql/example-kinds.row.js'
+import { exampleKindsRow } from './sql/example-kinds.row.js'
 import { QUERY } from './sql/queries.js'
 
-const { DELETE, GET, GET_ALL, INSERT } = QUERY
+const { DELETE, GET, GET_ALL, INSERT, UPDATE } = QUERY
 
 @Injectable()
 export class ExampleKindRepository implements IExampleKindRepository {
@@ -26,43 +28,75 @@ export class ExampleKindRepository implements IExampleKindRepository {
     this.txHost = txHost
   }
 
-  public get(kind: ExampleKind): ResultAsync<ExampleKind, ExampleKindNotFoundError> {
-    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(GET, { kind }), error => {
+  public get(id: ExampleKindID): ResultAsync<ExampleKind, ExampleKindNotFoundError> {
+    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(GET, { id }), error => {
       throw new UnexpectedPersistenceError(error as Error)
     }).andThen(row =>
       row === null
-        ? errAsync(new ExampleKindNotFoundError(kind))
-        : okAsync(exampleKindRow.parse(row).toDomain()),
+        ? errAsync(new ExampleKindNotFoundError(id))
+        : okAsync(exampleKindsRow.parse(row).toDomain()),
     )
   }
 
   public getAll(): ResultAsync<ExampleKind[], never> {
     return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
       throw new UnexpectedPersistenceError(error as Error)
-    }).map(rows => rows.map(row => exampleKindRow.parse(row).toDomain()))
+    }).map(rows => rows.map(row => exampleKindsRow.parse(row).toDomain()))
   }
 
-  public create(kind: ExampleKind): ResultAsync<ExampleKind, DuplicateExampleKindError> {
-    return ResultAsync.fromPromise(this.txHost.tx.one<unknown>(INSERT, { kind }), error => {
+  public create({
+    id,
+    name,
+  }: ExampleKind): ResultAsync<
+    ExampleKind,
+    DuplicateExampleKindIdError | DuplicateExampleKindNameError
+  > {
+    return ResultAsync.fromPromise(this.txHost.tx.one<unknown>(INSERT, { id, name }), error => {
       if (isUniqueConstraintViolation('example_kinds_pkey', error)) {
-        return new DuplicateExampleKindError(kind)
+        return new DuplicateExampleKindIdError(id)
+      }
+      if (isUniqueConstraintViolation('example_kinds_name', error)) {
+        return new DuplicateExampleKindNameError(name)
       }
 
       throw new UnexpectedPersistenceError(error as Error)
-    }).map(row => exampleKindRow.parse(row).toDomain())
+    }).map(row => exampleKindsRow.parse(row).toDomain())
+  }
+
+  public update({
+    id,
+    name,
+  }: ExampleKind): ResultAsync<
+    ExampleKind,
+    ExampleKindNotFoundError | DuplicateExampleKindNameError
+  > {
+    return ResultAsync.fromPromise(
+      this.txHost.tx.oneOrNone<unknown>(UPDATE, { id, name }),
+      error => {
+        if (isUniqueConstraintViolation('example_kinds_name', error)) {
+          return new DuplicateExampleKindNameError(name)
+        }
+
+        throw new UnexpectedPersistenceError(error as Error)
+      },
+    ).andThen(row =>
+      row === null
+        ? errAsync(new ExampleKindNotFoundError(id))
+        : okAsync(exampleKindsRow.parse(row).toDomain()),
+    )
   }
 
   public delete(
-    kind: ExampleKind,
+    id: ExampleKindID,
   ): ResultAsync<void, ExampleKindNotFoundError | ExampleKindInUseError> {
-    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(DELETE, { kind }), error => {
-      if (isForeignKeyViolation('examples_kind_fkey', error)) {
-        return new ExampleKindInUseError(kind)
+    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(DELETE, { id }), error => {
+      if (isForeignKeyViolation('examples_example_kind_id_fkey', error)) {
+        return new ExampleKindInUseError(id)
       }
 
       throw new UnexpectedPersistenceError(error as Error)
     }).andThen(row =>
-      row === null ? errAsync(new ExampleKindNotFoundError(kind)) : okAsync(undefined),
+      row === null ? errAsync(new ExampleKindNotFoundError(id)) : okAsync(undefined),
     )
   }
 }

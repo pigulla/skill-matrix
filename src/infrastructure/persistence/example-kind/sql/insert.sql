@@ -1,6 +1,7 @@
 INSERT INTO
-  example_kinds (kind)
+  example_kinds (id, name)
 VALUES
-  ($(kind))
+  ($(id), $(name))
 RETURNING
-  kind;
+  id,
+  name;

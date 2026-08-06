@@ -66,7 +66,7 @@ Errors split into two channels, chosen by whether the caller is expected to hand
 - **Expected domain errors** — not-found, duplicate, still-in-use, missing-reference, and similar — are returned as values using [`neverthrow`](https://github.com/supermacro/neverthrow)'s `Result`/`ResultAsync`, never thrown. This applies across the entire call chain: repository → service → controller.
 - **Unexpected errors** — bugs, infrastructure failures — are still thrown as `Error` subclasses and propagate as rejections/exceptions, exactly as before this pattern existed.
 
-Never throw a concrete domain error (`EntityNotFoundError`, `DuplicateEntityError`, `EntityInUseError`, `EntityReferenceNotFoundError`, or any subclass) from a repository or service method — return it as an `Err` instead. This pattern is applied uniformly across every domain (`user`, `skill`, `example`, `example-kind`, `team`, `team-skill-proficiencies`).
+Never throw a concrete domain error (`EntityNotFoundError`, `DuplicateEntityError`, `EntityInUseError`, `EntityReferenceNotFoundError`, or any subclass) from a repository or service method — return it as an `Err` instead. This pattern is applied uniformly across every domain (`user`, `skill`, `example`, `kind`, `team`, `team-skill-proficiencies`).
 
 Concrete shape, layer by layer:
 

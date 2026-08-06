@@ -2,7 +2,7 @@ import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
 import { proficiencySchema } from '#/domain/skill/proficiency.js'
-import { skillIdSchema } from '#/domain/skill/skill-id.js'
+import { EXAMPLE_SKILL_ID, skillIdSchema } from '#/domain/skill/skill-id.js'
 import { teamIdSchema } from '#/domain/team/team-id.js'
 import { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 
@@ -13,12 +13,17 @@ const setSkillProficiencyDTOSchema = z
 const teamSkillProficienciesDTOSchema = z
   .strictObject({
     teamId: teamIdSchema,
-    skills: z.array(
-      z.strictObject({
-        skillId: skillIdSchema,
-        proficiency: proficiencySchema,
+    skills: z
+      .array(
+        z.strictObject({
+          skillId: skillIdSchema,
+          proficiency: proficiencySchema,
+        }),
+      )
+      .meta({
+        description: 'The skill proficiencies associated with this team.',
+        example: [{ skillId: EXAMPLE_SKILL_ID, proficiency: 3 }],
       }),
-    ),
   })
   .brand('team-skill-proficiencies-dto')
 

@@ -8,7 +8,7 @@ import { TeamSkillProficiencies } from '../team-skill-proficiencies.js'
 export class TeamSkillNotFoundError extends EntityNotFoundError<TeamID> {
   public readonly skillId: SkillID
 
-  public constructor(teamId: TeamID, skillId: SkillID) {
+  public constructor({ teamId, skillId }: { teamId: TeamID; skillId: SkillID }) {
     super(TeamSkillProficiencies.name, teamId)
     this.skillId = skillId
   }

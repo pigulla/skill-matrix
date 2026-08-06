@@ -12,7 +12,7 @@ const skillsRowSchema = z.strictObject({
 
 export const skillWithExampleIdsRow = skillsRowSchema
   .extend({
-    examples: z.array(exampleIdSchema).refine(ids => new Set(ids).size === ids.length, {
+    example_ids: z.array(exampleIdSchema).refine(ids => new Set(ids).size === ids.length, {
       message: 'Duplicate example IDs in view result',
     }),
   })
@@ -23,7 +23,7 @@ export const skillWithExampleIdsRow = skillsRowSchema
         id: data.id,
         name: data.name,
         description: data.description,
-        exampleIds: new Set(data.examples),
+        exampleIds: new Set(data.example_ids),
       }),
   }))
   .readonly()

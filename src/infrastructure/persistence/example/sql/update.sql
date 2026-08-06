@@ -1,12 +1,12 @@
 UPDATE examples
 SET
   name = $(name),
-  kind = $(kind),
+  example_kind_id = $(exampleKindId),
   url = $(url)
 WHERE
   id = $(id)
 RETURNING
   id,
   name,
-  kind,
+  example_kind_id,
   url;

@@ -18,3 +18,5 @@ export type TeamID = z.infer<typeof teamIdSchema>
 export function asTeamID(id: string): TeamID {
   return teamIdSchema.parse(id)
 }
+
+export const EXAMPLE_TEAM_ID = asTeamID(`22222222-${EntityIdMarker.TEAM}-4000-8000-111111111111`)

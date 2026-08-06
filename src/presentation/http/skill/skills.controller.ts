@@ -11,7 +11,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common'
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import type { ResultAsync } from 'neverthrow'
 
 import { ISkillService } from '#/application/skill/skill.service.interface.js'
@@ -20,7 +20,7 @@ import type { DuplicateSkillIdError } from '#/domain/skill/error/duplicate-skill
 import type { DuplicateSkillNameError } from '#/domain/skill/error/duplicate-skill-name.error.js'
 import type { SkillInUseError } from '#/domain/skill/error/skill-in-use.error.js'
 import type { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
-import type { SkillID } from '#/domain/skill/skill-id.js'
+import { EXAMPLE_SKILL_ID, type SkillID } from '#/domain/skill/skill-id.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { CreateSkillDTO, fromDomain, SkillDTO, UpdateSkillDTO } from './skill.dto.js'
@@ -65,7 +65,7 @@ export class SkillsController {
     summary: 'Get a skill.',
     description: 'Get the skill with the given id, if it exists.',
   })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiResponse({
     status: HttpStatus.OK,
     type: SkillDTO,
@@ -90,7 +90,7 @@ export class SkillsController {
     summary: 'Delete a skill.',
     description: 'Delete the skill with the given id, if it exists.',
   })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'The operation completed successfully.',
@@ -130,6 +130,7 @@ export class SkillsController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'A referenced example was not found.',
   })
+  @ApiBody({ type: CreateSkillDTO })
   @UnwrapResult()
   public create(
     @Body() dto: CreateSkillDTO,
@@ -147,7 +148,7 @@ export class SkillsController {
   }
 
   @Put(':id')
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiOperation({
     operationId: 'skills.update',
     summary: 'Update an existing skill.',
@@ -170,6 +171,7 @@ export class SkillsController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'A referenced example was not found.',
   })
+  @ApiBody({ type: UpdateSkillDTO })
   @UnwrapResult()
   public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))

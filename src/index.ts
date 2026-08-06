@@ -17,6 +17,7 @@ export async function bootstrap(): Promise<void> {
   const logger = app.get(Logger)
 
   app.enableShutdownHooks([], { useProcessExit: true }).useLogger(logger)
+  app.disable('x-powered-by')
 
   if (openApi.swagger.enabled) {
     SwaggerModule.setup(openApi.swagger.path, app, () => createOpenAPIDocument(app, openApi))

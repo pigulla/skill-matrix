@@ -1,5 +1,6 @@
 DELETE FROM example_kinds
 WHERE
-  kind = $(kind)
+  id = $(id)
 RETURNING
-  kind;
+  id,
+  name;
