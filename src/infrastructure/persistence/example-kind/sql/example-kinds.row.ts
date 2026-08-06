@@ -1,14 +1,16 @@
 import z from 'zod'
 
-import { exampleKindSchema } from '#/domain/example-kind/example-kind.js'
+import { ExampleKind } from '#/domain/example/kind/example-kind.js'
+import { exampleKindIdSchema } from '#/domain/example/kind/example-kind-id.js'
 
-export const exampleKindRow = z
+export const exampleKindsRow = z
   .strictObject({
-    kind: exampleKindSchema,
+    id: exampleKindIdSchema,
+    name: z.string(),
   })
   .transform(data => ({
     ...data,
-    toDomain: () => data.kind,
+    toDomain: () => new ExampleKind({ ...data }),
   }))
   .readonly()
-  .brand('example-kind-row')
+  .brand('example-kinds-row')

@@ -18,3 +18,5 @@ export type SkillID = z.infer<typeof skillIdSchema>
 export function asSkillID(id: string): SkillID {
   return skillIdSchema.parse(id)
 }
+
+export const EXAMPLE_SKILL_ID = asSkillID(`33333333-${EntityIdMarker.SKILL}-4000-8000-111111111111`)

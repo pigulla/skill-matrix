@@ -33,7 +33,8 @@ export class Team implements Properties {
   }
 
   public update(data: Partial<Except<Properties, 'id'>>): Team {
-    return new Team({ ...this, ...data })
+    // Let's not rely on TypeScript only. The id should never be accidentally overwritten.
+    return new Team({ ...this, ...data, id: this.id })
   }
 
   public toJSON(): JsonObject {

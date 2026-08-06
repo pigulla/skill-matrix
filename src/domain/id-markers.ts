@@ -16,4 +16,5 @@ export const EntityIdMarker = {
   TEAM: '0002',
   SKILL: '0003',
   EXAMPLE: '0004',
+  EXAMPLE_KIND: '0005',
 } as const satisfies Record<string, EntityIdMarkerValue>

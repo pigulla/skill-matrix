@@ -1,6 +1,7 @@
 SELECT
-  kind
+  id,
+  name
 FROM
   example_kinds
 ORDER BY
-  kind;
+  id;

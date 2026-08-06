@@ -49,7 +49,8 @@ export class Skill implements Properties {
   }
 
   public update(data: Partial<Except<Properties, 'id'>>): Skill {
-    return new Skill({ ...this, ...data })
+    // Let's not rely on TypeScript only. The id should never be accidentally overwritten.
+    return new Skill({ ...this, ...data, id: this.id })
   }
 
   public toJSON(): JsonObject {

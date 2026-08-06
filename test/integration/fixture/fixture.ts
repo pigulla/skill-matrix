@@ -1,7 +1,7 @@
-import { asExampleKind } from '#/domain/example-kind/example-kind.js'
 import type { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
+import { ExampleKindBuilder } from '../../builder/example-kind.builder.js'
 import { SkillBuilder } from '../../builder/skill.builder.js'
 import { TeamBuilder } from '../../builder/team.builder.js'
 import { TeamSkillProficienciesBuilder } from '../../builder/team-skill-proficiencies.builder.js'
@@ -80,101 +80,113 @@ export const users = {
 }
 
 export const exampleKinds = {
-  CONCEPT: asExampleKind('concept'),
-  METHODOLOGY: asExampleKind('methodology'),
-  PATTERN: asExampleKind('pattern'),
-  TECHNOLOGY: asExampleKind('technology'),
+  concept: ExampleKindBuilder.create<true>({
+    id: '55555555-0005-4000-8000-111111111111',
+    name: 'concept',
+  }),
+  methodology: ExampleKindBuilder.create<true>({
+    id: '55555555-0005-4000-8000-222222222222',
+    name: 'methodology',
+  }),
+  pattern: ExampleKindBuilder.create<true>({
+    id: '55555555-0005-4000-8000-333333333333',
+    name: 'pattern',
+  }),
+  technology: ExampleKindBuilder.create<true>({
+    id: '55555555-0005-4000-8000-444444444444',
+    name: 'technology',
+  }),
 }
 
 export const examples = {
   html: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-111111111111',
     name: 'HTML',
-    kind: exampleKinds.TECHNOLOGY,
+    exampleKindId: exampleKinds.technology.id,
     url: null,
   }),
   css: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-222222222222',
     name: 'CSS',
-    kind: exampleKinds.TECHNOLOGY,
+    exampleKindId: exampleKinds.technology.id,
     url: null,
   }),
   react: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-333333333333',
     name: 'React',
-    kind: exampleKinds.TECHNOLOGY,
+    exampleKindId: exampleKinds.technology.id,
     url: 'https://react.dev',
   }),
   nestjs: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-444444444444',
     name: 'Nest.js',
-    kind: exampleKinds.TECHNOLOGY,
+    exampleKindId: exampleKinds.technology.id,
     url: 'https://nestjs.com',
   }),
   vuejs: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-555555555555',
     name: 'Vue.js',
-    kind: exampleKinds.TECHNOLOGY,
+    exampleKindId: exampleKinds.technology.id,
     url: 'https://vuejs.org',
   }),
   postgresql: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-666666666666',
     name: 'PostgreSQL',
-    kind: exampleKinds.TECHNOLOGY,
+    exampleKindId: exampleKinds.technology.id,
     url: 'https://www.postgresql.org',
   }),
   solid: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-777777777777',
     name: 'SOLID',
-    kind: exampleKinds.PATTERN,
+    exampleKindId: exampleKinds.pattern.id,
     url: null,
   }),
   hexagonalArchitecture: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-888888888888',
     name: 'Hexagonal Architecture',
-    kind: exampleKinds.PATTERN,
+    exampleKindId: exampleKinds.pattern.id,
     url: 'https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)',
   }),
   cobol: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-999999999999',
     name: 'COBOL',
-    kind: exampleKinds.TECHNOLOGY,
+    exampleKindId: exampleKinds.technology.id,
     url: null,
   }),
   infrastructureAsCode: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-aaaaaaaaaaaa',
     name: 'Infrastructure-as-Code',
-    kind: exampleKinds.METHODOLOGY,
+    exampleKindId: exampleKinds.methodology.id,
     url: null,
   }),
   domainDrivenDesign: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-bbbbbbbbbbbb',
     name: 'Domain-Driven Design',
-    kind: exampleKinds.METHODOLOGY,
+    exampleKindId: exampleKinds.methodology.id,
     url: 'https://en.wikipedia.org/wiki/Domain-driven_design',
   }),
   circuitBreaker: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-cccccccccccc',
     name: 'Circuit Breaker',
-    kind: exampleKinds.PATTERN,
+    exampleKindId: exampleKinds.pattern.id,
     url: null,
   }),
   bulkhead: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-dddddddddddd',
     name: 'Bulkhead',
-    kind: exampleKinds.PATTERN,
+    exampleKindId: exampleKinds.pattern.id,
     url: null,
   }),
   sql: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-eeeeeeeeeeee',
     name: 'SQL',
-    kind: exampleKinds.TECHNOLOGY,
+    exampleKindId: exampleKinds.technology.id,
     url: null,
   }),
   factory: ExampleBuilder.create<true>({
     id: '44444444-0004-4000-8000-ffffffffffff',
     name: 'Factory',
-    kind: exampleKinds.PATTERN,
+    exampleKindId: exampleKinds.pattern.id,
     url: null,
   }),
 }

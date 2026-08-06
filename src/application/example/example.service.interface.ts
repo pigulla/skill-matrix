@@ -7,7 +7,7 @@ import type { ExampleInUseError } from '#/domain/example/error/example-in-use.er
 import type { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
 import type { Example, Properties } from '#/domain/example/example.js'
 import type { ExampleID } from '#/domain/example/example-id.js'
-import type { ExampleKindReferenceNotFoundError } from '#/domain/example-kind/error/example-kind-reference-not-found.error.js'
+import type { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 
 export abstract class IExampleService {
   public abstract create(

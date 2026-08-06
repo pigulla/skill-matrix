@@ -1,7 +1,7 @@
 SELECT
   id,
   name,
-  kind,
+  example_kind_id,
   url
 FROM
   examples

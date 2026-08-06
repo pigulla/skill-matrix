@@ -18,3 +18,7 @@ export type ExampleID = z.infer<typeof exampleIdSchema>
 export function asExampleID(id: string): ExampleID {
   return exampleIdSchema.parse(id)
 }
+
+export const EXAMPLE_EXAMPLE_ID = asExampleID(
+  `44444444-${EntityIdMarker.EXAMPLE}-4000-8000-111111111111`,
+)

@@ -10,24 +10,24 @@ import {
   Post,
   Put,
 } from '@nestjs/common'
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import type { ResultAsync } from 'neverthrow'
 
 import { ITeamSkillProficienciesService } from '#/application/team/team-skill-proficiencies.service.interface.js'
 import type { SkillReferenceNotFoundError } from '#/domain/skill/error/skill-reference-not-found.error.js'
-import type { SkillID } from '#/domain/skill/skill-id.js'
+import { EXAMPLE_SKILL_ID, type SkillID } from '#/domain/skill/skill-id.js'
 import type { DuplicateTeamSkillError } from '#/domain/team/error/duplicate-team-skill.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
 import type { TeamSkillNotFoundError } from '#/domain/team/error/team-skill-not-found.error.js'
-import type { TeamID } from '#/domain/team/team-id.js'
+import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { fromDomain, SetSkillProficiencyDTO, TeamSkillProficienciesDTO } from './team-skill.dto.js'
 
 @Controller('teams/:teamId/skills')
 @ApiTags('Team Skills')
-@ApiParam({ name: 'teamId', type: 'string', format: 'uuid' })
+@ApiParam({ name: 'teamId', type: 'string', format: 'uuid', example: EXAMPLE_TEAM_ID })
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description:
@@ -45,7 +45,7 @@ export class TeamSkillsController {
   }
 
   @Get()
-  @ApiOperation({ operationId: 'teamSkills.get', summary: 'Get skill proficiencies for a team.' })
+  @ApiOperation({ operationId: 'team.skills.get', summary: 'Get skill proficiencies for a team.' })
   @ApiResponse({
     status: HttpStatus.OK,
     type: TeamSkillProficienciesDTO,
@@ -61,8 +61,8 @@ export class TeamSkillsController {
   }
 
   @Post(':skillId')
-  @ApiOperation({ operationId: 'teamSkills.add', summary: 'Add a skill proficiency to a team.' })
-  @ApiParam({ name: 'skillId', type: 'string', format: 'uuid' })
+  @ApiOperation({ operationId: 'team.skills.add', summary: 'Add a skill proficiency to a team.' })
+  @ApiParam({ name: 'skillId', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiResponse({
     status: HttpStatus.CREATED,
     type: TeamSkillProficienciesDTO,
@@ -76,6 +76,7 @@ export class TeamSkillsController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'The referenced skill or team was not found.',
   })
+  @ApiBody({ type: SetSkillProficiencyDTO })
   @UnwrapResult()
   public add(
     @Param('teamId', new ParseUUIDPipe({ version: '4' }))
@@ -94,9 +95,9 @@ export class TeamSkillsController {
   }
 
   @Put(':skillId')
-  @ApiParam({ name: 'skillId', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'skillId', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiOperation({
-    operationId: 'teamSkills.update',
+    operationId: 'team.skills.update',
     summary: 'Update a skill proficiency on a team.',
   })
   @ApiResponse({
@@ -108,6 +109,7 @@ export class TeamSkillsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The team or skill association was not found.',
   })
+  @ApiBody({ type: SetSkillProficiencyDTO })
   @UnwrapResult()
   public update(
     @Param('teamId', new ParseUUIDPipe({ version: '4' }))
@@ -122,10 +124,10 @@ export class TeamSkillsController {
   @Delete(':skillId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    operationId: 'teamSkills.remove',
+    operationId: 'team.skills.remove',
     summary: 'Remove a skill proficiency from a team.',
   })
-  @ApiParam({ name: 'skillId', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'skillId', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiResponse({
     status: HttpStatus.OK,
     type: TeamSkillProficienciesDTO,

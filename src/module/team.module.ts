@@ -10,14 +10,14 @@ import { ITeamSkillProficienciesRepository } from '#/domain/team/team-skill-prof
 import { TeamRepository } from '#/infrastructure/persistence/team/team.repository.js'
 import { TeamSkillProficienciesRepository } from '#/infrastructure/persistence/team/team-skill-proficiencies.repository.js'
 import { TeamUuidProvider } from '#/infrastructure/team-uuid-provider.js'
-import { TeamSkillsController } from '#/presentation/http/team/team-skills.controller.js'
+import { TeamSkillsController } from '#/presentation/http/team/skill/team-skills.controller.js'
 import { TeamsController } from '#/presentation/http/team/teams.controller.js'
 
 import { DatabaseModule } from './database.module.js'
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [TeamsController, TeamSkillsController],
+  controllers: [TeamSkillsController, TeamsController],
   providers: [
     { provide: ITeamRepository, useClass: TeamRepository },
     { provide: ITeamService, useClass: TeamService },

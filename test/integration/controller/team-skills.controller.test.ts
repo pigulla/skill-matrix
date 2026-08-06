@@ -3,7 +3,7 @@ import request from 'supertest'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest'
 
 import { TeamModule } from '#/module/team.module.js'
-import { TeamSkillsController } from '#/presentation/http/team/team-skills.controller.js'
+import { TeamSkillsController } from '#/presentation/http/team/skill/team-skills.controller.js'
 
 import { UNKNOWN_SKILL_ID, UNKNOWN_TEAM_ID } from '../../util/entity-ids.js'
 import { skills, teamSkillProficiencies, teams } from '../fixture/fixture.js'

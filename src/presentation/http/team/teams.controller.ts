@@ -11,7 +11,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common'
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import type { ResultAsync } from 'neverthrow'
 
 import { ITeamService } from '#/application/team/team.service.interface.js'
@@ -19,7 +19,7 @@ import type { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id
 import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
 import type { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
-import type { TeamID } from '#/domain/team/team-id.js'
+import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { CreateTeamDTO, fromDomain, TeamDTO, UpdateTeamDTO } from './team.dto.js'
@@ -64,7 +64,7 @@ export class TeamsController {
     summary: 'Get a team.',
     description: 'Get the team with the given id, if it exists.',
   })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_TEAM_ID })
   @ApiResponse({
     status: HttpStatus.OK,
     type: TeamDTO,
@@ -89,7 +89,7 @@ export class TeamsController {
     summary: 'Delete a team.',
     description: 'Delete the team with the given id, if it exists.',
   })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_TEAM_ID })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'The operation completed successfully.',
@@ -125,6 +125,7 @@ export class TeamsController {
     status: HttpStatus.CONFLICT,
     description: 'A team with the given name already exists.',
   })
+  @ApiBody({ type: CreateTeamDTO })
   @UnwrapResult()
   public create(
     @Body() dto: CreateTeamDTO,
@@ -133,7 +134,7 @@ export class TeamsController {
   }
 
   @Put(':id')
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_TEAM_ID })
   @ApiOperation({
     operationId: 'teams.update',
     summary: 'Update an existing team.',
@@ -152,6 +153,7 @@ export class TeamsController {
     status: HttpStatus.CONFLICT,
     description: 'A team with the given name already exists.',
   })
+  @ApiBody({ type: UpdateTeamDTO })
   @UnwrapResult()
   public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))

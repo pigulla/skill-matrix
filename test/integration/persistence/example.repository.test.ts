@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
+import { err } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
@@ -8,13 +9,12 @@ import { DuplicateExampleNameError } from '#/domain/example/error/duplicate-exam
 import { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
 import { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
 import type { ExampleID } from '#/domain/example/example-id.js'
-import { ExampleKindReferenceNotFoundError } from '#/domain/example-kind/error/example-kind-reference-not-found.error.js'
-import { asExampleKind } from '#/domain/example-kind/example-kind.js'
+import { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ExampleRepository } from '#/infrastructure/persistence/example/example.repository.js'
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
-import { UNKNOWN_EXAMPLE_ID } from '../../util/entity-ids.js'
+import { UNKNOWN_EXAMPLE_ID, UNKNOWN_EXAMPLE_KIND_ID } from '../../util/entity-ids.js'
 import { exampleKinds, examples } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
@@ -59,7 +59,7 @@ describe('ExampleRepository', () => {
     it('should return ExampleNotFoundError when the example does not exist', async () => {
       const result = await exampleRepository.get(UNKNOWN_EXAMPLE_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleNotFoundError)
+      expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -105,7 +105,7 @@ describe('ExampleRepository', () => {
         new Set([examples.nestjs.id, UNKNOWN_EXAMPLE_ID]),
       )
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleNotFoundError)
+      expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -121,7 +121,7 @@ describe('ExampleRepository', () => {
     it('should insert the example', async () => {
       const graphql = ExampleBuilder.create({
         name: 'GraphQL',
-        kind: exampleKinds.TECHNOLOGY,
+        exampleKindId: exampleKinds.technology.id,
         url: 'https://graphql.org',
       })
 
@@ -133,7 +133,7 @@ describe('ExampleRepository', () => {
         db.oneOrNone('SELECT * FROM examples WHERE id=$(id)', { id: graphql.id }),
       ).resolves.toMatchObject({
         name: graphql.name,
-        kind: graphql.kind,
+        example_kind_id: graphql.exampleKindId,
         url: graphql.url,
       })
     })
@@ -141,36 +141,36 @@ describe('ExampleRepository', () => {
     it('should return DuplicateExampleIdError if the id already exists', async () => {
       const result = await exampleRepository.create(examples.react)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateExampleIdError)
+      expect(result).toEqual(err(new DuplicateExampleIdError(examples.react.id)))
     })
 
     it('should return DuplicateExampleNameError if the name already exists', async () => {
       const duplicate = ExampleBuilder.create({
         name: examples.nestjs.name,
-        kind: exampleKinds.TECHNOLOGY,
+        exampleKindId: exampleKinds.technology.id,
       })
 
       const result = await exampleRepository.create(duplicate)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateExampleNameError)
+      expect(result).toEqual(err(new DuplicateExampleNameError(examples.nestjs.name)))
     })
 
-    it('should return ExampleKindReferenceNotFoundError if the kind does not exists', async () => {
+    it('should return ExampleKindReferenceNotFoundError if the example kind does not exist', async () => {
       const graphql = ExampleBuilder.create({
         name: 'GraphQL',
-        kind: asExampleKind('invalid'),
+        exampleKindId: UNKNOWN_EXAMPLE_KIND_ID,
         url: 'https://graphql.org',
       })
 
       const result = await exampleRepository.create(graphql)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleKindReferenceNotFoundError)
+      expect(result).toEqual(err(new ExampleKindReferenceNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
       const graphql = ExampleBuilder.create({
         name: 'GraphQL',
-        kind: exampleKinds.TECHNOLOGY,
+        exampleKindId: exampleKinds.technology.id,
       })
 
       await db.none('ALTER TABLE examples RENAME TO examples_renamed')
@@ -191,7 +191,7 @@ describe('ExampleRepository', () => {
         db.oneOrNone('SELECT * FROM examples WHERE id=$(id)', { id: updated.id }),
       ).resolves.toMatchObject({
         name: updated.name,
-        kind: updated.kind,
+        example_kind_id: updated.exampleKindId,
         url: updated.url,
       })
     })
@@ -203,27 +203,29 @@ describe('ExampleRepository', () => {
 
       const result = await exampleRepository.update(conflict)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateExampleNameError)
+      expect(result).toEqual(err(new DuplicateExampleNameError(examples.postgresql.name)))
     })
 
     it('should return ExampleNotFoundError if the example does not exist', async () => {
       const ghost = ExampleBuilder.create({
         id: UNKNOWN_EXAMPLE_ID,
         name: 'Ghost',
-        kind: 'concept',
+        exampleKindId: exampleKinds.concept.id,
       })
 
       const result = await exampleRepository.update(ghost)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleNotFoundError)
+      expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
-    it('should return ExampleKindReferenceNotFoundError if the kind does not exist', async () => {
-      const invalid = ExampleBuilder.from(examples.cobol).withKind('invalid').build()
+    it('should return ExampleKindReferenceNotFoundError if the example kind does not exist', async () => {
+      const invalid = ExampleBuilder.from(examples.cobol)
+        .withExampleKindId(UNKNOWN_EXAMPLE_KIND_ID)
+        .build()
 
       const result = await exampleRepository.update(invalid)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleKindReferenceNotFoundError)
+      expect(result).toEqual(err(new ExampleKindReferenceNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -239,7 +241,7 @@ describe('ExampleRepository', () => {
     it('should delete an unreferenced example', async () => {
       const result = await exampleRepository.delete(examples.cobol.id)
 
-      expect(result._unsafeUnwrap()).toBeUndefined()
+      expect(result.isOk()).toBe(true)
 
       await expect(
         db.oneOrNone('SELECT * FROM examples WHERE id=$(id)', { id: examples.cobol.id }),
@@ -249,13 +251,13 @@ describe('ExampleRepository', () => {
     it('should return ExampleInUseError if the example is referenced by a skill', async () => {
       const result = await exampleRepository.delete(examples.nestjs.id)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleInUseError)
+      expect(result).toEqual(err(new ExampleInUseError(examples.nestjs.id)))
     })
 
     it('should return ExampleNotFoundError if the example does not exist', async () => {
       const result = await exampleRepository.delete(UNKNOWN_EXAMPLE_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleNotFoundError)
+      expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {

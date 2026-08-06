@@ -72,15 +72,21 @@ VALUES
   );
 
 --
--- Skill example kinds
+-- Example kinds
 --
 INSERT INTO
-  example_kinds (kind)
+  example_kinds (id, name)
 VALUES
-  ('technology'),
-  ('pattern'),
-  ('concept'),
-  ('methodology');
+  ('55555555-0005-4000-8000-111111111111', 'concept'),
+  (
+    '55555555-0005-4000-8000-222222222222',
+    'methodology'
+  ),
+  ('55555555-0005-4000-8000-333333333333', 'pattern'),
+  (
+    '55555555-0005-4000-8000-444444444444',
+    'technology'
+  );
 
 --
 -- Skills
@@ -113,96 +119,96 @@ VALUES
 -- Examples
 --
 INSERT INTO
-  examples (id, name, kind, url)
+  examples (id, name, example_kind_id, url)
 VALUES
   (
     '44444444-0004-4000-8000-111111111111',
     'HTML',
-    'technology',
+    '55555555-0005-4000-8000-444444444444',
     NULL
   ),
   (
     '44444444-0004-4000-8000-222222222222',
     'CSS',
-    'technology',
+    '55555555-0005-4000-8000-444444444444',
     NULL
   ),
   (
     '44444444-0004-4000-8000-333333333333',
     'React',
-    'technology',
+    '55555555-0005-4000-8000-444444444444',
     'https://react.dev'
   ),
   (
     '44444444-0004-4000-8000-444444444444',
     'Nest.js',
-    'technology',
+    '55555555-0005-4000-8000-444444444444',
     'https://nestjs.com'
   ),
   (
     '44444444-0004-4000-8000-555555555555',
     'Vue.js',
-    'technology',
+    '55555555-0005-4000-8000-444444444444',
     'https://vuejs.org'
   ),
   (
     '44444444-0004-4000-8000-666666666666',
     'PostgreSQL',
-    'technology',
+    '55555555-0005-4000-8000-444444444444',
     'https://www.postgresql.org'
   ),
   (
     '44444444-0004-4000-8000-777777777777',
     'SOLID',
-    'pattern',
+    '55555555-0005-4000-8000-333333333333',
     NULL
   ),
   (
     '44444444-0004-4000-8000-888888888888',
     'Hexagonal Architecture',
-    'pattern',
+    '55555555-0005-4000-8000-333333333333',
     'https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)'
   ),
   (
     '44444444-0004-4000-8000-999999999999',
     'COBOL',
-    'technology',
+    '55555555-0005-4000-8000-444444444444',
     NULL
   ),
   (
     '44444444-0004-4000-8000-aaaaaaaaaaaa',
     'Infrastructure-as-Code',
-    'methodology',
+    '55555555-0005-4000-8000-222222222222',
     NULL
   ),
   (
     '44444444-0004-4000-8000-bbbbbbbbbbbb',
     'Domain-Driven Design',
-    'methodology',
+    '55555555-0005-4000-8000-222222222222',
     'https://en.wikipedia.org/wiki/Domain-driven_design'
   ),
   (
     '44444444-0004-4000-8000-cccccccccccc',
     'Circuit Breaker',
-    'pattern',
+    '55555555-0005-4000-8000-333333333333',
     NULL
   ),
   (
     '44444444-0004-4000-8000-dddddddddddd',
     'Bulkhead',
-    'pattern',
+    '55555555-0005-4000-8000-333333333333',
     NULL
   ),
   (
     '44444444-0004-4000-8000-eeeeeeeeeeee',
     'SQL',
-    'technology',
+    '55555555-0005-4000-8000-444444444444',
     NULL
   ),
   (
     '44444444-0004-4000-8000-ffffffffffff',
     'Factory',
-    'pattern',
+    '55555555-0005-4000-8000-333333333333',
     NULL
   );
 

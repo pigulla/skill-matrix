@@ -26,7 +26,7 @@ SELECT
         users.id IS NOT NULL
     ),
     '[]'::JSON
-  ) AS members
+  ) AS member_ids
 FROM
   teams
   LEFT JOIN users ON users.team_id = teams.id

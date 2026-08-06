@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
+import { err } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
@@ -54,7 +55,7 @@ describe('SkillRepository', () => {
     it('should return SkillNotFoundError when the skill does not exist', async () => {
       const result = await skillRepository.get(UNKNOWN_SKILL_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(SkillNotFoundError)
+      expect(result).toEqual(err(new SkillNotFoundError(UNKNOWN_SKILL_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -121,7 +122,7 @@ describe('SkillRepository', () => {
 
       const result = await skillRepository.create(skill)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateSkillIdError)
+      expect(result).toEqual(err(new DuplicateSkillIdError(skills.frontendDevelopment.id)))
     })
 
     it('should return ExampleReferenceNotFoundError if a referenced example does not exist', async () => {
@@ -132,7 +133,7 @@ describe('SkillRepository', () => {
 
       const result = await skillRepository.create(skill)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleReferenceNotFoundError)
+      expect(result).toEqual(err(new ExampleReferenceNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the skill insert fails', async () => {
@@ -195,7 +196,7 @@ describe('SkillRepository', () => {
 
       const result = await skillRepository.update(skill)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(SkillNotFoundError)
+      expect(result).toEqual(err(new SkillNotFoundError(UNKNOWN_SKILL_ID)))
     })
 
     it('should return ExampleReferenceNotFoundError if a referenced example does not exist', async () => {
@@ -205,7 +206,7 @@ describe('SkillRepository', () => {
 
       const result = await skillRepository.update(skill)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleReferenceNotFoundError)
+      expect(result).toEqual(err(new ExampleReferenceNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the skill update fails', async () => {
@@ -233,7 +234,7 @@ describe('SkillRepository', () => {
     it('should delete the skill', async () => {
       const result = await skillRepository.delete(skills.qualityAssurance.id)
 
-      expect(result._unsafeUnwrap()).toBeUndefined()
+      expect(result.isOk()).toBe(true)
 
       await expect(
         db.oneOrNone('SELECT * FROM skills WHERE id=$(id)', { id: skills.qualityAssurance.id }),
@@ -250,7 +251,7 @@ describe('SkillRepository', () => {
     it('should return SkillNotFoundError when the skill does not exist', async () => {
       const result = await skillRepository.delete(UNKNOWN_SKILL_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(SkillNotFoundError)
+      expect(result).toEqual(err(new SkillNotFoundError(UNKNOWN_SKILL_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {

@@ -1,22 +1,23 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
+import { err } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
-import { DuplicateExampleKindError } from '#/domain/example-kind/error/duplicate-example-kind.error.js'
-import { ExampleKindInUseError } from '#/domain/example-kind/error/example-kind-in-use.error.js'
-import { ExampleKindNotFoundError } from '#/domain/example-kind/error/example-kind-not-found.error.js'
-import { asExampleKind } from '#/domain/example-kind/example-kind.js'
+import { DuplicateExampleKindIdError } from '#/domain/example/kind/error/duplicate-example-kind-id.error.js'
+import { DuplicateExampleKindNameError } from '#/domain/example/kind/error/duplicate-example-kind-name.error.js'
+import { ExampleKindInUseError } from '#/domain/example/kind/error/example-kind-in-use.error.js'
+import { ExampleKindNotFoundError } from '#/domain/example/kind/error/example-kind-not-found.error.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ExampleKindRepository } from '#/infrastructure/persistence/example-kind/example-kind.repository.js'
 
+import { ExampleKindBuilder } from '../../builder/example-kind.builder.js'
+import { UNKNOWN_EXAMPLE_KIND_ID } from '../../util/entity-ids.js'
+import { byId } from '../../util/sort-by-id.js'
 import { exampleKinds } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
-const { TECHNOLOGY, CONCEPT } = exampleKinds
-
 describe('ExampleKindRepository', () => {
-  const missingKind = asExampleKind('missing')
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
@@ -48,32 +49,32 @@ describe('ExampleKindRepository', () => {
   })
 
   describe('get', () => {
-    it('should return the example kind', async () => {
-      const result = await exampleKindRepository.get(TECHNOLOGY)
+    it('should return an example kind', async () => {
+      const result = await exampleKindRepository.get(exampleKinds.technology.id)
 
-      expect(result._unsafeUnwrap()).toEqual(TECHNOLOGY)
+      expect(result._unsafeUnwrap()).toEqual(exampleKinds.technology)
     })
 
     it('should return ExampleKindNotFoundError when the example kind does not exist', async () => {
-      const result = await exampleKindRepository.get(missingKind)
+      const result = await exampleKindRepository.get(UNKNOWN_EXAMPLE_KIND_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleKindNotFoundError)
+      expect(result).toEqual(err(new ExampleKindNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
       await db.none('ALTER TABLE example_kinds RENAME TO example_kinds_renamed')
 
-      await expect(exampleKindRepository.get(TECHNOLOGY)).rejects.toThrow(
+      await expect(exampleKindRepository.get(exampleKinds.technology.id)).rejects.toThrow(
         UnexpectedPersistenceError,
       )
     })
   })
 
   describe('getAll', () => {
-    it('should return all example kinds ordered by kind', async () => {
+    it('should return all example kinds', async () => {
       const result = await exampleKindRepository.getAll()
 
-      expect(result._unsafeUnwrap()).toEqual(Object.values(exampleKinds).sort())
+      expect(result._unsafeUnwrap().sort(byId)).toEqual(Object.values(exampleKinds).sort(byId))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
@@ -84,34 +85,88 @@ describe('ExampleKindRepository', () => {
   })
 
   describe('create', () => {
-    it('should insert the example kind', async () => {
-      const tool = asExampleKind('tool')
+    it('should create an example kind', async () => {
+      const exampleKind = ExampleKindBuilder.create({ name: 'Tool' })
 
-      const result = await exampleKindRepository.create(tool)
+      const result = await exampleKindRepository.create(exampleKind)
 
-      expect(result._unsafeUnwrap()).toEqual(tool)
+      expect(result._unsafeUnwrap()).toEqual(exampleKind)
 
       await expect(
-        db.oneOrNone('SELECT * FROM example_kinds WHERE kind=$(kind)', { kind: tool }),
-      ).resolves.toMatchObject({ kind: tool })
+        db.oneOrNone('SELECT * FROM example_kinds WHERE id=$(id)', { id: exampleKind.id }),
+      ).resolves.toMatchObject({ name: exampleKind.name })
     })
 
-    it('should return DuplicateExampleKindError if the kind already exists', async () => {
-      const result = await exampleKindRepository.create(TECHNOLOGY)
+    it('should return DuplicateExampleKindIdError if the id already exists', async () => {
+      const exampleKind = ExampleKindBuilder.from(exampleKinds.technology)
+        .withName('Different')
+        .build()
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateExampleKindError)
+      const result = await exampleKindRepository.create(exampleKind)
+
+      expect(result).toEqual(err(new DuplicateExampleKindIdError(exampleKinds.technology.id)))
     })
 
-    it('should return DuplicateExampleKindError if the kind already exists', async () => {
-      const result = await exampleKindRepository.create(TECHNOLOGY)
+    it('should return DuplicateExampleKindNameError if the name already exists', async () => {
+      const exampleKind = ExampleKindBuilder.create({ name: exampleKinds.technology.name })
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(DuplicateExampleKindError)
+      const result = await exampleKindRepository.create(exampleKind)
+
+      expect(result).toEqual(err(new DuplicateExampleKindNameError(exampleKinds.technology.name)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      const exampleKind = ExampleKindBuilder.create({ name: 'Tool' })
+
       await db.none('ALTER TABLE example_kinds RENAME TO example_kinds_renamed')
 
-      await expect(exampleKindRepository.create(asExampleKind('tool'))).rejects.toThrow(
+      await expect(exampleKindRepository.create(exampleKind)).rejects.toThrow(
+        UnexpectedPersistenceError,
+      )
+    })
+  })
+
+  describe('update', () => {
+    it('should update an example kind', async () => {
+      const updated = ExampleKindBuilder.from(exampleKinds.pattern)
+        .withName('Design Pattern')
+        .build()
+
+      const result = await exampleKindRepository.update(updated)
+
+      expect(result._unsafeUnwrap()).toEqual(updated)
+
+      await expect(
+        db.oneOrNone('SELECT * FROM example_kinds WHERE id=$(id)', { id: updated.id }),
+      ).resolves.toMatchObject({ name: updated.name })
+    })
+
+    it('should return ExampleKindNotFoundError if the example kind does not exist', async () => {
+      const exampleKind = new ExampleKindBuilder().withId(UNKNOWN_EXAMPLE_KIND_ID).build()
+
+      const result = await exampleKindRepository.update(exampleKind)
+
+      expect(result).toEqual(err(new ExampleKindNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
+    })
+
+    it('should return DuplicateExampleKindNameError if the name is taken', async () => {
+      const updated = ExampleKindBuilder.from(exampleKinds.pattern)
+        .withName(exampleKinds.technology.name)
+        .build()
+
+      const result = await exampleKindRepository.update(updated)
+
+      expect(result).toEqual(err(new DuplicateExampleKindNameError(exampleKinds.technology.name)))
+    })
+
+    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+      const updated = ExampleKindBuilder.from(exampleKinds.pattern)
+        .withName('Design Pattern')
+        .build()
+
+      await db.none('ALTER TABLE example_kinds RENAME TO example_kinds_renamed')
+
+      await expect(exampleKindRepository.update(updated)).rejects.toThrow(
         UnexpectedPersistenceError,
       )
     })
@@ -119,31 +174,31 @@ describe('ExampleKindRepository', () => {
 
   describe('delete', () => {
     it('should delete an unreferenced example kind', async () => {
-      const result = await exampleKindRepository.delete(CONCEPT)
+      const result = await exampleKindRepository.delete(exampleKinds.concept.id)
 
-      expect(result._unsafeUnwrap()).toBeUndefined()
+      expect(result.isOk()).toBe(true)
 
       await expect(
-        db.oneOrNone('SELECT * FROM example_kinds WHERE kind=$(kind)', { kind: CONCEPT }),
+        db.oneOrNone('SELECT * FROM example_kinds WHERE id=$(id)', { id: exampleKinds.concept.id }),
       ).resolves.toBeNull()
     })
 
     it('should return ExampleKindInUseError if the example kind is referenced by an example', async () => {
-      const result = await exampleKindRepository.delete(TECHNOLOGY)
+      const result = await exampleKindRepository.delete(exampleKinds.technology.id)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleKindInUseError)
+      expect(result).toEqual(err(new ExampleKindInUseError(exampleKinds.technology.id)))
     })
 
     it('should return ExampleKindNotFoundError if the example kind does not exist', async () => {
-      const result = await exampleKindRepository.delete(missingKind)
+      const result = await exampleKindRepository.delete(UNKNOWN_EXAMPLE_KIND_ID)
 
-      expect(result._unsafeUnwrapErr()).toBeInstanceOf(ExampleKindNotFoundError)
+      expect(result).toEqual(err(new ExampleKindNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
     })
 
     it('should throw UnexpectedPersistenceError when the query fails', async () => {
       await db.none('ALTER TABLE example_kinds RENAME TO example_kinds_renamed')
 
-      await expect(exampleKindRepository.delete(CONCEPT)).rejects.toThrow(
+      await expect(exampleKindRepository.delete(exampleKinds.concept.id)).rejects.toThrow(
         UnexpectedPersistenceError,
       )
     })

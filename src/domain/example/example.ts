@@ -1,10 +1,9 @@
 import type { Except, JsonObject } from 'type-fest'
 import z from 'zod'
 
-import { type ExampleKind, exampleKindSchema } from '../example-kind/example-kind.js'
-
 import { InvalidExampleError } from './error/invalid-example.error.js'
 import { type ExampleID, exampleIdSchema } from './example-id.js'
+import { type ExampleKindID, exampleKindIdSchema } from './kind/example-kind-id.js'
 
 export const exampleSchema = z.object({
   id: exampleIdSchema,
@@ -12,7 +11,7 @@ export const exampleSchema = z.object({
     description: 'The display name of the example.',
     example: 'NestJS',
   }),
-  kind: exampleKindSchema,
+  exampleKindId: exampleKindIdSchema,
   url: z.url().nullable().meta({
     description: 'An optional URL for the example, or null.',
     example: 'https://nestjs.com',
@@ -27,10 +26,15 @@ export class Example implements Properties {
 
   public readonly id: ExampleID
   public readonly name: string
-  public readonly kind: ExampleKind
+  public readonly exampleKindId: ExampleKindID
   public readonly url: string | null
 
-  public constructor(data: { id: ExampleID; name: string; kind: ExampleKind; url: string | null }) {
+  public constructor(data: {
+    id: ExampleID
+    name: string
+    exampleKindId: ExampleKindID
+    url: string | null
+  }) {
     const result = exampleSchema.safeParse(data)
 
     if (result.error) {
@@ -39,19 +43,20 @@ export class Example implements Properties {
 
     this.id = result.data.id
     this.name = result.data.name
-    this.kind = result.data.kind
+    this.exampleKindId = result.data.exampleKindId
     this.url = result.data.url
   }
 
   public update(data: Partial<Except<Properties, 'id'>>): Example {
-    return new Example({ ...this, ...data })
+    // Let's not rely on TypeScript only. The id should never be accidentally overwritten.
+    return new Example({ ...this, ...data, id: this.id })
   }
 
   public toJSON(): JsonObject {
     return {
       id: this.id,
       name: this.name,
-      kind: this.kind,
+      exampleKindId: this.exampleKindId,
       url: this.url,
     }
   }

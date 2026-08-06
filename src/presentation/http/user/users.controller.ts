@@ -11,7 +11,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common'
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import type { ResultAsync } from 'neverthrow'
 
 import { IUserService } from '#/application/user/user.service.interface.js'
@@ -19,7 +19,7 @@ import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-refere
 import type { DuplicateUserEmailError } from '#/domain/user/error/duplicate-user-email.error.js'
 import type { DuplicateUserIdError } from '#/domain/user/error/duplicate-user-id.error.js'
 import type { UserNotFoundError } from '#/domain/user/error/user-not-found.error.js'
-import type { UserID } from '#/domain/user/user-id.js'
+import { EXAMPLE_USER_ID, type UserID } from '#/domain/user/user-id.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { CreateUserDTO, fromDomain, UpdateUserDTO, UserDTO } from './user.dto.js'
@@ -64,7 +64,7 @@ export class UsersController {
     summary: 'Get a user.',
     description: 'Get the user with the given id, if it exists.',
   })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_USER_ID })
   @ApiResponse({
     status: HttpStatus.OK,
     type: UserDTO,
@@ -89,7 +89,7 @@ export class UsersController {
     summary: 'Delete a user.',
     description: 'Delete the user with the given id, if it exists.',
   })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_USER_ID })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'The operation completed successfully.',
@@ -125,6 +125,7 @@ export class UsersController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'The referenced team was not found.',
   })
+  @ApiBody({ type: CreateUserDTO })
   @UnwrapResult()
   public create(
     @Body() dto: CreateUserDTO,
@@ -136,7 +137,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_USER_ID })
   @ApiOperation({
     operationId: 'users.update',
     summary: 'Update an existing user.',
@@ -155,6 +156,7 @@ export class UsersController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'The referenced team was not found.',
   })
+  @ApiBody({ type: UpdateUserDTO })
   @UnwrapResult()
   public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
