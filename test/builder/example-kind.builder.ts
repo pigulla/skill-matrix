@@ -3,13 +3,13 @@ import { asExampleKindID } from '#/domain/example/kind/example-kind-id.js'
 
 import { UNKNOWN_EXAMPLE_KIND_ID } from '../util/entity-ids.js'
 
-export type ExampleKindProperties = {
+type Properties = {
   id: string
   name: string
 }
 
 export class ExampleKindBuilder {
-  private properties: ExampleKindProperties = {
+  private properties: Properties = {
     id: UNKNOWN_EXAMPLE_KIND_ID,
     name: 'technology',
   }
@@ -24,15 +24,13 @@ export class ExampleKindBuilder {
     return this
   }
 
-  public with(properties: Partial<ExampleKindProperties>): this {
+  public with(properties: Partial<Properties>): this {
     this.properties = { ...this.properties, ...properties }
     return this
   }
 
   public static create<Full extends boolean = false>(
-    ...args: Full extends true
-      ? [properties: ExampleKindProperties]
-      : [properties?: Partial<ExampleKindProperties>]
+    ...args: Full extends true ? [properties: Properties] : [properties?: Partial<Properties>]
   ): ExampleKind {
     return new ExampleKindBuilder().with(args[0] ?? {}).build()
   }

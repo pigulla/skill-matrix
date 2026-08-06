@@ -1,18 +1,16 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common'
-import { TerminusModule } from '@nestjs/terminus'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { afterEach, beforeEach, describe, it } from 'vitest'
 
-import { HealthController } from '#/presentation/http/health/health.controller.js'
+import { HealthModule } from '#/module/health.module.js'
 
 describe('HealthController', () => {
   let app: INestApplication
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [TerminusModule],
-      controllers: [HealthController],
+      imports: [HealthModule],
     }).compile()
 
     app = await module.createNestApplication({ logger: false }).enableShutdownHooks().init()

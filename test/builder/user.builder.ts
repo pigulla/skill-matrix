@@ -4,7 +4,7 @@ import { asUserID } from '#/domain/user/user-id.js'
 
 import { UNKNOWN_TEAM_ID, UNKNOWN_USER_ID } from '../util/entity-ids.js'
 
-export type UserProperties = {
+type Properties = {
   id: string
   firstName: string
   lastName: string
@@ -13,7 +13,7 @@ export type UserProperties = {
 }
 
 export class UserBuilder {
-  private properties: UserProperties = {
+  private properties: Properties = {
     id: UNKNOWN_USER_ID,
     firstName: 'Peter',
     lastName: 'Pan',
@@ -46,15 +46,13 @@ export class UserBuilder {
     return this
   }
 
-  public with(properties: Partial<UserProperties>): this {
+  public with(properties: Partial<Properties>): this {
     this.properties = { ...this.properties, ...properties }
     return this
   }
 
   public static create<Full extends boolean = false>(
-    ...args: Full extends true
-      ? [properties: UserProperties]
-      : [properties?: Partial<UserProperties>]
+    ...args: Full extends true ? [properties: Properties] : [properties?: Partial<Properties>]
   ): User {
     return new UserBuilder().with(args[0] ?? {}).build()
   }

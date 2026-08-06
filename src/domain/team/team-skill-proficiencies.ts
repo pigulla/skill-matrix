@@ -1,8 +1,8 @@
 import type { JsonObject } from 'type-fest'
 import z from 'zod'
 
+import { SkillProficiency, skillProficiencySchema } from '../skill/proficiency/skill-proficiency.js'
 import type { SkillID } from '../skill/skill-id.js'
-import { SkillProficiency, skillProficiencySchema } from '../skill/skill-proficiency.js'
 
 import { InvalidTeamSkillProficienciesError } from './error/invalid-team-skill-proficiencies.error.js'
 import { type TeamID, teamIdSchema } from './team-id.js'

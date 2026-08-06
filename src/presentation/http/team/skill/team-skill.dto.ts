@@ -1,7 +1,7 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
-import { proficiencySchema } from '#/domain/skill/proficiency.js'
+import { proficiencySchema } from '#/domain/skill/proficiency/proficiency.js'
 import { EXAMPLE_SKILL_ID, skillIdSchema } from '#/domain/skill/skill-id.js'
 import { teamIdSchema } from '#/domain/team/team-id.js'
 import { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'

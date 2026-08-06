@@ -9,7 +9,7 @@ import { DuplicateExampleKindNameError } from '#/domain/example/kind/error/dupli
 import { ExampleKindInUseError } from '#/domain/example/kind/error/example-kind-in-use.error.js'
 import { ExampleKindNotFoundError } from '#/domain/example/kind/error/example-kind-not-found.error.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
-import { ExampleKindRepository } from '#/infrastructure/persistence/example-kind/example-kind.repository.js'
+import { ExampleKindRepository } from '#/infrastructure/persistence/example/kind/example-kind.repository.js'
 
 import { ExampleKindBuilder } from '../../builder/example-kind.builder.js'
 import { UNKNOWN_EXAMPLE_KIND_ID } from '../../util/entity-ids.js'

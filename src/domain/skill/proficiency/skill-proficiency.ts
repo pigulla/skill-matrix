@@ -1,9 +1,10 @@
 import type { JsonObject } from 'type-fest'
 import z from 'zod'
 
+import { type SkillID, skillIdSchema } from '../skill-id.js'
+
 import { InvalidSkillProficiencyError } from './error/invalid-skill-proficiency.error.js'
 import { type Proficiency, proficiencySchema } from './proficiency.js'
-import { type SkillID, skillIdSchema } from './skill-id.js'
 
 export const skillProficiencySchema = z.object({
   skillId: skillIdSchema,

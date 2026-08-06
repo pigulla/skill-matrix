@@ -11,7 +11,7 @@ import { IExampleKindRepository } from '#/domain/example/kind/example-kind.repos
 import { ExampleKindUuidProvider } from '#/infrastructure/example-kind-uuid-provider.js'
 import { ExampleUuidProvider } from '#/infrastructure/example-uuid-provider.js'
 import { ExampleRepository } from '#/infrastructure/persistence/example/example.repository.js'
-import { ExampleKindRepository } from '#/infrastructure/persistence/example-kind/example-kind.repository.js'
+import { ExampleKindRepository } from '#/infrastructure/persistence/example/kind/example-kind.repository.js'
 import { ExamplesController } from '#/presentation/http/example/examples.controller.js'
 import { ExampleKindsController } from '#/presentation/http/example/kind/example-kinds.controller.js'
 

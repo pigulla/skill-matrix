@@ -1,8 +1,8 @@
 import z from 'zod'
 
-import { proficiencySchema } from '#/domain/skill/proficiency.js'
+import { proficiencySchema } from '#/domain/skill/proficiency/proficiency.js'
+import { SkillProficiency } from '#/domain/skill/proficiency/skill-proficiency.js'
 import { skillIdSchema } from '#/domain/skill/skill-id.js'
-import { SkillProficiency } from '#/domain/skill/skill-proficiency.js'
 import { teamIdSchema } from '#/domain/team/team-id.js'
 import { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 

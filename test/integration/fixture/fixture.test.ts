@@ -2,7 +2,7 @@ import type { INestApplication } from '@nestjs/common'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { ExampleRepository } from '#/infrastructure/persistence/example/example.repository.js'
-import { ExampleKindRepository } from '#/infrastructure/persistence/example-kind/example-kind.repository.js'
+import { ExampleKindRepository } from '#/infrastructure/persistence/example/kind/example-kind.repository.js'
 import { SkillRepository } from '#/infrastructure/persistence/skill/skill.repository.js'
 import { TeamRepository } from '#/infrastructure/persistence/team/team.repository.js'
 import { UserRepository } from '#/infrastructure/persistence/user/user.repository.js'

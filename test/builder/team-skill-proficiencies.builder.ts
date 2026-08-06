@@ -1,19 +1,19 @@
-import { asProficiency } from '#/domain/skill/proficiency.js'
+import { asProficiency } from '#/domain/skill/proficiency/proficiency.js'
+import { SkillProficiency } from '#/domain/skill/proficiency/skill-proficiency.js'
 import { asSkillID } from '#/domain/skill/skill-id.js'
-import { SkillProficiency } from '#/domain/skill/skill-proficiency.js'
 import { asTeamID } from '#/domain/team/team-id.js'
 import { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 
 import { teams } from '../integration/fixture/fixture.js'
 
-type SkillProperties = {
+type Properties = {
   skillId: string
   proficiency: number
 }
 
-type TeamSkillProficiencyProperties = {
+export type TeamSkillProficiencyProperties = {
   teamId: string
-  skills: SkillProperties[]
+  skills: Properties[]
 }
 
 export class TeamSkillProficienciesBuilder {
@@ -27,7 +27,7 @@ export class TeamSkillProficienciesBuilder {
     return this
   }
 
-  public withSkills(skills: SkillProperties[]): this {
+  public withSkills(skills: Properties[]): this {
     this.properties.skills = [...skills]
     return this
   }

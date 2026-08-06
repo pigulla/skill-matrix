@@ -1,7 +1,7 @@
 import type { ResultAsync } from 'neverthrow'
 
 import type { SkillReferenceNotFoundError } from '#/domain/skill/error/skill-reference-not-found.error.js'
-import type { Proficiency } from '#/domain/skill/proficiency.js'
+import type { Proficiency } from '#/domain/skill/proficiency/proficiency.js'
 import type { SkillID } from '#/domain/skill/skill-id.js'
 import type { DuplicateTeamSkillError } from '#/domain/team/error/duplicate-team-skill.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'

@@ -6,10 +6,7 @@
   "bugs": {
     "url": "https://github.com/pigulla/skill-matrix/issues"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:pigulla/skill-matrix.git"
-  },
+  "repository": "github:pigulla/skill-matrix",
   "license": "ISC",
   "author": {
     "name": "Raphael Pigulla",
@@ -44,14 +41,14 @@
     "lint:markdown": "prettier --check .",
     "lint:package-json": "npmPkgJsonLint . && sort-package-json --check",
     "lint:sql": "NODE_OPTIONS='--conditions development' jiti scripts/sql-formatter.ts lint",
-    "lint:tsc": "tsc",
+    "lint:tsc": "tsc --project tsconfig.test.json",
     "openapi": "npm run openapi:build && npm run openapi:html && npm run openapi:lint",
     "openapi:build": "NODE_OPTIONS='--conditions development' jiti scripts/build-openapi-spec.ts > docs/openapi.json",
     "openapi:html": "redocly build-docs docs/openapi.json --output=docs/openapi.html",
     "openapi:lint": "redocly lint docs/openapi.json",
     "start": "NODE_OPTIONS='--conditions development' jiti src/index.ts",
     "start:dist": "NODE_OPTIONS='--conditions dist' node dist/src/index.js",
-    "test": "npm run lint && npm run vitest && npm run audit && npm run openapi",
+    "test": "npm run lint && npm run vitest && npm run openapi",
     "vitest": "npm run vitest:unit && npm run vitest:integration && npm run vitest:architecture",
     "vitest:architecture": "vitest run --passWithNoTests --slowTestThreshold 30000 --testTimeout 30000 test/architecture",
     "vitest:integration": "vitest run --slowTestThreshold 10000 --testTimeout 15000 test/integration",

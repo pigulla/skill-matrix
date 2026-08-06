@@ -12,8 +12,8 @@ import type { ExampleKind } from '#/domain/example/kind/example-kind.js'
 import { IExampleKindRepository } from '#/domain/example/kind/example-kind.repository.interface.js'
 import type { ExampleKindID } from '#/domain/example/kind/example-kind-id.js'
 
-import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
-import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
+import { isForeignKeyViolation } from '../../error/is-foreign-key-violation.js'
+import { isUniqueConstraintViolation } from '../../error/is-unique-constraint-violation.js'
 
 import { exampleKindsRow } from './sql/example-kinds.row.js'
 import { QUERY } from './sql/queries.js'

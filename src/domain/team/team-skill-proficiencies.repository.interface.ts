@@ -1,8 +1,8 @@
 import type { ResultAsync } from 'neverthrow'
 
 import type { SkillReferenceNotFoundError } from '../skill/error/skill-reference-not-found.error.js'
+import type { SkillProficiency } from '../skill/proficiency/skill-proficiency.js'
 import type { SkillID } from '../skill/skill-id.js'
-import type { SkillProficiency } from '../skill/skill-proficiency.js'
 
 import type { DuplicateTeamSkillError } from './error/duplicate-team-skill.error.js'
 import type { TeamNotFoundError } from './error/team-not-found.error.js'

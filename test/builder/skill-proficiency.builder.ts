@@ -1,16 +1,16 @@
-import { asProficiency } from '#/domain/skill/proficiency.js'
+import { asProficiency } from '#/domain/skill/proficiency/proficiency.js'
+import { SkillProficiency } from '#/domain/skill/proficiency/skill-proficiency.js'
 import { asSkillID } from '#/domain/skill/skill-id.js'
-import { SkillProficiency } from '#/domain/skill/skill-proficiency.js'
 
 import { skills } from '../integration/fixture/fixture.js'
 
-export type SkillProficiencyProperties = {
+type Properties = {
   skillId: string
   proficiency: number
 }
 
 export class SkillProficiencyBuilder {
-  private properties: SkillProficiencyProperties = {
+  private properties: Properties = {
     skillId: skills.softwareArchitecture.id,
     proficiency: 2,
   }
@@ -25,12 +25,12 @@ export class SkillProficiencyBuilder {
     return this
   }
 
-  public with(properties: Partial<SkillProficiencyProperties>): this {
+  public with(properties: Partial<Properties>): this {
     this.properties = { ...this.properties, ...properties }
     return this
   }
 
-  public static create(properties?: Partial<SkillProficiencyProperties>): SkillProficiency {
+  public static create(properties?: Partial<Properties>): SkillProficiency {
     return new SkillProficiencyBuilder().with(properties ?? {}).build()
   }
 

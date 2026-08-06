@@ -4,7 +4,7 @@ import { asExampleKindID } from '#/domain/example/kind/example-kind-id.js'
 
 import { UNKNOWN_EXAMPLE_ID, UNKNOWN_EXAMPLE_KIND_ID } from '../util/entity-ids.js'
 
-export type ExampleProperties = {
+type Properties = {
   id: string
   name: string
   exampleKindId: string
@@ -12,7 +12,7 @@ export type ExampleProperties = {
 }
 
 export class ExampleBuilder {
-  private properties: ExampleProperties = {
+  private properties: Properties = {
     id: UNKNOWN_EXAMPLE_ID,
     name: 'TypeScript',
     exampleKindId: UNKNOWN_EXAMPLE_KIND_ID,
@@ -39,15 +39,13 @@ export class ExampleBuilder {
     return this
   }
 
-  public with(properties: Partial<ExampleProperties>): this {
+  public with(properties: Partial<Properties>): this {
     this.properties = { ...this.properties, ...properties }
     return this
   }
 
   public static create<Full extends boolean = false>(
-    ...args: Full extends true
-      ? [properties: ExampleProperties]
-      : [properties?: Partial<ExampleProperties>]
+    ...args: Full extends true ? [properties: Properties] : [properties?: Partial<Properties>]
   ): Example {
     return new ExampleBuilder().with(args[0] ?? {}).build()
   }

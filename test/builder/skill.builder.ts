@@ -4,7 +4,7 @@ import { asSkillID } from '#/domain/skill/skill-id.js'
 
 import { UNKNOWN_SKILL_ID } from '../util/entity-ids.js'
 
-export type SkillProperties = {
+type Properties = {
   id: string
   name: string
   description: string
@@ -12,7 +12,7 @@ export type SkillProperties = {
 }
 
 export class SkillBuilder {
-  private properties: SkillProperties = {
+  private properties: Properties = {
     id: UNKNOWN_SKILL_ID,
     name: 'Frontend Development',
     description: 'Building modern web user interfaces.',
@@ -39,15 +39,13 @@ export class SkillBuilder {
     return this
   }
 
-  public with(properties: Partial<SkillProperties>): this {
+  public with(properties: Partial<Properties>): this {
     this.properties = { ...this.properties, ...properties }
     return this
   }
 
   public static create<Full extends boolean = false>(
-    ...args: Full extends true
-      ? [properties: SkillProperties]
-      : [properties?: Partial<SkillProperties>]
+    ...args: Full extends true ? [properties: Properties] : [properties?: Partial<Properties>]
   ): Skill {
     return new SkillBuilder().with(args[0] ?? {}).build()
   }
