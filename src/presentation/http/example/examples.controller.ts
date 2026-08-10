@@ -21,12 +21,13 @@ import type { ExampleInUseError } from '#/domain/example/error/example-in-use.er
 import type { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
 import { EXAMPLE_EXAMPLE_ID, type ExampleID } from '#/domain/example/example-id.js'
 import type { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
+import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { CreateExampleDTO, ExampleDTO, fromDomain, UpdateExampleDTO } from './example.dto.js'
 
 @Controller('examples')
-@ApiTags('Examples')
+@ApiTags(OpenApiTag.EXAMPLES.name)
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description:

@@ -23,6 +23,7 @@ import {
   EXAMPLE_EXAMPLE_KIND_ID,
   type ExampleKindID,
 } from '#/domain/example/kind/example-kind-id.js'
+import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import {
@@ -33,7 +34,7 @@ import {
 } from './example-kind.dto.js'
 
 @Controller('examples/kinds')
-@ApiTags('Example Kinds')
+@ApiTags(OpenApiTag.EXAMPLE_KINDS.name)
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description:

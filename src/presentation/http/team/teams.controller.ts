@@ -20,12 +20,13 @@ import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-
 import type { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
+import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { CreateTeamDTO, fromDomain, TeamDTO, UpdateTeamDTO } from './team.dto.js'
 
 @Controller('teams')
-@ApiTags('Teams')
+@ApiTags(OpenApiTag.TEAMS.name)
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description:

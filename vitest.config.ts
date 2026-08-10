@@ -24,8 +24,8 @@ export default defineConfig({
         '**/*.module.ts',
         '**/*.test.ts',
         'src/index.ts',
-        'src/create-openapi-document.ts',
         'src/infrastructure/persistence/default-transaction-options.ts',
+        'src/presentation/http/openapi.create-document.ts',
       ],
       thresholds: {
         perFile: true,

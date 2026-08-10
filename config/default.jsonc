@@ -29,7 +29,6 @@
         "server": "http://example.com",
         "title": "Skill Matrix API",
         "description": "This is the API for the skill matrix.",
-        "version": "1.0",
         "swagger": {
             "enabled": false,
             "path": "swagger"

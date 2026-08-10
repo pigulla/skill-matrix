@@ -21,12 +21,13 @@ import type { DuplicateSkillNameError } from '#/domain/skill/error/duplicate-ski
 import type { SkillInUseError } from '#/domain/skill/error/skill-in-use.error.js'
 import type { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
 import { EXAMPLE_SKILL_ID, type SkillID } from '#/domain/skill/skill-id.js'
+import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { CreateSkillDTO, fromDomain, SkillDTO, UpdateSkillDTO } from './skill.dto.js'
 
 @Controller('skills')
-@ApiTags('Skills')
+@ApiTags(OpenApiTag.SKILLS.name)
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description:

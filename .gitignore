@@ -43,3 +43,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /.worktrees
 
 .mcp.json
+/src/version.json

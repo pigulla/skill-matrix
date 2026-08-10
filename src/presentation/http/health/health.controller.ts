@@ -2,8 +2,10 @@ import { Controller, Get } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { HealthCheck, type HealthCheckResult, HealthCheckService } from '@nestjs/terminus'
 
+import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
+
 @Controller('health')
-@ApiTags('Health')
+@ApiTags(OpenApiTag.HEALTH.name)
 export class HealthController {
   private readonly health: HealthCheckService
 

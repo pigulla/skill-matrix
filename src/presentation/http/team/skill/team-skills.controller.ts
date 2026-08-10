@@ -21,12 +21,13 @@ import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error
 import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
 import type { TeamSkillNotFoundError } from '#/domain/team/error/team-skill-not-found.error.js'
 import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
+import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { fromDomain, SetSkillProficiencyDTO, TeamSkillProficienciesDTO } from './team-skill.dto.js'
 
 @Controller('teams/:teamId/skills')
-@ApiTags('Team Skills')
+@ApiTags(OpenApiTag.TEAM_SKILLS.name)
 @ApiParam({ name: 'teamId', type: 'string', format: 'uuid', example: EXAMPLE_TEAM_ID })
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
