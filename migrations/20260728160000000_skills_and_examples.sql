@@ -1,16 +1,9 @@
 -- Up Migration
--- NOTE: This migration was edited in place on 2026-08-05 to give `example_kinds` a UUID
--- surrogate primary key (`id`) and a `name` column, replacing the original design where
--- the `kind` string itself was the primary key. This is normally forbidden (migrations are
--- append-only once applied), but was done deliberately here by explicit instruction. Any
--- database that already applied the ORIGINAL content of this file must be rebuilt from
--- scratch (drop and re-run every migration) rather than upgraded in place — node-pg-migrate
--- tracks applied migrations by filename, not content, so it will never detect or re-apply
--- this change.
 CREATE TABLE skills (
   id UUID NOT NULL CONSTRAINT skills_pkey PRIMARY KEY,
   name VARCHAR NOT NULL CONSTRAINT skills_name UNIQUE,
-  description VARCHAR NOT NULL
+  description VARCHAR NOT NULL,
+  last_updated TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE example_kinds (
@@ -22,7 +15,8 @@ CREATE TABLE examples (
   id UUID NOT NULL CONSTRAINT examples_pkey PRIMARY KEY,
   name VARCHAR NOT NULL CONSTRAINT examples_name UNIQUE,
   example_kind_id UUID NOT NULL CONSTRAINT examples_example_kind_id_fkey REFERENCES example_kinds (id),
-  url VARCHAR
+  url VARCHAR,
+  last_updated TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE examples_to_skills (
@@ -36,6 +30,7 @@ SELECT
   skills.id,
   skills.name,
   skills.description,
+  skills.last_updated,
   COALESCE(
     JSON_AGG(
       examples.id

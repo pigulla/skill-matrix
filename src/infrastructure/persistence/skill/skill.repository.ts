@@ -4,6 +4,7 @@ import { TransactionalAdapterPgPromise } from '@nestjs-cls/transactional-adapter
 import { errAsync, okAsync, ResultAsync } from 'neverthrow'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
+import { ITimeProvider } from '#/application/time-provider.interface.js'
 import { ExampleReferenceNotFoundError } from '#/domain/example/error/example-reference-not-found.error.js'
 import type { ExampleID } from '#/domain/example/example-id.js'
 import { DuplicateSkillIdError } from '#/domain/skill/error/duplicate-skill-id.error.js'
@@ -35,9 +36,14 @@ const {
 @Injectable()
 export class SkillRepository implements ISkillRepository {
   private readonly txHost: TransactionHost<TransactionalAdapterPgPromise>
+  private readonly timeProvider: ITimeProvider
 
-  public constructor(txHost: TransactionHost<TransactionalAdapterPgPromise>) {
+  public constructor(
+    txHost: TransactionHost<TransactionalAdapterPgPromise>,
+    timeProvider: ITimeProvider,
+  ) {
     this.txHost = txHost
+    this.timeProvider = timeProvider
   }
 
   public get(id: SkillID): ResultAsync<Skill, SkillNotFoundError> {
@@ -64,10 +70,11 @@ export class SkillRepository implements ISkillRepository {
     DuplicateSkillIdError | DuplicateSkillNameError | ExampleReferenceNotFoundError
   > {
     const { id, name, description, exampleIds } = skill
+    const lastUpdated = this.timeProvider.now().toDate()
     const self = this
 
     async function createAndFetch(): Promise<Skill> {
-      await self.txHost.tx.one<unknown>(INSERT_SKILL, { id, name, description })
+      await self.txHost.tx.one<unknown>(INSERT_SKILL, { id, name, description, lastUpdated })
       await self.updateAssociations(id, exampleIds)
 
       const row = await self.txHost.tx.one<unknown>(GET_SKILL, { id })
@@ -101,22 +108,26 @@ export class SkillRepository implements ISkillRepository {
     SkillNotFoundError | DuplicateSkillNameError | ExampleReferenceNotFoundError
   > {
     const { id, name, description, exampleIds } = skill
+    const lastUpdated = this.timeProvider.now().toDate()
     const self = this
 
-    async function updateRow(): Promise<boolean> {
-      const row = await self.txHost.tx.oneOrNone<unknown>(UPDATE_SKILL, { id, name, description })
+    async function update(): Promise<void> {
+      const row = await self.txHost.tx.oneOrNone<unknown>(UPDATE_SKILL, {
+        id,
+        name,
+        description,
+        lastUpdated,
+      })
 
       if (row === null) {
-        return false
+        throw new SkillNotFoundError(id)
       }
 
       await self.updateAssociations(id, exampleIds)
-
-      return true
     }
 
-    return ResultAsync.fromPromise(updateRow(), error => {
-      if (error instanceof ExampleReferenceNotFoundError) {
+    return ResultAsync.fromPromise(update(), error => {
+      if (error instanceof ExampleReferenceNotFoundError || error instanceof SkillNotFoundError) {
         return error
       }
       if (error instanceof UnexpectedPersistenceError) {
@@ -127,7 +138,7 @@ export class SkillRepository implements ISkillRepository {
       }
 
       throw new UnexpectedPersistenceError(error as Error)
-    }).andThen(updated => (updated ? self.get(id) : errAsync(new SkillNotFoundError(id))))
+    }).andThen(() => self.get(id))
   }
 
   private async updateAssociations(

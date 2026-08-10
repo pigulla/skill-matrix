@@ -10,9 +10,10 @@ import { ExampleModule } from '#/module/example.module.js'
 import { SkillsController } from '#/presentation/http/skill/skills.controller.js'
 
 import { DatabaseModule } from './database.module.js'
+import { UtilityModule } from './utility.module.js'
 
 @Module({
-  imports: [DatabaseModule, ExampleModule],
+  imports: [DatabaseModule, ExampleModule, UtilityModule],
   controllers: [SkillsController],
   providers: [
     { provide: ISkillRepository, useClass: SkillRepository },

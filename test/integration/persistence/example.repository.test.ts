@@ -1,9 +1,11 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
+import dayjs from 'dayjs'
 import { err } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
+import { ITimeProvider } from '#/application/time-provider.interface.js'
 import { DuplicateExampleIdError } from '#/domain/example/error/duplicate-example-id.error.js'
 import { DuplicateExampleNameError } from '#/domain/example/error/duplicate-example-name.error.js'
 import { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
@@ -12,17 +14,21 @@ import type { ExampleID } from '#/domain/example/example-id.js'
 import { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ExampleRepository } from '#/infrastructure/persistence/example/example.repository.js'
+import { mockTimeProvider, type TimeProviderMock } from '#/mocks.js'
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
 import { UNKNOWN_EXAMPLE_ID, UNKNOWN_EXAMPLE_KIND_ID } from '../../util/entity-ids.js'
 import { exampleKinds, examples } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
+const now = dayjs('2026-01-01T00:00:00.000Z')
+
 describe('ExampleRepository', () => {
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let exampleRepository: ExampleRepository
+  let timeProviderMock: TimeProviderMock
   let db: Database
 
   beforeAll(integrationTest.beforeAll)
@@ -31,11 +37,12 @@ describe('ExampleRepository', () => {
   beforeEach(async () => {
     await integrationTest.beforeEach()
 
+    timeProviderMock = mockTimeProvider(now)
+
     const module = await integrationTest
       .createModule({
         testName: ExampleRepository.name,
-        providers: [ExampleRepository],
-        exports: [ExampleRepository],
+        providers: [ExampleRepository, { provide: ITimeProvider, useValue: timeProviderMock }],
       })
       .compile()
 
@@ -135,6 +142,7 @@ describe('ExampleRepository', () => {
         name: graphql.name,
         example_kind_id: graphql.exampleKindId,
         url: graphql.url,
+        last_updated: now,
       })
     })
 
@@ -181,6 +189,9 @@ describe('ExampleRepository', () => {
 
   describe('update', () => {
     it('should update the example', async () => {
+      const later = now.add(5, 'minutes')
+      timeProviderMock.now.mockReturnValue(later)
+
       const updated = ExampleBuilder.from(examples.nestjs).withUrl(null).build()
 
       const result = await exampleRepository.update(updated)
@@ -193,6 +204,7 @@ describe('ExampleRepository', () => {
         name: updated.name,
         example_kind_id: updated.exampleKindId,
         url: updated.url,
+        last_updated: later,
       })
     })
 

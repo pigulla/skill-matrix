@@ -4,6 +4,7 @@ import { TransactionalAdapterPgPromise } from '@nestjs-cls/transactional-adapter
 import { errAsync, okAsync, ResultAsync } from 'neverthrow'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
+import { ITimeProvider } from '#/application/time-provider.interface.js'
 import { DuplicateExampleIdError } from '#/domain/example/error/duplicate-example-id.error.js'
 import { DuplicateExampleNameError } from '#/domain/example/error/duplicate-example-name.error.js'
 import { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
@@ -25,9 +26,14 @@ const { DELETE, GET_ALL, GET, GET_MANY, INSERT, UPDATE } = QUERY
 @Injectable()
 export class ExampleRepository implements IExampleRepository {
   private readonly txHost: TransactionHost<TransactionalAdapterPgPromise>
+  private readonly timeProvider: ITimeProvider
 
-  public constructor(txHost: TransactionHost<TransactionalAdapterPgPromise>) {
+  public constructor(
+    txHost: TransactionHost<TransactionalAdapterPgPromise>,
+    timeProvider: ITimeProvider,
+  ) {
     this.txHost = txHost
+    this.timeProvider = timeProvider
   }
 
   public get(id: ExampleID): ResultAsync<Example, ExampleNotFoundError> {
@@ -74,9 +80,10 @@ export class ExampleRepository implements IExampleRepository {
     DuplicateExampleIdError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
   > {
     const { id, name, exampleKindId, url } = example
+    const lastUpdated = this.timeProvider.now().toDate()
 
     return ResultAsync.fromPromise(
-      this.txHost.tx.one<unknown>(INSERT, { id, name, exampleKindId, url }),
+      this.txHost.tx.one<unknown>(INSERT, { id, name, exampleKindId, url, lastUpdated }),
       error => {
         if (isUniqueConstraintViolation('examples_pkey', error)) {
           return new DuplicateExampleIdError(id)
@@ -100,9 +107,10 @@ export class ExampleRepository implements IExampleRepository {
     ExampleNotFoundError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
   > {
     const { id, name, exampleKindId, url } = example
+    const lastUpdated = this.timeProvider.now().toDate()
 
     return ResultAsync.fromPromise(
-      this.txHost.tx.oneOrNone<unknown>(UPDATE, { id, name, exampleKindId, url }),
+      this.txHost.tx.oneOrNone<unknown>(UPDATE, { id, name, exampleKindId, url, lastUpdated }),
       error => {
         if (isUniqueConstraintViolation('examples_name', error)) {
           return new DuplicateExampleNameError(name)

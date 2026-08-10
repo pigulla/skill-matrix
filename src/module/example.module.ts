@@ -16,9 +16,10 @@ import { ExamplesController } from '#/presentation/http/example/examples.control
 import { ExampleKindsController } from '#/presentation/http/example/kind/example-kinds.controller.js'
 
 import { DatabaseModule } from './database.module.js'
+import { UtilityModule } from './utility.module.js'
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, UtilityModule],
   controllers: [ExampleKindsController, ExamplesController],
   providers: [
     { provide: IExampleRepository, useClass: ExampleRepository },

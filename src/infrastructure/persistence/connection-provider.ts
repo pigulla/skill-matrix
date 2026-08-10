@@ -15,11 +15,10 @@ import { DATABASE_CONFIG, type DatabaseConfig } from '../config/database.config.
 
 import { IConnectionProvider } from './connection-provider.interface.js'
 
-// PostgreSQL 18 is the first version where an `ON DELETE RESTRICT` foreign key reports its own
-// SQLSTATE (23001, restrict_violation) instead of reusing `ON DELETE NO ACTION`'s 23503
-// (foreign_key_violation). `isRestrictViolation` (see infrastructure/persistence/error/) relies on
-// that distinction to translate RESTRICT violations into the correct domain error, so older servers
-// would silently misclassify those violations as unexpected persistence errors.
+// PostgreSQL 18 is the first version where an `ON DELETE RESTRICT` foreign key reports its own SQLSTATE (23001,
+// restrict_violation) instead of reusing `ON DELETE NO ACTION`'s 23503 (foreign_key_violation). `isRestrictViolation`
+// (see infrastructure/persistence/error/) relies on that distinction to translate RESTRICT violations into the correct
+// domain error, so older servers would silently misclassify those violations as unexpected persistence errors.
 const MINIMUM_POSTGRES_MAJOR_VERSION = 18
 
 @Injectable()
@@ -40,8 +39,10 @@ export class ConnectionProvider
       query: event => this.onQuery(event),
       noWarnings: config.disableWarnings,
     })
-    pgp.pg.types.setTypeParser(1114 /* TIMESTAMP */, value => dayjs(value))
-    pgp.pg.types.setTypeParser(1184 /* TIMESTAMPTZ */, value => dayjs(value))
+
+    const { types } = pgp.pg
+    types.setTypeParser(types.builtins.TIMESTAMP, value => dayjs(value))
+    types.setTypeParser(types.builtins.TIMESTAMPTZ, value => dayjs(value))
 
     this.helpers = pgp.helpers
     this.database = pgp({

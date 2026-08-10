@@ -2,11 +2,13 @@ UPDATE examples
 SET
   name = $(name),
   example_kind_id = $(exampleKindId),
-  url = $(url)
+  url = $(url),
+  last_updated = $(lastUpdated)
 WHERE
   id = $(id)
 RETURNING
   id,
   name,
   example_kind_id,
-  url;
+  url,
+  last_updated;

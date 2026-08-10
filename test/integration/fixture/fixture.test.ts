@@ -6,6 +6,7 @@ import { ExampleKindRepository } from '#/infrastructure/persistence/example/kind
 import { SkillRepository } from '#/infrastructure/persistence/skill/skill.repository.js'
 import { TeamRepository } from '#/infrastructure/persistence/team/team.repository.js'
 import { UserRepository } from '#/infrastructure/persistence/user/user.repository.js'
+import { UtilityModule } from '#/module/utility.module.js'
 
 import { byId } from '../../util/sort-by-id.js'
 
@@ -26,6 +27,7 @@ describe('Data in the SQL fixture', () => {
     const module = await integrationTest
       .createModule({
         testName: 'fixtureData',
+        imports: [UtilityModule],
         providers: [
           SkillRepository,
           ExampleRepository,

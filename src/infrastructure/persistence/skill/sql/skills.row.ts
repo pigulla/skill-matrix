@@ -3,11 +3,13 @@ import z from 'zod'
 import { exampleIdSchema } from '#/domain/example/example-id.js'
 import { Skill } from '#/domain/skill/skill.js'
 import { skillIdSchema } from '#/domain/skill/skill-id.js'
+import { dayjsSchema } from '#/util/dayjs.schema.js'
 
 const skillsRowSchema = z.strictObject({
   id: skillIdSchema,
   name: z.string(),
   description: z.string(),
+  last_updated: dayjsSchema,
 })
 
 export const skillWithExampleIdsRow = skillsRowSchema

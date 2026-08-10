@@ -1,14 +1,17 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
+import dayjs from 'dayjs'
 import { err } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
+import { ITimeProvider } from '#/application/time-provider.interface.js'
 import { ExampleReferenceNotFoundError } from '#/domain/example/error/example-reference-not-found.error.js'
 import { DuplicateSkillIdError } from '#/domain/skill/error/duplicate-skill-id.error.js'
 import { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { SkillRepository } from '#/infrastructure/persistence/skill/skill.repository.js'
+import { mockTimeProvider, type TimeProviderMock } from '#/mocks.js'
 
 import { SkillBuilder } from '../../builder/skill.builder.js'
 import { UNKNOWN_EXAMPLE_ID, UNKNOWN_SKILL_ID } from '../../util/entity-ids.js'
@@ -17,12 +20,14 @@ import { examples, skills } from '../fixture/fixture.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 const byExampleId = by('example_id')
+const now = dayjs('2026-01-01T00:00:00.000Z')
 
 describe('SkillRepository', () => {
   const integrationTest = setupIntegrationTest()
 
   let app: INestApplication
   let skillRepository: SkillRepository
+  let timeProviderMock: TimeProviderMock
   let db: Database
 
   beforeAll(integrationTest.beforeAll)
@@ -31,8 +36,13 @@ describe('SkillRepository', () => {
   beforeEach(async () => {
     await integrationTest.beforeEach()
 
+    timeProviderMock = mockTimeProvider(now)
+
     const module = await integrationTest
-      .createModule({ testName: SkillRepository.name, providers: [SkillRepository] })
+      .createModule({
+        testName: SkillRepository.name,
+        providers: [SkillRepository, { provide: ITimeProvider, useValue: timeProviderMock }],
+      })
       .compile()
 
     app = await module.createNestApplication().enableShutdownHooks().init()
@@ -102,6 +112,7 @@ describe('SkillRepository', () => {
       ).resolves.toMatchObject({
         name: skill.name,
         description: skill.description,
+        last_updated: now,
       })
       await expect(
         db.manyOrNone(
@@ -158,6 +169,9 @@ describe('SkillRepository', () => {
 
   describe('update', () => {
     it('should update the skill', async () => {
+      const later = now.add(5, 'minutes')
+      timeProviderMock.now.mockReturnValue(later)
+
       const updated = SkillBuilder.from(skills.backendDevelopment)
         .withName('Backend Engineering')
         .withDescription('Designing and building server-side systems.')
@@ -173,6 +187,7 @@ describe('SkillRepository', () => {
       ).resolves.toMatchObject({
         name: updated.name,
         description: updated.description,
+        last_updated: later,
       })
       await expect(
         db.manyOrNone(

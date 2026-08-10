@@ -2,7 +2,8 @@ SELECT
   id,
   name,
   example_kind_id,
-  url
+  url,
+  last_updated
 FROM
   examples
 ORDER BY
