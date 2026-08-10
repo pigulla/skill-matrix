@@ -9,7 +9,7 @@ import { ITeamRepository } from '#/domain/team/team.repository.interface.js'
 import { ITeamSkillProficienciesRepository } from '#/domain/team/team-skill-proficiencies.repository.interface.js'
 import { TeamRepository } from '#/infrastructure/persistence/team/team.repository.js'
 import { TeamSkillProficienciesRepository } from '#/infrastructure/persistence/team/team-skill-proficiencies.repository.js'
-import { TeamUuidProvider } from '#/infrastructure/team-uuid-provider.js'
+import { TeamUuidProvider } from '#/infrastructure/uuid/team.uuid-provider.js'
 import { TeamSkillsController } from '#/presentation/http/team/skill/team-skills.controller.js'
 import { TeamsController } from '#/presentation/http/team/teams.controller.js'
 

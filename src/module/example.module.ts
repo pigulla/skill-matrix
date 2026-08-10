@@ -8,10 +8,10 @@ import { ExampleKindService } from '#/application/example-kind/example-kind.serv
 import { IExampleKindUuidProvider } from '#/application/example-kind/example-kind-uuid-provider.interface.js'
 import { IExampleRepository } from '#/domain/example/example.repository.interface.js'
 import { IExampleKindRepository } from '#/domain/example/kind/example-kind.repository.interface.js'
-import { ExampleKindUuidProvider } from '#/infrastructure/example-kind-uuid-provider.js'
-import { ExampleUuidProvider } from '#/infrastructure/example-uuid-provider.js'
 import { ExampleRepository } from '#/infrastructure/persistence/example/example.repository.js'
 import { ExampleKindRepository } from '#/infrastructure/persistence/example/kind/example-kind.repository.js'
+import { ExampleUuidProvider } from '#/infrastructure/uuid/example.uuid-provider.js'
+import { ExampleKindUuidProvider } from '#/infrastructure/uuid/example-kind.uuid-provider.js'
 import { ExamplesController } from '#/presentation/http/example/examples.controller.js'
 import { ExampleKindsController } from '#/presentation/http/example/kind/example-kinds.controller.js'
 
