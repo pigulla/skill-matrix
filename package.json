@@ -53,7 +53,7 @@
     "vitest": "npm run vitest:unit && npm run vitest:integration && npm run vitest:architecture",
     "vitest:architecture": "vitest run --passWithNoTests --slowTestThreshold 30000 --testTimeout 30000 test/architecture",
     "vitest:integration": "vitest run --slowTestThreshold 10000 --testTimeout 15000 test/integration",
-    "vitest:unit": "vitest run --passWithNoTests src",
+    "vitest:unit": "vitest run src",
     "vitest:with-coverage": "vitest run --coverage --exclude test/architecture"
   },
   "config": {
