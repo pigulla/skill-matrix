@@ -60,4 +60,4 @@ The `user` slice is the canonical, complete example. Read it before writing new 
 - Putting `@Transactional()` on a repository method that issues only a single statement (already atomic; the decorator adds nothing), or opening a transaction manually. Only warranted when a repository method spans multiple related writes that must succeed or fail together.
 - Forgetting to translate a unique-constraint violation into a domain error (raw pg error leaks).
 - Editing `.sql` and skipping `npm run format:sql` (fails `lint:sql`).
-- Importing infrastructure types into the domain (breaks the Clean Architecture TSArch tests).
+- Importing infrastructure types into the domain (fails the Clean Architecture check, `npm run lint:architecture`).

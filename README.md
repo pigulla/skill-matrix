@@ -9,7 +9,7 @@ API for managing skill matrices for individual developers and teams.
 - Validation with [Zod](https://zod.dev/) ([`nestjs-zod`](https://github.com/BenLorantfy/nestjs-zod))
 - Structured logging with [Pino](https://getpino.io/) ([`nestjs-pino`](https://github.com/iamolegga/nestjs-pino))
 
-The codebase follows Clean Architecture, enforced by architecture tests. See [AGENTS.md](AGENTS.md#architecture) for the full layering rules and conventions.
+The codebase follows Clean Architecture, enforced by [dependency-cruiser](https://github.com/sverweij/dependency-cruiser). See [AGENTS.md](AGENTS.md#architecture) for the full layering rules and conventions.
 
 ## Error handling
 
@@ -35,8 +35,8 @@ Tear the stack down with `npm run docker:compose-down`.
 ```bash
 npm run build       # compile to dist/
 npm run test        # lint + full test suite + audit
-npm run vitest       # unit + integration + architecture tests
-npm run lint         # tsc + biome + knip + sql + lockfile + package.json + prettier (markdown only)
+npm run vitest       # unit + integration tests
+npm run lint         # tsc + architecture + biome + knip + sql + lockfile + package.json + prettier (markdown only)
 npm run format       # auto-fix formatting
 npm run openapi      # build + render + lint the OpenAPI spec
 ```

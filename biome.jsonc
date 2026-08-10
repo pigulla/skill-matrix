@@ -70,7 +70,7 @@
                     "options": {
                         "strictCase": false,
                         "requireAscii": true,
-                        "match": "(.+?)[.](.+)",
+                        "match": "[.]?(.+?)[.](.+)",
                         "filenameCases": ["kebab-case"]
                     }
                 },

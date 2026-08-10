@@ -12,15 +12,16 @@ paths:
 
 ## Overview
 
-Tests run on **Vitest**. There are three categories, each with its own location and command:
+Tests run on **Vitest**. There are two categories, each with its own location and command:
 
 | Category | Location | Command | What it covers |
 | --- | --- | --- | --- |
 | Unit | `src/**/*.test.ts` (colocated with source) | `npm run vitest:unit` | Logic in isolation, collaborators mocked |
 | Integration | `test/integration/**/*.test.ts` | `npm run vitest:integration` | Real wiring against a real PostgreSQL (Testcontainers): HTTP via supertest (real service + real repository) or a repository in isolation |
-| Architecture | `test/architecture/` | `npm run vitest:architecture` | Clean-architecture import rules (TSArch, driven by `rules.json`) |
 
 Run everything with `npm run vitest`; a single file with `npx vitest run path/to/file.test.ts`.
+
+Clean-architecture import rules are enforced separately, as a lint check rather than a Vitest test — see `npm run lint:architecture` (`.dependency-cruiser.cjs`, documented in [AGENTS.md](../../../AGENTS.md#architecture)).
 
 ## General rules (apply to all tests)
 
@@ -55,7 +56,6 @@ export function mockUserRepository(): UserRepositoryMock {
 
 - Unit tests (isolation, mocking collaborators) → [unit-tests.md](unit-tests.md)
 - Integration tests (HTTP via supertest, DB via Testcontainers) → [integration-tests.md](integration-tests.md)
-- Architecture tests (Clean Architecture import rules via `rules.json`) → [architecture-tests.md](architecture-tests.md)
 
 ## Common mistakes
 

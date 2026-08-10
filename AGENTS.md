@@ -13,15 +13,15 @@ npm run build                 # Compile TypeScript + copy configs + copy SQL fil
 npm run test                  # Run all tests and linting tasks.
 npm run vitest:unit           # Unit tests only (src/**/*.test.ts)
 npm run vitest:integration    # Integration tests (test/integration/**/*.test.ts)
-npm run vitest:architecture   # Architecture enforcement tests
-npm run vitest:with-coverage  # Full coverage report (excludes architecture tests)
+npm run vitest:with-coverage  # Full coverage report
 npm run vitest                # All test categories
 
 # Running a single test file
 npx vitest run path/to/file.test.ts
 
 # Lint & Format
-npm run lint                  # Full lint suite (tsc + biome + knip + sql + lockfile + package.json)
+npm run lint                  # Full lint suite (tsc + architecture + biome + knip + sql + lockfile + package.json)
+npm run lint:architecture     # Clean Architecture import-boundary check (dependency-cruiser)
 npm run format                # Format everything (biome + package.json + sql)
 
 # OpenAPI docs
@@ -30,7 +30,7 @@ npm run openapi               # Build, generate HTML, and validate spec
 
 ## Architecture
 
-This is a NestJS application following **Clean Architecture**, enforced by TSArch tests. The layers and their purpose and import rules:
+This is a NestJS application following **Clean Architecture**, enforced by [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) (`.dependency-cruiser.cjs`, run via `npm run lint:architecture`). The layers and their purpose and import rules:
 
 | Layer | Location | Purpose | May import |
 | --- | --- | --- | --- |
@@ -125,6 +125,7 @@ Because the build is ESM-first, always use `.js` extensions in import specifiers
 
 - **Biome** replaces ESLint + Prettier. Run `npm run format:biome` to auto-fix formatting, `npm run lint:biome` to lint.
 - **Knip** detects unused exports/dependencies — `npm run lint:knip`.
+- **dependency-cruiser** enforces the Clean Architecture import boundaries — `npm run lint:architecture`. Rules live in `.dependency-cruiser.cjs`.
 - **Integration tests** use Testcontainers (real PostgreSQL). They require Docker. See the `writing-tests` skill for test conventions (and the `database-changes` skill for repository/persistence specifics).
 - **Build** is ESM-first (`"type": "module"` in package.json). Use `.js` extensions in imports even for `.ts` source files.
 - The `development` import condition is active during `npm start`; the `dist` condition is active in production.

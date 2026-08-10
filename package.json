@@ -35,7 +35,8 @@
     "format:markdown": "prettier --write .",
     "format:package-json": "sort-package-json",
     "format:sql": "NODE_OPTIONS='--conditions development' jiti scripts/sql-formatter.ts format",
-    "lint": "npm run lint:tsc && npm run lint:biome && npm run lint:knip && npm run lint:markdown && npm run lint:sql && npm run lint:lockfile && npm run lint:package-json",
+    "lint": "npm run lint:tsc && npm run lint:architecture && npm run lint:biome && npm run lint:knip && npm run lint:markdown && npm run lint:sql && npm run lint:lockfile && npm run lint:package-json",
+    "lint:architecture": "depcruise --config .dependency-cruiser.cjs --output-type err src",
     "lint:biome": "biome check",
     "lint:knip": "knip --no-exit-code",
     "lint:lockfile": "lockfile-lint",
@@ -50,11 +51,10 @@
     "start": "NODE_OPTIONS='--conditions development' jiti src/index.ts",
     "start:dist": "NODE_OPTIONS='--conditions dist' node dist/src/index.js",
     "test": "npm run lint && npm run vitest && npm run openapi",
-    "vitest": "npm run vitest:unit && npm run vitest:integration && npm run vitest:architecture",
-    "vitest:architecture": "vitest run --passWithNoTests --slowTestThreshold 30000 --testTimeout 30000 test/architecture",
+    "vitest": "npm run vitest:unit && npm run vitest:integration",
     "vitest:integration": "vitest run --slowTestThreshold 10000 --testTimeout 15000 test/integration",
     "vitest:unit": "vitest run src",
-    "vitest:with-coverage": "vitest run --coverage --exclude test/architecture"
+    "vitest:with-coverage": "vitest run --coverage"
   },
   "config": {
     "commitizen": {
@@ -97,6 +97,7 @@
     "@types/supertest": "7.2.1",
     "@vitest/coverage-v8": "4.1.10",
     "cz-conventional-changelog": "3.3.0",
+    "dependency-cruiser": "18.1.1",
     "jiti": "2.7.0",
     "knip": "6.32.1",
     "lockfile-lint": "5.0.0",
@@ -108,7 +109,6 @@
     "sort-package-json": "4.0.0",
     "sql-formatter": "15.8.2",
     "supertest": "7.2.2",
-    "tsarch": "5.4.1",
     "type-fest": "5.8.0",
     "typescript": "7.0.2",
     "unplugin-swc": "1.5.10",
