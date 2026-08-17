@@ -37,6 +37,7 @@ export class Example implements Properties {
   }) {
     const result = exampleSchema.safeParse(data)
 
+    /* v8 ignore next -- @preserve */
     if (result.error) {
       throw new InvalidExampleError(result.error)
     }

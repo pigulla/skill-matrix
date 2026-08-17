@@ -2,17 +2,27 @@
 -- Teams
 --
 INSERT INTO
-  teams (id, name)
+  teams (id, name, last_updated)
 VALUES
   (
     '22222222-0002-4000-8000-111111111111',
-    'Platform Engineering'
+    'Platform Engineering',
+    '2026-01-01T01:01:01.000Z'
   ),
-  ('22222222-0002-4000-8000-222222222222', 'Testing'),
-  ('22222222-0002-4000-8000-333333333333', 'Traffic'),
+  (
+    '22222222-0002-4000-8000-222222222222',
+    'Testing',
+    '2026-01-01T02:02:02.000Z'
+  ),
+  (
+    '22222222-0002-4000-8000-333333333333',
+    'Traffic',
+    '2026-01-01T03:03:03.000Z'
+  ),
   (
     '22222222-0002-4000-8000-444444444444',
-    'Core Services'
+    'Core Services',
+    '2026-01-01T04:04:04.000Z'
   );
 
 --
@@ -75,17 +85,27 @@ VALUES
 -- Example kinds
 --
 INSERT INTO
-  example_kinds (id, name)
+  example_kinds (id, name, last_updated)
 VALUES
-  ('55555555-0005-4000-8000-111111111111', 'concept'),
+  (
+    '55555555-0005-4000-8000-111111111111',
+    'concept',
+    '2026-01-01T01:01:01.000Z'
+  ),
   (
     '55555555-0005-4000-8000-222222222222',
-    'methodology'
+    'methodology',
+    '2026-01-01T02:02:02.000Z'
   ),
-  ('55555555-0005-4000-8000-333333333333', 'pattern'),
+  (
+    '55555555-0005-4000-8000-333333333333',
+    'pattern',
+    '2026-01-01T03:03:03.000Z'
+  ),
   (
     '55555555-0005-4000-8000-444444444444',
-    'technology'
+    'technology',
+    '2026-01-01T04:04:04.000Z'
   );
 
 --
@@ -302,7 +322,7 @@ VALUES
 -- Teams <--> Skills
 --
 INSERT INTO
-  skills_to_teams (team_id, skill_id, proficiency)
+  skills_to_teams_with_proficiency (team_id, skill_id, proficiency)
 VALUES
   (
     '22222222-0002-4000-8000-111111111111', -- Platform Engineering

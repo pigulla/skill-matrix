@@ -11,21 +11,19 @@ export const skillProficiencySchema = z.object({
   proficiency: proficiencySchema,
 })
 
-export type SkillProficiencyProperties = {
-  skillId: SkillID
-  proficiency: Proficiency
-}
+export type Properties = z.infer<typeof skillProficiencySchema>
 
-export class SkillProficiency {
+export class SkillProficiency implements Properties {
   // biome-ignore lint/correctness/noUnusedPrivateClassMembers: Disable structural typing.
   readonly #brand = Symbol.for(SkillProficiency.name)
 
   public readonly skillId: SkillID
   public readonly proficiency: Proficiency
 
-  public constructor(data: SkillProficiencyProperties) {
+  public constructor(data: Properties) {
     const result = skillProficiencySchema.safeParse(data)
 
+    /* v8 ignore next -- @preserve */
     if (result.error) {
       throw new InvalidSkillProficiencyError(result.error)
     }

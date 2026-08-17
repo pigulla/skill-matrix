@@ -1,7 +1,8 @@
 -- Up Migration
 CREATE TABLE teams (
   id UUID NOT NULL CONSTRAINT teams_pkey PRIMARY KEY,
-  name VARCHAR NOT NULL CONSTRAINT teams_name UNIQUE
+  name VARCHAR NOT NULL CONSTRAINT teams_name UNIQUE,
+  last_updated TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE users (

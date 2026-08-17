@@ -20,6 +20,7 @@ export async function bootstrap(): Promise<void> {
 
   app.enableShutdownHooks([], { useProcessExit: true }).useLogger(logger)
   app.disable('x-powered-by')
+  app.disable('etag')
 
   if (openApi.swagger.enabled) {
     const settings = openApiSettings.parse({ ...openApi, version })

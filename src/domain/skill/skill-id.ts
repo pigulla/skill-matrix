@@ -10,7 +10,7 @@ export const skillIdSchema = idSchema
   .brand('skill-id')
   .meta({
     description: 'The ID of the skill.',
-    example: `00000000-${EntityIdMarker.SKILL}-4000-8000-000000000000`,
+    example: `33333333-${EntityIdMarker.SKILL}-4000-8000-111111111111`,
   })
 
 export type SkillID = z.infer<typeof skillIdSchema>

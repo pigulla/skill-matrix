@@ -1,6 +1,7 @@
 SELECT
   id,
-  name
+  name,
+  last_updated
 FROM
   example_kinds
 ORDER BY

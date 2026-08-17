@@ -11,15 +11,21 @@ import {
   Post,
   Put,
 } from '@nestjs/common'
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiHeader, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import type { ResultAsync } from 'neverthrow'
 
 import { ITeamService } from '#/application/team/team.service.interface.js'
+import type { ConcurrencyToken } from '#/domain/concurrency-token.js'
 import type { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
 import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
+import type { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
 import type { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
+import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
+import { EXAMPLE_ETAG } from '#/presentation/http/etag.js'
+import { ETagResponse } from '#/presentation/http/etag-response.decorator.js'
+import { IfMatchHeader } from '#/presentation/http/if-match-header.decorator.js'
 import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
@@ -45,7 +51,7 @@ export class TeamsController {
 
   @Get()
   @ApiOperation({
-    operationId: 'teams.getAll',
+    operationId: 'team.getAll',
     summary: 'Get all teams.',
     description: 'Get all teams.',
   })
@@ -61,7 +67,7 @@ export class TeamsController {
 
   @Get(':id')
   @ApiOperation({
-    operationId: 'teams.getOne',
+    operationId: 'team.getOne',
     summary: 'Get a team.',
     description: 'Get the team with the given id, if it exists.',
   })
@@ -70,27 +76,41 @@ export class TeamsController {
     status: HttpStatus.OK,
     type: TeamDTO,
     description: 'The operation completed successfully.',
+    headers: {
+      ETag: {
+        description: 'The team’s current ETag .',
+        schema: { type: 'string' },
+        example: EXAMPLE_ETAG,
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'The team with the given id was not found.',
   })
+  @ETagResponse()
   @UnwrapResult()
   public getOne(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: TeamID,
-  ): ResultAsync<TeamDTO, TeamNotFoundError> {
-    return this.service.get(id).map(fromDomain)
+  ): ResultAsync<WithConcurrencyToken<TeamDTO>, TeamNotFoundError> {
+    return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    operationId: 'teams.delete',
+    operationId: 'team.delete',
     summary: 'Delete a team.',
     description: 'Delete the team with the given id, if it exists.',
   })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_TEAM_ID })
+  @ApiHeader({
+    name: 'If-Match',
+    description: 'The team’s current ETag .',
+    required: true,
+    example: EXAMPLE_ETAG,
+  })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'The operation completed successfully.',
@@ -103,17 +123,26 @@ export class TeamsController {
     status: HttpStatus.CONFLICT,
     description: 'The team still has members and cannot be deleted.',
   })
+  @ApiResponse({
+    status: HttpStatus.PRECONDITION_FAILED,
+    description: 'The If-Match header does not match the team’s current ETag.',
+  })
+  @ApiResponse({
+    status: HttpStatus.PRECONDITION_REQUIRED,
+    description: 'The If-Match header is missing.',
+  })
   @UnwrapResult()
   public delete(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: TeamID,
-  ): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError> {
-    return this.service.delete(id)
+    @IfMatchHeader() expectedToken: ConcurrencyToken,
+  ): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError | TeamConcurrencyError> {
+    return this.service.delete(id, expectedToken)
   }
 
   @Post()
   @ApiOperation({
-    operationId: 'teams.create',
+    operationId: 'team.create',
     summary: 'Create a new team.',
     description: 'Create a new team and return it.',
   })
@@ -121,30 +150,51 @@ export class TeamsController {
     status: HttpStatus.CREATED,
     description: 'The operation completed successfully.',
     type: TeamDTO,
+    headers: {
+      ETag: {
+        description: 'The team’s current ETag .',
+        schema: { type: 'string' },
+        example: EXAMPLE_ETAG,
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
     description: 'A team with the given name already exists.',
   })
   @ApiBody({ type: CreateTeamDTO })
+  @ETagResponse()
   @UnwrapResult()
   public create(
     @Body() dto: CreateTeamDTO,
-  ): ResultAsync<TeamDTO, DuplicateTeamIdError | DuplicateTeamNameError> {
-    return this.service.create(dto).map(fromDomain)
+  ): ResultAsync<WithConcurrencyToken<TeamDTO>, DuplicateTeamIdError | DuplicateTeamNameError> {
+    return this.service.create(dto).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
 
   @Put(':id')
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_TEAM_ID })
   @ApiOperation({
-    operationId: 'teams.update',
+    operationId: 'team.update',
     summary: 'Update an existing team.',
     description: 'Update an existing team, if it exists, and return it.',
+  })
+  @ApiHeader({
+    name: 'If-Match',
+    description: 'The team’s current ETag .',
+    required: true,
+    example: EXAMPLE_ETAG,
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'The operation completed successfully.',
     type: TeamDTO,
+    headers: {
+      ETag: {
+        description: 'The team’s current ETag .',
+        schema: { type: 'string' },
+        example: EXAMPLE_ETAG,
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -154,17 +204,32 @@ export class TeamsController {
     status: HttpStatus.CONFLICT,
     description: 'A team with the given name already exists.',
   })
+  @ApiResponse({
+    status: HttpStatus.PRECONDITION_FAILED,
+    description: 'The If-Match header does not match the team’s current ETag.',
+  })
+  @ApiResponse({
+    status: HttpStatus.PRECONDITION_REQUIRED,
+    description: 'The If-Match header is missing.',
+  })
   @ApiBody({ type: UpdateTeamDTO })
+  @ETagResponse()
   @UnwrapResult()
   public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: TeamID,
     @Body() dto: UpdateTeamDTO,
-  ): ResultAsync<TeamDTO, TeamNotFoundError | DuplicateTeamNameError> {
+    @IfMatchHeader() expectedToken: ConcurrencyToken,
+  ): ResultAsync<
+    WithConcurrencyToken<TeamDTO>,
+    TeamNotFoundError | DuplicateTeamNameError | TeamConcurrencyError
+  > {
     if (id !== dto.id) {
       throw new BadRequestException('The id in the payload does not match the id in the route.')
     }
 
-    return this.service.update(dto).map(fromDomain)
+    return this.service
+      .update(dto, expectedToken)
+      .map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
 }

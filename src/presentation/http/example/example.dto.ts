@@ -1,17 +1,15 @@
 import { createZodDto } from 'nestjs-zod'
-import { z } from 'zod'
 
 import { Example, exampleSchema } from '#/domain/example/example.js'
-import { exampleIdSchema } from '#/domain/example/example-id.js'
 
-const createExampleDTOSchema = z
-  .strictObject(exampleSchema.pick({ name: true, exampleKindId: true, url: true }).shape)
+const createExampleDTOSchema = exampleSchema
+  .pick({ name: true, exampleKindId: true, url: true })
+  .strict()
   .brand('create-example-dto')
 
-const updateExampleDTOSchema = createExampleDTOSchema
-  .extend({
-    id: exampleIdSchema,
-  })
+const updateExampleDTOSchema = exampleSchema
+  .pick({ id: true, name: true, exampleKindId: true, url: true })
+  .strict()
   .brand('update-example-dto')
 
 const exampleDTOSchema = updateExampleDTOSchema.brand('example-dto')

@@ -8,8 +8,6 @@ import { TeamRepository } from '#/infrastructure/persistence/team/team.repositor
 import { UserRepository } from '#/infrastructure/persistence/user/user.repository.js'
 import { UtilityModule } from '#/module/utility.module.js'
 
-import { byId } from '../../util/sort-by-id.js'
-
 import { exampleKinds, examples, skills, teams, users } from './fixture.js'
 import { setupIntegrationTest } from './setup-integration-test.js'
 
@@ -48,26 +46,26 @@ describe('Data in the SQL fixture', () => {
 
   it('should match the modeled examples', async () => {
     const all = (await app.get(ExampleRepository).getAll())._unsafeUnwrap()
-    expect(all.sort(byId)).toEqual(Object.values(examples).sort(byId))
+    expect(all).to.have.deep.members(Object.values(examples))
   })
 
   it('should match the modeled skills', async () => {
     const all = (await app.get(SkillRepository).getAll())._unsafeUnwrap()
-    expect(all.sort(byId)).toEqual(Object.values(skills).sort(byId))
+    expect(all).to.have.deep.members(Object.values(skills))
   })
 
   it('should match the modeled example kinds', async () => {
     const all = (await app.get(ExampleKindRepository).getAll())._unsafeUnwrap()
-    expect(all.sort(byId)).toEqual(Object.values(exampleKinds).sort(byId))
+    expect(all).to.have.deep.members(Object.values(exampleKinds))
   })
 
   it('should match the modeled users', async () => {
     const all = (await app.get(UserRepository).getAll())._unsafeUnwrap()
-    expect(all.sort(byId)).toEqual(Object.values(users).sort(byId))
+    expect(all).to.have.deep.members(Object.values(users))
   })
 
   it('should match the modeled teams', async () => {
     const all = (await app.get(TeamRepository).getAll())._unsafeUnwrap()
-    expect(all.sort(byId)).toEqual(Object.values(teams).sort(byId))
+    expect(all).to.have.deep.members(Object.values(teams))
   })
 })

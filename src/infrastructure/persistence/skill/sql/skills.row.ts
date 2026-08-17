@@ -5,6 +5,8 @@ import { Skill } from '#/domain/skill/skill.js'
 import { skillIdSchema } from '#/domain/skill/skill-id.js'
 import { dayjsSchema } from '#/util/dayjs.schema.js'
 
+import { toConcurrencyToken } from '../../concurrency-token.codec.js'
+
 const skillsRowSchema = z.strictObject({
   id: skillIdSchema,
   name: z.string(),
@@ -27,6 +29,17 @@ export const skillWithExampleIdsRow = skillsRowSchema
         description: data.description,
         exampleIds: new Set(data.example_ids),
       }),
+    getConcurrencyToken: () => toConcurrencyToken(data.last_updated),
   }))
   .readonly()
   .brand('skill-with-examples-row')
+
+export const skillUpdateRow = z
+  .union([z.strictObject({ id: skillIdSchema }), z.strictObject({ id: z.null() })])
+  .readonly()
+  .brand('skill-update-row')
+
+export const skillDeleteRow = z
+  .union([z.strictObject({ id: skillIdSchema }), z.strictObject({ id: z.null() })])
+  .readonly()
+  .brand('skill-delete-row')

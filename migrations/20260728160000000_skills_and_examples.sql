@@ -1,4 +1,8 @@
 -- Up Migration
+CREATE FUNCTION concurrency_token (ts TIMESTAMPTZ) RETURNS TEXT AS $$
+  SELECT md5(FLOOR(EXTRACT(EPOCH FROM ts) * 1000)::BIGINT::TEXT)
+$$ LANGUAGE SQL IMMUTABLE;
+
 CREATE TABLE skills (
   id UUID NOT NULL CONSTRAINT skills_pkey PRIMARY KEY,
   name VARCHAR NOT NULL CONSTRAINT skills_name UNIQUE,
@@ -8,7 +12,8 @@ CREATE TABLE skills (
 
 CREATE TABLE example_kinds (
   id UUID NOT NULL CONSTRAINT example_kinds_pkey PRIMARY KEY,
-  name VARCHAR NOT NULL CONSTRAINT example_kinds_name UNIQUE
+  name VARCHAR NOT NULL CONSTRAINT example_kinds_name UNIQUE,
+  last_updated TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE examples (
@@ -59,3 +64,5 @@ DROP TABLE examples;
 DROP TABLE example_kinds;
 
 DROP TABLE skills;
+
+DROP FUNCTION concurrency_token (TIMESTAMPTZ);

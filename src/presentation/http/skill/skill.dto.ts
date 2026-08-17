@@ -4,28 +4,36 @@ import { z } from 'zod'
 import { EXAMPLE_EXAMPLE_ID, exampleIdSchema } from '#/domain/example/example-id.js'
 import { Skill, skillSchema } from '#/domain/skill/skill.js'
 
-const updateSkillDTOSchema = z
-  .strictObject(skillSchema.shape)
-  .extend({
-    exampleIds: z
-      .array(exampleIdSchema)
-      .refine(ids => new Set(ids).size === ids.length, { message: 'Example ids must be unique' })
-      .meta({
-        description: 'The ids of the examples associated with this skill.',
-        example: [EXAMPLE_EXAMPLE_ID],
-        uniqueItems: true,
-      }),
+const exampleIdsDTOSchema = z
+  .array(exampleIdSchema)
+  .refine(ids => new Set(ids).size === ids.length, { message: 'Example ids must be unique' })
+  .meta({
+    description: 'The ids of the examples associated with this skill.',
+    example: [EXAMPLE_EXAMPLE_ID],
+    uniqueItems: true,
   })
+  .brand('example-ids-dto')
+
+const createSkillDTOSchema = skillSchema
+  .pick({
+    name: true,
+    description: true,
+  })
+  .extend({ exampleIds: exampleIdsDTOSchema })
+  .strict()
+  .brand('create-skill-dto')
+
+const updateSkillDTOSchema = skillSchema
+  .pick({
+    id: true,
+    name: true,
+    description: true,
+  })
+  .extend({ exampleIds: exampleIdsDTOSchema })
+  .strict()
   .brand('update-skill-dto')
 
-const createSkillDTOSchema = updateSkillDTOSchema.omit({ id: true }).brand('create-skill-dto')
-
-const skillDTOSchema = z
-  .strictObject({
-    ...createSkillDTOSchema.shape,
-    ...skillSchema.pick({ id: true }).shape,
-  })
-  .brand('skill-dto')
+const skillDTOSchema = updateSkillDTOSchema.brand('skill-dto')
 
 export class CreateSkillDTO extends createZodDto(createSkillDTOSchema) {}
 

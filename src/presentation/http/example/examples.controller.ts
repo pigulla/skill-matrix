@@ -11,16 +11,22 @@ import {
   Post,
   Put,
 } from '@nestjs/common'
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiHeader, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import type { ResultAsync } from 'neverthrow'
 
 import { IExampleService } from '#/application/example/example.service.interface.js'
+import type { ConcurrencyToken } from '#/domain/concurrency-token.js'
 import type { DuplicateExampleIdError } from '#/domain/example/error/duplicate-example-id.error.js'
 import type { DuplicateExampleNameError } from '#/domain/example/error/duplicate-example-name.error.js'
+import type { ExampleConcurrencyError } from '#/domain/example/error/example-concurrency.error.js'
 import type { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
 import type { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
 import { EXAMPLE_EXAMPLE_ID, type ExampleID } from '#/domain/example/example-id.js'
 import type { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
+import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
+import { EXAMPLE_ETAG } from '#/presentation/http/etag.js'
+import { ETagResponse } from '#/presentation/http/etag-response.decorator.js'
+import { IfMatchHeader } from '#/presentation/http/if-match-header.decorator.js'
 import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
@@ -46,7 +52,7 @@ export class ExamplesController {
 
   @Get()
   @ApiOperation({
-    operationId: 'examples.getAll',
+    operationId: 'example.getAll',
     summary: 'Get all examples.',
     description: 'Get all examples.',
   })
@@ -62,7 +68,7 @@ export class ExamplesController {
 
   @Get(':id')
   @ApiOperation({
-    operationId: 'examples.getOne',
+    operationId: 'example.getOne',
     summary: 'Get an example.',
     description: 'Get the example with the given id, if it exists.',
   })
@@ -71,27 +77,41 @@ export class ExamplesController {
     status: HttpStatus.OK,
     type: ExampleDTO,
     description: 'The operation completed successfully.',
+    headers: {
+      ETag: {
+        description: 'The example’s current ETag .',
+        schema: { type: 'string' },
+        example: EXAMPLE_ETAG,
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'The example with the given id was not found.',
   })
+  @ETagResponse()
   @UnwrapResult()
   public getOne(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: ExampleID,
-  ): ResultAsync<ExampleDTO, ExampleNotFoundError> {
-    return this.service.get(id).map(fromDomain)
+  ): ResultAsync<WithConcurrencyToken<ExampleDTO>, ExampleNotFoundError> {
+    return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    operationId: 'examples.delete',
+    operationId: 'example.delete',
     summary: 'Delete an example.',
     description: 'Delete the example with the given id, if it exists.',
   })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_EXAMPLE_ID })
+  @ApiHeader({
+    name: 'If-Match',
+    description: 'The example’s current ETag .',
+    required: true,
+    example: EXAMPLE_ETAG,
+  })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'The operation completed successfully.',
@@ -104,17 +124,26 @@ export class ExamplesController {
     status: HttpStatus.CONFLICT,
     description: 'The example is still referenced by a skill.',
   })
+  @ApiResponse({
+    status: HttpStatus.PRECONDITION_FAILED,
+    description: 'The If-Match header does not match the example’s current ETag.',
+  })
+  @ApiResponse({
+    status: HttpStatus.PRECONDITION_REQUIRED,
+    description: 'The If-Match header is missing.',
+  })
   @UnwrapResult()
   public delete(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: ExampleID,
-  ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError> {
-    return this.service.delete(id)
+    @IfMatchHeader() expectedToken: ConcurrencyToken,
+  ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError | ExampleConcurrencyError> {
+    return this.service.delete(id, expectedToken)
   }
 
   @Post()
   @ApiOperation({
-    operationId: 'examples.create',
+    operationId: 'example.create',
     summary: 'Create a new example.',
     description: 'Create a new example and return it.',
   })
@@ -122,6 +151,13 @@ export class ExamplesController {
     status: HttpStatus.CREATED,
     type: ExampleDTO,
     description: 'The operation completed successfully.',
+    headers: {
+      ETag: {
+        description: 'The example’s current ETag .',
+        schema: { type: 'string' },
+        example: EXAMPLE_ETAG,
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
@@ -132,27 +168,41 @@ export class ExamplesController {
     description: 'The referenced example kind does not exist.',
   })
   @ApiBody({ type: CreateExampleDTO })
+  @ETagResponse()
   @UnwrapResult()
   public create(
     @Body() dto: CreateExampleDTO,
   ): ResultAsync<
-    ExampleDTO,
+    WithConcurrencyToken<ExampleDTO>,
     DuplicateExampleIdError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
   > {
-    return this.service.create(dto).map(fromDomain)
+    return this.service.create(dto).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
 
   @Put(':id')
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_EXAMPLE_ID })
   @ApiOperation({
-    operationId: 'examples.update',
+    operationId: 'example.update',
     summary: 'Update an existing example.',
     description: 'Update an existing example, if it exists, and return it.',
+  })
+  @ApiHeader({
+    name: 'If-Match',
+    description: 'The example’s current ETag .',
+    required: true,
+    example: EXAMPLE_ETAG,
   })
   @ApiResponse({
     status: HttpStatus.OK,
     type: ExampleDTO,
     description: 'The operation completed successfully.',
+    headers: {
+      ETag: {
+        description: 'The example’s current ETag .',
+        schema: { type: 'string' },
+        example: EXAMPLE_ETAG,
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -166,20 +216,35 @@ export class ExamplesController {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     description: 'The referenced example kind does not exist.',
   })
+  @ApiResponse({
+    status: HttpStatus.PRECONDITION_FAILED,
+    description: 'The If-Match header does not match the example’s current ETag.',
+  })
+  @ApiResponse({
+    status: HttpStatus.PRECONDITION_REQUIRED,
+    description: 'The If-Match header is missing.',
+  })
   @ApiBody({ type: UpdateExampleDTO })
+  @ETagResponse()
   @UnwrapResult()
   public update(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: ExampleID,
     @Body() dto: UpdateExampleDTO,
+    @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<
-    ExampleDTO,
-    ExampleNotFoundError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
+    WithConcurrencyToken<ExampleDTO>,
+    | ExampleNotFoundError
+    | DuplicateExampleNameError
+    | ExampleKindReferenceNotFoundError
+    | ExampleConcurrencyError
   > {
     if (id !== dto.id) {
       throw new BadRequestException('The id in the payload does not match the id in the route.')
     }
 
-    return this.service.update(dto).map(fromDomain)
+    return this.service
+      .update(dto, expectedToken)
+      .map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
 }

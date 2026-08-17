@@ -23,8 +23,9 @@ Every `@ApiOperation({...})` call must set `operationId`, as the first property 
 @ApiOperation({ operationId: 'skills.getAll', summary: 'Get all skills.', description: 'Get all skills.' })
 ```
 
-- Value format: `<entity>.<methodName>` — `methodName` is the exact, literal name of the decorated method (`getAll`, `getOne`, `create`, ...), never a paraphrase.
-- `entity` = the controller's class name with the trailing `Controller` suffix stripped, then lower-camel-cased: `SkillsController` → `skills`, `TeamSkillsController` → `teamSkills` (not `team-skills`).
+- Value format: `<prefix>.<methodName>`
+    - `prefix` is the path to the controller's directory. So if it is located in `src/presentation/http/team/skill-proficiencies`, then the value should be `team.skill-proficiencies` (the common `src/presentation/http` prefix is dropped).
+    - `methodName` is the exact, literal name of the decorated method (`getAll`, `getOne`, `create`, ...), never a paraphrase.
 - Without an explicit `operationId`, NestJS derives one from `${ControllerClass}_${handlerFunctionName}` — but `#/util/unwrap-result.decorator.js`'s `@UnwrapResult()` renames every wrapped handler function to `wrapped`, so every method in a controller collapses onto the same auto-derived id (`${ControllerClass}_wrapped`) and fails Redocly's `operation-operationId-unique` rule. Setting `operationId` explicitly is what avoids this, on every method, not just ones that currently collide.
 
 ## Non-negotiable rules

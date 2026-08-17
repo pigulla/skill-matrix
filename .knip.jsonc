@@ -2,12 +2,7 @@
     "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
     "project": ["src/**/*.ts", "test/**/*.ts"],
     "ignore": ["src/**/*.mock.ts"],
-    "ignoreDependencies": [
-        "@nestjs/schematics",
-        "@swc-node/register",
-        "cz-conventional-changelog",
-        "pino-pretty"
-    ],
+    "ignoreDependencies": ["@nestjs/schematics", "cz-conventional-changelog", "pino-pretty"],
     "paths": {
         "#/*": ["./src/*"]
     }

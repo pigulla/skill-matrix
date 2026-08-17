@@ -2,13 +2,16 @@ import { Injectable } from '@nestjs/common'
 import type { ResultAsync } from 'neverthrow'
 import type { Except, SetRequired } from 'type-fest'
 
+import type { ConcurrencyToken } from '#/domain/concurrency-token.js'
 import type { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
 import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
+import type { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
 import type { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { type Properties, Team } from '#/domain/team/team.js'
 import { ITeamRepository } from '#/domain/team/team.repository.interface.js'
 import type { TeamID } from '#/domain/team/team-id.js'
+import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { ResultTransactional } from '#/util/result-transactional.decorator.js'
 
 import { ITeamService } from './team.service.interface.js'
@@ -30,19 +33,22 @@ export class TeamService implements ITeamService {
   }
 
   @ResultTransactional()
-  public get(id: TeamID): ResultAsync<Team, TeamNotFoundError> {
+  public get(id: TeamID): ResultAsync<WithConcurrencyToken<Team>, TeamNotFoundError> {
     return this.teamRepository.get(id)
   }
 
   @ResultTransactional()
-  public delete(id: TeamID): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError> {
-    return this.teamRepository.delete(id)
+  public delete(
+    id: TeamID,
+    expectedToken: ConcurrencyToken,
+  ): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError | TeamConcurrencyError> {
+    return this.teamRepository.delete(id, expectedToken)
   }
 
   @ResultTransactional()
   public create(
     properties: Except<Properties, 'id'>,
-  ): ResultAsync<Team, DuplicateTeamIdError | DuplicateTeamNameError> {
+  ): ResultAsync<WithConcurrencyToken<Team>, DuplicateTeamIdError | DuplicateTeamNameError> {
     const id = this.uuidProvider.generate()
     const team = new Team({ ...properties, id })
 
@@ -52,9 +58,15 @@ export class TeamService implements ITeamService {
   @ResultTransactional()
   public update(
     properties: SetRequired<Partial<Properties>, 'id'>,
-  ): ResultAsync<Team, TeamNotFoundError | DuplicateTeamNameError> {
+    expectedToken: ConcurrencyToken,
+  ): ResultAsync<
+    WithConcurrencyToken<Team>,
+    TeamNotFoundError | DuplicateTeamNameError | TeamConcurrencyError
+  > {
     return this.teamRepository
       .get(properties.id)
-      .andThen(existing => this.teamRepository.update(existing.update(properties)))
+      .andThen(existing =>
+        this.teamRepository.update(existing.value.update(properties), expectedToken),
+      )
   }
 }

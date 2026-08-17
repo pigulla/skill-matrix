@@ -2,7 +2,7 @@ import { asProficiency } from '#/domain/skill/proficiency/proficiency.js'
 import { SkillProficiency } from '#/domain/skill/proficiency/skill-proficiency.js'
 import { asSkillID } from '#/domain/skill/skill-id.js'
 
-import { skills } from '../integration/fixture/fixture.js'
+import { UNKNOWN_SKILL_ID } from '../util/entity-ids.js'
 
 type Properties = {
   skillId: string
@@ -11,7 +11,7 @@ type Properties = {
 
 export class SkillProficiencyBuilder {
   private properties: Properties = {
-    skillId: skills.softwareArchitecture.id,
+    skillId: UNKNOWN_SKILL_ID,
     proficiency: 2,
   }
 

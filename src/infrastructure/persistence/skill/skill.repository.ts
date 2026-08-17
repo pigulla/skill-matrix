@@ -5,15 +5,18 @@ import { errAsync, okAsync, ResultAsync } from 'neverthrow'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
 import { ITimeProvider } from '#/application/time-provider.interface.js'
+import type { ConcurrencyToken } from '#/domain/concurrency-token.js'
 import { ExampleReferenceNotFoundError } from '#/domain/example/error/example-reference-not-found.error.js'
 import type { ExampleID } from '#/domain/example/example-id.js'
 import { DuplicateSkillIdError } from '#/domain/skill/error/duplicate-skill-id.error.js'
 import { DuplicateSkillNameError } from '#/domain/skill/error/duplicate-skill-name.error.js'
+import { SkillConcurrencyError } from '#/domain/skill/error/skill-concurrency.error.js'
 import { SkillInUseError } from '#/domain/skill/error/skill-in-use.error.js'
 import { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
 import type { Skill } from '#/domain/skill/skill.js'
 import { ISkillRepository } from '#/domain/skill/skill.repository.interface.js'
 import type { SkillID } from '#/domain/skill/skill-id.js'
+import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { ResultTransactional } from '#/util/result-transactional.decorator.js'
 
 import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
@@ -21,16 +24,16 @@ import { isRestrictViolation } from '../error/is-restrict-violation.js'
 import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
 
 import { QUERY } from './sql/queries.js'
-import { skillWithExampleIdsRow } from './sql/skills.row.js'
+import { skillDeleteRow, skillUpdateRow, skillWithExampleIdsRow } from './sql/skills.row.js'
 
 const {
   ASSOCIATE_EXAMPLE_WITH_SKILL,
-  DELETE_SKILL,
-  DELETE_SKILL_EXAMPLES,
-  GET_ALL_SKILLS,
-  GET_SKILL,
-  INSERT_SKILL,
-  UPDATE_SKILL,
+  DELETE,
+  GET,
+  GET_ALL,
+  INSERT,
+  UNASSOCIATE_ALL_EXAMPLES_FROM_SKILL,
+  UPDATE,
 } = QUERY
 
 @Injectable()
@@ -46,18 +49,22 @@ export class SkillRepository implements ISkillRepository {
     this.timeProvider = timeProvider
   }
 
-  public get(id: SkillID): ResultAsync<Skill, SkillNotFoundError> {
-    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(GET_SKILL, { id }), error => {
+  public get(id: SkillID): ResultAsync<WithConcurrencyToken<Skill>, SkillNotFoundError> {
+    return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(GET, { id }), error => {
       throw new UnexpectedPersistenceError(error as Error)
-    }).andThen(row =>
-      row === null
-        ? errAsync(new SkillNotFoundError(id))
-        : okAsync(skillWithExampleIdsRow.parse(row).toDomain()),
-    )
+    }).andThen(row => {
+      if (row === null) {
+        return errAsync(new SkillNotFoundError(id))
+      }
+
+      const parsed = skillWithExampleIdsRow.parse(row)
+
+      return okAsync({ value: parsed.toDomain(), token: parsed.getConcurrencyToken() })
+    })
   }
 
   public getAll(): ResultAsync<Skill[], never> {
-    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL_SKILLS), error => {
+    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
       throw new UnexpectedPersistenceError(error as Error)
     }).map(rows => rows.map(row => skillWithExampleIdsRow.parse(row).toDomain()))
   }
@@ -66,20 +73,21 @@ export class SkillRepository implements ISkillRepository {
   public create(
     skill: Skill,
   ): ResultAsync<
-    Skill,
+    WithConcurrencyToken<Skill>,
     DuplicateSkillIdError | DuplicateSkillNameError | ExampleReferenceNotFoundError
   > {
     const { id, name, description, exampleIds } = skill
     const lastUpdated = this.timeProvider.now().toDate()
     const self = this
 
-    async function createAndFetch(): Promise<Skill> {
-      await self.txHost.tx.one<unknown>(INSERT_SKILL, { id, name, description, lastUpdated })
+    async function createAndFetch(): Promise<WithConcurrencyToken<Skill>> {
+      await self.txHost.tx.one<unknown>(INSERT, { id, name, description, lastUpdated })
       await self.updateAssociations(id, exampleIds)
 
-      const row = await self.txHost.tx.one<unknown>(GET_SKILL, { id })
+      const row = await self.txHost.tx.one<unknown>(GET, { id })
+      const parsed = skillWithExampleIdsRow.parse(row)
 
-      return skillWithExampleIdsRow.parse(row).toDomain()
+      return { value: parsed.toDomain(), token: parsed.getConcurrencyToken() }
     }
 
     return ResultAsync.fromPromise(createAndFetch(), error => {
@@ -103,31 +111,44 @@ export class SkillRepository implements ISkillRepository {
   @ResultTransactional()
   public update(
     skill: Skill,
+    expectedToken: ConcurrencyToken,
   ): ResultAsync<
-    Skill,
-    SkillNotFoundError | DuplicateSkillNameError | ExampleReferenceNotFoundError
+    WithConcurrencyToken<Skill>,
+    | SkillNotFoundError
+    | DuplicateSkillNameError
+    | ExampleReferenceNotFoundError
+    | SkillConcurrencyError
   > {
     const { id, name, description, exampleIds } = skill
     const lastUpdated = this.timeProvider.now().toDate()
     const self = this
 
     async function update(): Promise<void> {
-      const row = await self.txHost.tx.oneOrNone<unknown>(UPDATE_SKILL, {
+      // oneOrNone yields: null (no such skill), { id: null } (stale token), or { id } (updated).
+      const row = await self.txHost.tx.oneOrNone<unknown>(UPDATE, {
         id,
         name,
         description,
         lastUpdated,
+        expectedToken,
       })
 
       if (row === null) {
         throw new SkillNotFoundError(id)
+      }
+      if (skillUpdateRow.parse(row).id === null) {
+        throw new SkillConcurrencyError(id)
       }
 
       await self.updateAssociations(id, exampleIds)
     }
 
     return ResultAsync.fromPromise(update(), error => {
-      if (error instanceof ExampleReferenceNotFoundError || error instanceof SkillNotFoundError) {
+      if (
+        error instanceof ExampleReferenceNotFoundError ||
+        error instanceof SkillNotFoundError ||
+        error instanceof SkillConcurrencyError
+      ) {
         return error
       }
       if (error instanceof UnexpectedPersistenceError) {
@@ -146,7 +167,7 @@ export class SkillRepository implements ISkillRepository {
     exampleIds: ReadonlySet<ExampleID>,
   ): Promise<void> {
     try {
-      await this.txHost.tx.none(DELETE_SKILL_EXAMPLES, { skill_id: skillId })
+      await this.txHost.tx.none(UNASSOCIATE_ALL_EXAMPLES_FROM_SKILL, { skill_id: skillId })
     } catch (error) {
       throw new UnexpectedPersistenceError(error as Error)
     }
@@ -169,16 +190,28 @@ export class SkillRepository implements ISkillRepository {
     )
   }
 
-  public delete(id: SkillID): ResultAsync<void, SkillInUseError | SkillNotFoundError> {
+  public delete(
+    id: SkillID,
+    expectedToken: ConcurrencyToken,
+  ): ResultAsync<void, SkillInUseError | SkillNotFoundError | SkillConcurrencyError> {
+    // oneOrNone yields: null (no such skill), { id: null } (stale token), or { id } (deleted).
     return ResultAsync.fromPromise(
-      this.txHost.tx.oneOrNone<unknown>(DELETE_SKILL, { id }),
+      this.txHost.tx.oneOrNone<unknown>(DELETE, { id, expectedToken }),
       error => {
-        if (isRestrictViolation('skills_to_teams_skill_fkey', error)) {
+        if (isRestrictViolation('skills_to_teams_with_proficiency_skill_fkey', error)) {
           return new SkillInUseError(id)
         }
 
         throw new UnexpectedPersistenceError(error as Error)
       },
-    ).andThen(row => (row === null ? errAsync(new SkillNotFoundError(id)) : okAsync(undefined)))
+    ).andThen(row => {
+      if (row === null) {
+        return errAsync(new SkillNotFoundError(id))
+      }
+
+      return skillDeleteRow.parse(row).id === null
+        ? errAsync(new SkillConcurrencyError(id))
+        : okAsync(undefined)
+    })
   }
 }

@@ -8,18 +8,20 @@ import { UnexpectedPersistenceError } from '#/application/error/unexpected-persi
 import { ITimeProvider } from '#/application/time-provider.interface.js'
 import { ExampleReferenceNotFoundError } from '#/domain/example/error/example-reference-not-found.error.js'
 import { DuplicateSkillIdError } from '#/domain/skill/error/duplicate-skill-id.error.js'
+import { SkillConcurrencyError } from '#/domain/skill/error/skill-concurrency.error.js'
 import { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
+import { toConcurrencyToken } from '#/infrastructure/persistence/concurrency-token.codec.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { SkillRepository } from '#/infrastructure/persistence/skill/skill.repository.js'
 import { mockTimeProvider, type TimeProviderMock } from '#/mocks.js'
 
 import { SkillBuilder } from '../../builder/skill.builder.js'
+import { STALE_CONCURRENCY_TOKEN } from '../../util/concurrency-tokens.js'
 import { UNKNOWN_EXAMPLE_ID, UNKNOWN_SKILL_ID } from '../../util/entity-ids.js'
-import { by } from '../../util/sort-by-id.js'
 import { examples, skills } from '../fixture/fixture.js'
+import { type ETags, getETags } from '../fixture/get-etags.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
-const byExampleId = by('example_id')
 const now = dayjs('2026-01-01T00:00:00.000Z')
 
 describe('SkillRepository', () => {
@@ -29,6 +31,7 @@ describe('SkillRepository', () => {
   let skillRepository: SkillRepository
   let timeProviderMock: TimeProviderMock
   let db: Database
+  let etags: ETags
 
   beforeAll(integrationTest.beforeAll)
   afterAll(integrationTest.afterAll)
@@ -48,6 +51,7 @@ describe('SkillRepository', () => {
     app = await module.createNestApplication().enableShutdownHooks().init()
     skillRepository = app.get(SkillRepository)
     db = app.get(IConnectionProvider).database
+    etags = await getETags(db)
   })
 
   afterEach(async () => {
@@ -56,19 +60,22 @@ describe('SkillRepository', () => {
   })
 
   describe('get', () => {
-    it('should return a skill', async () => {
+    it('should return a skill and its token', async () => {
       const result = await skillRepository.get(skills.backendDevelopment.id)
 
-      expect(result._unsafeUnwrap()).toEqual(skills.backendDevelopment)
+      expect(result._unsafeUnwrap()).toEqual({
+        value: skills.backendDevelopment,
+        token: etags.skills[skills.backendDevelopment.id].token,
+      })
     })
 
-    it('should return SkillNotFoundError when the skill does not exist', async () => {
+    it('should return SkillNotFoundError if the skill does not exist', async () => {
       const result = await skillRepository.get(UNKNOWN_SKILL_ID)
 
       expect(result).toEqual(err(new SkillNotFoundError(UNKNOWN_SKILL_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       await db.none(
         'ALTER VIEW view_skills_with_examples RENAME TO view_skills_with_examples_renamed',
       )
@@ -86,7 +93,7 @@ describe('SkillRepository', () => {
       expect(result._unsafeUnwrap()).to.have.deep.members(Object.values(skills))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       await db.none(
         'ALTER VIEW view_skills_with_examples RENAME TO view_skills_with_examples_renamed',
       )
@@ -105,7 +112,7 @@ describe('SkillRepository', () => {
 
       const result = await skillRepository.create(skill)
 
-      expect(result._unsafeUnwrap()).toEqual(skill)
+      expect(result._unsafeUnwrap()).toEqual({ value: skill, token: toConcurrencyToken(now) })
 
       await expect(
         db.oneOrNone('SELECT * FROM skills WHERE id=$(id)', { id: skill.id }),
@@ -119,13 +126,11 @@ describe('SkillRepository', () => {
           'SELECT example_id FROM examples_to_skills WHERE skill_id=$(id) ORDER BY example_id',
           { id: skill.id },
         ),
-      ).resolves.toEqual(
-        [
-          {
-            example_id: examples.postgresql.id,
-          },
-        ].sort(byExampleId),
-      )
+      ).resolves.to.have.deep.members([
+        {
+          example_id: examples.postgresql.id,
+        },
+      ])
     })
 
     it('should return DuplicateSkillIdError if the id already exists', async () => {
@@ -147,7 +152,7 @@ describe('SkillRepository', () => {
       expect(result).toEqual(err(new ExampleReferenceNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the skill insert fails', async () => {
+    it('should throw UnexpectedPersistenceError if the skill insert fails', async () => {
       const skill = SkillBuilder.create({ id: UNKNOWN_SKILL_ID })
 
       await db.none('ALTER TABLE skills RENAME TO skills_renamed')
@@ -155,7 +160,7 @@ describe('SkillRepository', () => {
       await expect(skillRepository.create(skill)).rejects.toThrow(UnexpectedPersistenceError)
     })
 
-    it('should throw UnexpectedPersistenceError when clearing the example associations fails', async () => {
+    it('should throw UnexpectedPersistenceError if clearing the example associations fails', async () => {
       const skill = SkillBuilder.create({
         id: UNKNOWN_SKILL_ID,
         name: 'A brand new skill',
@@ -170,17 +175,20 @@ describe('SkillRepository', () => {
   describe('update', () => {
     it('should update the skill', async () => {
       const later = now.add(5, 'minutes')
-      timeProviderMock.now.mockReturnValue(later)
-
       const updated = SkillBuilder.from(skills.backendDevelopment)
         .withName('Backend Engineering')
         .withDescription('Designing and building server-side systems.')
         .withExamples([examples.react.id, examples.postgresql.id])
         .build()
 
-      const result = await skillRepository.update(updated)
+      timeProviderMock.now.mockReturnValue(later)
 
-      expect(result._unsafeUnwrap()).toEqual(updated)
+      const result = await skillRepository.update(
+        updated,
+        etags.skills[skills.backendDevelopment.id].token,
+      )
+
+      expect(result._unsafeUnwrap()).toEqual({ value: updated, token: toConcurrencyToken(later) })
 
       await expect(
         db.oneOrNone('SELECT * FROM skills WHERE id=$(id)', { id: updated.id }),
@@ -194,45 +202,56 @@ describe('SkillRepository', () => {
           'SELECT example_id FROM examples_to_skills WHERE skill_id=$(id) ORDER BY example_id',
           { id: updated.id },
         ),
-      ).resolves.toEqual(
-        [
-          {
-            example_id: examples.react.id,
-          },
-          {
-            example_id: examples.postgresql.id,
-          },
-        ].sort(byExampleId),
+      ).resolves.to.have.deep.members([
+        {
+          example_id: examples.react.id,
+        },
+        {
+          example_id: examples.postgresql.id,
+        },
+      ])
+    })
+
+    it('should return SkillConcurrencyError if the token does not match', async () => {
+      const result = await skillRepository.update(
+        SkillBuilder.from(skills.backendDevelopment).withName('Renamed').build(),
+        STALE_CONCURRENCY_TOKEN,
       )
+
+      expect(result).toEqual(err(new SkillConcurrencyError(skills.backendDevelopment.id)))
     })
 
     it('should return SkillNotFoundError if the skill does not exist', async () => {
       const skill = SkillBuilder.create({ id: UNKNOWN_SKILL_ID })
 
-      const result = await skillRepository.update(skill)
+      const result = await skillRepository.update(skill, toConcurrencyToken(now))
 
       expect(result).toEqual(err(new SkillNotFoundError(UNKNOWN_SKILL_ID)))
     })
 
     it('should return ExampleReferenceNotFoundError if a referenced example does not exist', async () => {
+      const currentToken = etags.skills[skills.frontendDevelopment.id].token
       const skill = SkillBuilder.from(skills.frontendDevelopment)
         .withExamples([UNKNOWN_EXAMPLE_ID])
         .build()
 
-      const result = await skillRepository.update(skill)
+      const result = await skillRepository.update(skill, currentToken)
 
       expect(result).toEqual(err(new ExampleReferenceNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the skill update fails', async () => {
+    it('should throw UnexpectedPersistenceError if the skill update fails', async () => {
+      const currentToken = etags.skills[skills.backendDevelopment.id].token
       const updated = SkillBuilder.from(skills.backendDevelopment).withName('Renamed').build()
 
       await db.none('ALTER TABLE skills RENAME TO skills_renamed')
 
-      await expect(skillRepository.update(updated)).rejects.toThrow(UnexpectedPersistenceError)
+      await expect(skillRepository.update(updated, currentToken)).rejects.toThrow(
+        UnexpectedPersistenceError,
+      )
     })
 
-    it('should throw UnexpectedPersistenceError when associating an example fails', async () => {
+    it('should throw UnexpectedPersistenceError if associating an example fails', async () => {
       const updated = SkillBuilder.from(skills.backendDevelopment)
         .withExamples([examples.react.id])
         .build()
@@ -241,20 +260,24 @@ describe('SkillRepository', () => {
         'ALTER TABLE examples_to_skills ADD CONSTRAINT force_failure CHECK (FALSE) NOT VALID',
       )
 
-      await expect(skillRepository.update(updated)).rejects.toThrow(UnexpectedPersistenceError)
+      await expect(
+        skillRepository.update(updated, etags.skills[skills.backendDevelopment.id].token),
+      ).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 
   describe('delete', () => {
     it('should delete the skill', async () => {
-      const result = await skillRepository.delete(skills.qualityAssurance.id)
+      const result = await skillRepository.delete(
+        skills.qualityAssurance.id,
+        etags.skills[skills.qualityAssurance.id].token,
+      )
 
       expect(result.isOk()).toBe(true)
 
       await expect(
         db.oneOrNone('SELECT * FROM skills WHERE id=$(id)', { id: skills.qualityAssurance.id }),
       ).resolves.toBeNull()
-
       await expect(
         db.manyOrNone(
           'SELECT example_id FROM examples_to_skills WHERE skill_id=$(id) ORDER BY example_id',
@@ -263,18 +286,29 @@ describe('SkillRepository', () => {
       ).resolves.toEqual([])
     })
 
-    it('should return SkillNotFoundError when the skill does not exist', async () => {
-      const result = await skillRepository.delete(UNKNOWN_SKILL_ID)
+    it('should return SkillConcurrencyError if the token does not match', async () => {
+      const result = await skillRepository.delete(
+        skills.qualityAssurance.id,
+        STALE_CONCURRENCY_TOKEN,
+      )
+
+      expect(result).toEqual(err(new SkillConcurrencyError(skills.qualityAssurance.id)))
+    })
+
+    it('should return SkillNotFoundError if the skill does not exist', async () => {
+      const result = await skillRepository.delete(UNKNOWN_SKILL_ID, toConcurrencyToken(now))
 
       expect(result).toEqual(err(new SkillNotFoundError(UNKNOWN_SKILL_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
+      const currentToken = etags.skills[skills.qualityAssurance.id].token
+
       await db.none('ALTER TABLE skills RENAME TO skills_renamed')
 
-      await expect(skillRepository.delete(skills.qualityAssurance.id)).rejects.toThrow(
-        UnexpectedPersistenceError,
-      )
+      await expect(
+        skillRepository.delete(skills.qualityAssurance.id, currentToken),
+      ).rejects.toThrow(UnexpectedPersistenceError)
     })
   })
 })

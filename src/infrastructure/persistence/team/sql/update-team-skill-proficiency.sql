@@ -1,4 +1,4 @@
-UPDATE skills_to_teams
+UPDATE skills_to_teams_with_proficiency
 SET
   proficiency = $(proficiency)
 WHERE

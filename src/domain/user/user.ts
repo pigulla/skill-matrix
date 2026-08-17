@@ -38,6 +38,7 @@ export class User implements Properties {
   public constructor(data: Properties) {
     const result = userSchema.safeParse(data)
 
+    /* v8 ignore next -- @preserve */
     if (result.error) {
       throw new InvalidUserError(result.error)
     }

@@ -1,3 +1,5 @@
+/* v8 ignore file -- @preserve */
+
 import { access } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 

@@ -96,7 +96,7 @@ describe('ResultTransactional', () => {
     await integrationTest.afterEach()
   })
 
-  it('commits the write when the method resolves Ok', async () => {
+  it('commits the write if the method resolves Ok', async () => {
     const result = await testService.writeThenOk('committed')
 
     expect(result.isOk()).toBe(true)
@@ -105,7 +105,7 @@ describe('ResultTransactional', () => {
     ])
   })
 
-  it('rolls back the write when the method resolves Err', async () => {
+  it('rolls back the write if the method resolves Err', async () => {
     const result = await testService.writeThenErr('rolled-back')
 
     expect(result.isErr()).toBe(true)
@@ -113,7 +113,7 @@ describe('ResultTransactional', () => {
     await expect(db.manyOrNone('SELECT * FROM test_rows')).resolves.toEqual([])
   })
 
-  it('rolls back and propagates when the method throws unexpectedly', async () => {
+  it('rolls back and propagates if the method throws unexpectedly', async () => {
     await expect(testService.writeThenThrowUnexpected('unexpected')).rejects.toThrow(
       'genuinely unexpected failure',
     )
@@ -121,7 +121,7 @@ describe('ResultTransactional', () => {
     await expect(db.manyOrNone('SELECT * FROM test_rows')).resolves.toEqual([])
   })
 
-  it('rolls back both writes when a later write resolves Err', async () => {
+  it('rolls back both writes if a later write resolves Err', async () => {
     const result = await testService.writeTwiceThenErr('first-write', 'second-write')
 
     expect(result.isErr()).toBe(true)

@@ -19,9 +19,10 @@ export function createOpenApiDocument(
     .addBearerAuth()
     .addSecurityRequirements('bearer')
 
-  for (const tag of Object.values(OpenApiTag)) {
-    documentBuilder.addTag(tag.name, tag.description)
-  }
+  // biome-ignore lint/suspicious/useIterableCallbackReturn: It's fine.
+  Object.values(OpenApiTag).forEach(({ name, description }) =>
+    documentBuilder.addTag(name, description),
+  )
 
   const document = SwaggerModule.createDocument(app, documentBuilder.build())
 

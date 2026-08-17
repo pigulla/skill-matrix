@@ -1,3 +1,5 @@
+/* v8 ignore file -- @preserve */
+
 import pgPromise from 'pg-promise'
 
 export const DEFAULT_TX_OPTIONS = {

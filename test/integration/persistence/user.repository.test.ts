@@ -53,13 +53,13 @@ describe('UserRepository', () => {
       expect(result._unsafeUnwrap()).toEqual(users.clemens)
     })
 
-    it('should return UserNotFoundError', async () => {
+    it('should return UserNotFoundError if the user does not exist', async () => {
       const result = await userRepository.get(UNKNOWN_USER_ID)
 
       expect(result).toEqual(err(new UserNotFoundError(UNKNOWN_USER_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       await db.none('ALTER TABLE users RENAME TO users_renamed')
 
       await expect(userRepository.get(users.clemens.id)).rejects.toThrow(UnexpectedPersistenceError)
@@ -73,7 +73,7 @@ describe('UserRepository', () => {
       expect(result._unsafeUnwrap()).to.have.deep.members(Object.values(users))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       await db.none('ALTER TABLE users RENAME TO users_renamed')
 
       await expect(userRepository.getAll()).rejects.toThrow(UnexpectedPersistenceError)
@@ -126,7 +126,7 @@ describe('UserRepository', () => {
       expect(result).toEqual(err(new DuplicateUserEmailError(users.peter.email)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       const updated = UserBuilder.from(users.clemens).withFirstName('Clemens-Bob').build()
 
       await db.none('ALTER TABLE users RENAME TO users_renamed')
@@ -152,7 +152,7 @@ describe('UserRepository', () => {
       expect(result).toEqual(err(new UserNotFoundError(UNKNOWN_USER_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       await db.none('ALTER TABLE users RENAME TO users_renamed')
 
       await expect(userRepository.delete(users.clemens.id)).rejects.toThrow(
@@ -201,7 +201,7 @@ describe('UserRepository', () => {
       expect(result).toEqual(err(new TeamReferenceNotFoundError(UNKNOWN_TEAM_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       const user = UserBuilder.create()
 
       await db.none('ALTER TABLE users RENAME TO users_renamed')

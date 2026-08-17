@@ -8,17 +8,20 @@ import { UnexpectedPersistenceError } from '#/application/error/unexpected-persi
 import { ITimeProvider } from '#/application/time-provider.interface.js'
 import { DuplicateExampleIdError } from '#/domain/example/error/duplicate-example-id.error.js'
 import { DuplicateExampleNameError } from '#/domain/example/error/duplicate-example-name.error.js'
+import { ExampleConcurrencyError } from '#/domain/example/error/example-concurrency.error.js'
 import { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
 import { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
-import type { ExampleID } from '#/domain/example/example-id.js'
 import { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
+import { toConcurrencyToken } from '#/infrastructure/persistence/concurrency-token.codec.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ExampleRepository } from '#/infrastructure/persistence/example/example.repository.js'
 import { mockTimeProvider, type TimeProviderMock } from '#/mocks.js'
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
+import { STALE_CONCURRENCY_TOKEN } from '../../util/concurrency-tokens.js'
 import { UNKNOWN_EXAMPLE_ID, UNKNOWN_EXAMPLE_KIND_ID } from '../../util/entity-ids.js'
 import { exampleKinds, examples } from '../fixture/fixture.js'
+import { type ETags, getETags } from '../fixture/get-etags.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
 const now = dayjs('2026-01-01T00:00:00.000Z')
@@ -30,6 +33,7 @@ describe('ExampleRepository', () => {
   let exampleRepository: ExampleRepository
   let timeProviderMock: TimeProviderMock
   let db: Database
+  let etags: ETags
 
   beforeAll(integrationTest.beforeAll)
   afterAll(integrationTest.afterAll)
@@ -49,6 +53,7 @@ describe('ExampleRepository', () => {
     app = await module.createNestApplication().enableShutdownHooks().init()
     exampleRepository = app.get(ExampleRepository)
     db = app.get(IConnectionProvider).database
+    etags = await getETags(db)
   })
 
   afterEach(async () => {
@@ -57,19 +62,22 @@ describe('ExampleRepository', () => {
   })
 
   describe('get', () => {
-    it('should return the example', async () => {
+    it('should return the example and its token', async () => {
       const result = await exampleRepository.get(examples.nestjs.id)
 
-      expect(result._unsafeUnwrap()).toEqual(examples.nestjs)
+      expect(result._unsafeUnwrap()).toEqual({
+        value: examples.nestjs,
+        token: etags.examples[examples.nestjs.id].token,
+      })
     })
 
-    it('should return ExampleNotFoundError when the example does not exist', async () => {
+    it('should return ExampleNotFoundError if the example does not exist', async () => {
       const result = await exampleRepository.get(UNKNOWN_EXAMPLE_ID)
 
       expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       await db.none('ALTER TABLE examples RENAME TO examples_renamed')
 
       await expect(exampleRepository.get(examples.nestjs.id)).rejects.toThrow(
@@ -85,42 +93,10 @@ describe('ExampleRepository', () => {
       expect(result._unsafeUnwrap()).to.have.deep.members(Object.values(examples))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       await db.none('ALTER TABLE examples RENAME TO examples_renamed')
 
       await expect(exampleRepository.getAll()).rejects.toThrow(UnexpectedPersistenceError)
-    })
-  })
-
-  describe('getMany', () => {
-    it('should return the requested examples ordered by name', async () => {
-      const result = await exampleRepository.getMany(
-        new Set([examples.postgresql.id, examples.nestjs.id]),
-      )
-
-      expect(result._unsafeUnwrap()).toEqual([examples.nestjs, examples.postgresql])
-    })
-
-    it('should return an empty array for an empty set', async () => {
-      const result = await exampleRepository.getMany(new Set<ExampleID>())
-
-      expect(result._unsafeUnwrap()).toEqual([])
-    })
-
-    it('should return ExampleNotFoundError when any requested example does not exist', async () => {
-      const result = await exampleRepository.getMany(
-        new Set([examples.nestjs.id, UNKNOWN_EXAMPLE_ID]),
-      )
-
-      expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
-    })
-
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
-      await db.none('ALTER TABLE examples RENAME TO examples_renamed')
-
-      await expect(exampleRepository.getMany(new Set([examples.nestjs.id]))).rejects.toThrow(
-        UnexpectedPersistenceError,
-      )
     })
   })
 
@@ -134,7 +110,7 @@ describe('ExampleRepository', () => {
 
       const result = await exampleRepository.create(graphql)
 
-      expect(result._unsafeUnwrap()).toEqual(graphql)
+      expect(result._unsafeUnwrap()).toEqual({ value: graphql, token: toConcurrencyToken(now) })
 
       await expect(
         db.oneOrNone('SELECT * FROM examples WHERE id=$(id)', { id: graphql.id }),
@@ -175,7 +151,7 @@ describe('ExampleRepository', () => {
       expect(result).toEqual(err(new ExampleKindReferenceNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       const graphql = ExampleBuilder.create({
         name: 'GraphQL',
         exampleKindId: exampleKinds.technology.id,
@@ -190,13 +166,16 @@ describe('ExampleRepository', () => {
   describe('update', () => {
     it('should update the example', async () => {
       const later = now.add(5, 'minutes')
-      timeProviderMock.now.mockReturnValue(later)
-
       const updated = ExampleBuilder.from(examples.nestjs).withUrl(null).build()
 
-      const result = await exampleRepository.update(updated)
+      timeProviderMock.now.mockReturnValue(later)
 
-      expect(result._unsafeUnwrap()).toEqual(updated)
+      const result = await exampleRepository.update(
+        updated,
+        etags.examples[examples.nestjs.id].token,
+      )
+
+      expect(result._unsafeUnwrap()).toEqual({ value: updated, token: toConcurrencyToken(later) })
 
       await expect(
         db.oneOrNone('SELECT * FROM examples WHERE id=$(id)', { id: updated.id }),
@@ -208,12 +187,22 @@ describe('ExampleRepository', () => {
       })
     })
 
+    it('should return ExampleConcurrencyError if the token does not match', async () => {
+      const result = await exampleRepository.update(
+        ExampleBuilder.from(examples.nestjs).withUrl(null).build(),
+        STALE_CONCURRENCY_TOKEN,
+      )
+
+      expect(result).toEqual(err(new ExampleConcurrencyError(examples.nestjs.id)))
+    })
+
     it('should return DuplicateExampleNameError if the name already exists', async () => {
+      const currentToken = etags.examples[examples.nestjs.id].token
       const conflict = ExampleBuilder.from(examples.nestjs)
         .withName(examples.postgresql.name)
         .build()
 
-      const result = await exampleRepository.update(conflict)
+      const result = await exampleRepository.update(conflict, currentToken)
 
       expect(result).toEqual(err(new DuplicateExampleNameError(examples.postgresql.name)))
     })
@@ -225,33 +214,39 @@ describe('ExampleRepository', () => {
         exampleKindId: exampleKinds.concept.id,
       })
 
-      const result = await exampleRepository.update(ghost)
+      const result = await exampleRepository.update(ghost, toConcurrencyToken(now))
 
       expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
     it('should return ExampleKindReferenceNotFoundError if the example kind does not exist', async () => {
+      const currentToken = etags.examples[examples.cobol.id].token
       const invalid = ExampleBuilder.from(examples.cobol)
         .withExampleKindId(UNKNOWN_EXAMPLE_KIND_ID)
         .build()
 
-      const result = await exampleRepository.update(invalid)
+      const result = await exampleRepository.update(invalid, currentToken)
 
       expect(result).toEqual(err(new ExampleKindReferenceNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
+      const currentToken = etags.examples[examples.nestjs.id].token
       const updated = ExampleBuilder.from(examples.nestjs).withUrl(null).build()
 
       await db.none('ALTER TABLE examples RENAME TO examples_renamed')
 
-      await expect(exampleRepository.update(updated)).rejects.toThrow(UnexpectedPersistenceError)
+      await expect(exampleRepository.update(updated, currentToken)).rejects.toThrow(
+        UnexpectedPersistenceError,
+      )
     })
   })
 
   describe('delete', () => {
     it('should delete an unreferenced example', async () => {
-      const result = await exampleRepository.delete(examples.cobol.id)
+      const currentToken = etags.examples[examples.cobol.id].token
+
+      const result = await exampleRepository.delete(examples.cobol.id, currentToken)
 
       expect(result.isOk()).toBe(true)
 
@@ -260,22 +255,32 @@ describe('ExampleRepository', () => {
       ).resolves.toBeNull()
     })
 
+    it('should return ExampleConcurrencyError if the token does not match', async () => {
+      const result = await exampleRepository.delete(examples.cobol.id, STALE_CONCURRENCY_TOKEN)
+
+      expect(result).toEqual(err(new ExampleConcurrencyError(examples.cobol.id)))
+    })
+
     it('should return ExampleInUseError if the example is referenced by a skill', async () => {
-      const result = await exampleRepository.delete(examples.nestjs.id)
+      const currentToken = etags.examples[examples.nestjs.id].token
+
+      const result = await exampleRepository.delete(examples.nestjs.id, currentToken)
 
       expect(result).toEqual(err(new ExampleInUseError(examples.nestjs.id)))
     })
 
     it('should return ExampleNotFoundError if the example does not exist', async () => {
-      const result = await exampleRepository.delete(UNKNOWN_EXAMPLE_ID)
+      const result = await exampleRepository.delete(UNKNOWN_EXAMPLE_ID, toConcurrencyToken(now))
 
       expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
+      const currentToken = etags.examples[examples.cobol.id].token
+
       await db.none('ALTER TABLE examples RENAME TO examples_renamed')
 
-      await expect(exampleRepository.delete(examples.cobol.id)).rejects.toThrow(
+      await expect(exampleRepository.delete(examples.cobol.id, currentToken)).rejects.toThrow(
         UnexpectedPersistenceError,
       )
     })

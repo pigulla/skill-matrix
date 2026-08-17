@@ -3,12 +3,14 @@ import {
   Catch,
   ConflictException,
   NotFoundException,
+  PreconditionFailedException,
   UnprocessableEntityException,
 } from '@nestjs/common'
 import { BaseExceptionFilter } from '@nestjs/core'
 import { serializeError } from 'serialize-error'
 
 import { DuplicateEntityError } from '#/domain/error/duplicate-entity.error.js'
+import { EntityConcurrencyError } from '#/domain/error/entity-concurrency.error.js'
 import { EntityInUseError } from '#/domain/error/entity-in-use.error.js'
 import { EntityNotFoundError } from '#/domain/error/entity-not-found.error.js'
 import { EntityReferenceNotFoundError } from '#/domain/error/entity-reference-not-found.error.js'
@@ -26,6 +28,8 @@ export class DomainErrorsExceptionFilter extends BaseExceptionFilter {
       super.catch(new ConflictException(exception.message, { cause }), host)
     } else if (exception instanceof EntityReferenceNotFoundError) {
       super.catch(new UnprocessableEntityException(exception.message, { cause }), host)
+    } else if (exception instanceof EntityConcurrencyError) {
+      super.catch(new PreconditionFailedException(exception.message, { cause }), host)
     } else {
       super.catch(exception, host)
     }

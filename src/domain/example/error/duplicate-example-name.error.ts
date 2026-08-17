@@ -1,8 +1,8 @@
-import { DuplicateEntityNameError } from '../../error/duplicate-entity-name.error.js'
+import { DuplicateEntityError } from '../../error/duplicate-entity.error.js'
 import { Example } from '../example.js'
 
-export class DuplicateExampleNameError extends DuplicateEntityNameError {
+export class DuplicateExampleNameError extends DuplicateEntityError<{ name: string }> {
   public constructor(name: string) {
-    super(Example.name, name)
+    super(Example.name, { name })
   }
 }

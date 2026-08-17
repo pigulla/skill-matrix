@@ -1,11 +1,8 @@
 import { DuplicateEntityError } from '../../error/duplicate-entity.error.js'
+import { User } from '../user.js'
 
-export class DuplicateUserEmailError extends DuplicateEntityError {
-  public readonly email: string
-
+export class DuplicateUserEmailError extends DuplicateEntityError<{ email: string }> {
   public constructor(email: string) {
-    super('Duplicate user email')
-
-    this.email = email
+    super(User.name, { email })
   }
 }

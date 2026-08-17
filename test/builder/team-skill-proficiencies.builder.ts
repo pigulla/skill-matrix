@@ -1,10 +1,10 @@
 import { asProficiency } from '#/domain/skill/proficiency/proficiency.js'
 import { SkillProficiency } from '#/domain/skill/proficiency/skill-proficiency.js'
 import { asSkillID } from '#/domain/skill/skill-id.js'
+import { TeamSkillProficiencies } from '#/domain/team/skill-proficiencies/team-skill-proficiencies.js'
 import { asTeamID } from '#/domain/team/team-id.js'
-import { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
 
-import { teams } from '../integration/fixture/fixture.js'
+import { UNKNOWN_TEAM_ID } from '../util/entity-ids.js'
 
 type Properties = {
   skillId: string
@@ -18,7 +18,7 @@ export type TeamSkillProficiencyProperties = {
 
 export class TeamSkillProficienciesBuilder {
   private properties: TeamSkillProficiencyProperties = {
-    teamId: teams.platformEngineering.id,
+    teamId: UNKNOWN_TEAM_ID,
     skills: [],
   }
 
@@ -58,7 +58,7 @@ export class TeamSkillProficienciesBuilder {
   public build(): TeamSkillProficiencies {
     return new TeamSkillProficiencies({
       teamId: asTeamID(this.properties.teamId),
-      items: this.properties.skills.map(
+      skills: this.properties.skills.map(
         skill =>
           new SkillProficiency({
             skillId: asSkillID(skill.skillId),

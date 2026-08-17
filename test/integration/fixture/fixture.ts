@@ -1,4 +1,4 @@
-import type { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
+import type { TeamSkillProficiencies } from '#/domain/team/skill-proficiencies/team-skill-proficiencies.js'
 
 import { ExampleBuilder } from '../../builder/example.builder.js'
 import { ExampleKindBuilder } from '../../builder/example-kind.builder.js'

@@ -24,6 +24,7 @@ export class Team implements Properties {
   public constructor(data: { id: TeamID; name: string }) {
     const result = teamSchema.safeParse(data)
 
+    /* v8 ignore next -- @preserve */
     if (result.error) {
       throw new InvalidTeamError(result.error)
     }

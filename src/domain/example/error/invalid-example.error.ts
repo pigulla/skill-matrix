@@ -5,6 +5,6 @@ import { Example } from '../example.js'
 
 export class InvalidExampleError extends InvalidEntityError {
   public constructor(cause: ZodError) {
-    super(`An entity of type ${Example.name} has failed validation`, cause)
+    super(Example.name, cause)
   }
 }

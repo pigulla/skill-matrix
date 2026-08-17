@@ -1,7 +1,8 @@
 INSERT INTO
-  teams (id, name)
+  teams (id, name, last_updated)
 VALUES
-  ($(id), $(name))
+  ($(id), $(name), $(lastUpdated))
 RETURNING
   id,
-  name;
+  name,
+  last_updated;

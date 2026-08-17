@@ -7,19 +7,19 @@ import { UnexpectedPersistenceError } from '#/application/error/unexpected-persi
 import { SkillReferenceNotFoundError } from '#/domain/skill/error/skill-reference-not-found.error.js'
 import type { SkillProficiency } from '#/domain/skill/proficiency/skill-proficiency.js'
 import type { SkillID } from '#/domain/skill/skill-id.js'
-import { DuplicateTeamSkillError } from '#/domain/team/error/duplicate-team-skill.error.js'
 import { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-not-found.error.js'
-import { TeamSkillNotFoundError } from '#/domain/team/error/team-skill-not-found.error.js'
+import { DuplicateTeamSkillProficienciesError } from '#/domain/team/skill-proficiencies/error/duplicate-team-skill-proficiencies.error.js'
+import { TeamSkillProficienciesNotFoundError } from '#/domain/team/skill-proficiencies/error/team-skill-proficiencies-not-found.error.js'
+import type { TeamSkillProficiencies } from '#/domain/team/skill-proficiencies/team-skill-proficiencies.js'
+import { ITeamSkillProficienciesRepository } from '#/domain/team/skill-proficiencies/team-skill-proficiencies.repository.interface.js'
 import type { TeamID } from '#/domain/team/team-id.js'
-import type { TeamSkillProficiencies } from '#/domain/team/team-skill-proficiencies.js'
-import { ITeamSkillProficienciesRepository } from '#/domain/team/team-skill-proficiencies.repository.interface.js'
 
 import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
 import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
 
 import { QUERY } from './sql/queries.js'
-import { teamSkillProficiencyRow } from './sql/team-skill-proficiencies.row.js'
+import { teamSkillProficienciesRow } from './sql/team-skill-proficiencies.row.js'
 
 const {
   DELETE_TEAM_SKILL_PROFICIENCY,
@@ -45,7 +45,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
     ).andThen(row =>
       row === null
         ? errAsync(new TeamNotFoundError(teamId))
-        : okAsync(teamSkillProficiencyRow.parse(row).toDomain()),
+        : okAsync(teamSkillProficienciesRow.parse(row).toDomain()),
     )
   }
 
@@ -54,7 +54,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
     proficiency: SkillProficiency,
   ): ResultAsync<
     void,
-    DuplicateTeamSkillError | SkillReferenceNotFoundError | TeamReferenceNotFoundError
+    DuplicateTeamSkillProficienciesError | SkillReferenceNotFoundError | TeamReferenceNotFoundError
   > {
     const { skillId } = proficiency
 
@@ -65,13 +65,13 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
         proficiency: proficiency.proficiency,
       }),
       error => {
-        if (isUniqueConstraintViolation('skills_to_teams_pkey', error)) {
-          return new DuplicateTeamSkillError({ teamId, skillId })
+        if (isUniqueConstraintViolation('skills_to_teams_with_proficiency_pkey', error)) {
+          return new DuplicateTeamSkillProficienciesError({ teamId, skillId })
         }
-        if (isForeignKeyViolation('skills_to_teams_skill_fkey', error)) {
+        if (isForeignKeyViolation('skills_to_teams_with_proficiency_skill_fkey', error)) {
           return new SkillReferenceNotFoundError(skillId)
         }
-        if (isForeignKeyViolation('skills_to_teams_team_fkey', error)) {
+        if (isForeignKeyViolation('skills_to_teams_with_proficiency_team_fkey', error)) {
           return new TeamReferenceNotFoundError(teamId)
         }
 
@@ -83,7 +83,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
   public update(
     teamId: TeamID,
     proficiency: SkillProficiency,
-  ): ResultAsync<void, TeamSkillNotFoundError> {
+  ): ResultAsync<void, TeamSkillProficienciesNotFoundError> {
     const { skillId } = proficiency
 
     return ResultAsync.fromPromise(
@@ -96,11 +96,16 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
         throw new UnexpectedPersistenceError(error as Error)
       },
     ).andThen(row =>
-      row === null ? errAsync(new TeamSkillNotFoundError({ teamId, skillId })) : okAsync(undefined),
+      row === null
+        ? errAsync(new TeamSkillProficienciesNotFoundError({ teamId, skillId }))
+        : okAsync(undefined),
     )
   }
 
-  public remove(teamId: TeamID, skillId: SkillID): ResultAsync<void, TeamSkillNotFoundError> {
+  public remove(
+    teamId: TeamID,
+    skillId: SkillID,
+  ): ResultAsync<void, TeamSkillProficienciesNotFoundError> {
     return ResultAsync.fromPromise(
       this.txHost.tx.oneOrNone<unknown>(DELETE_TEAM_SKILL_PROFICIENCY, {
         team_id: teamId,
@@ -110,7 +115,9 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
         throw new UnexpectedPersistenceError(error as Error)
       },
     ).andThen(row =>
-      row === null ? errAsync(new TeamSkillNotFoundError({ teamId, skillId })) : okAsync(undefined),
+      row === null
+        ? errAsync(new TeamSkillProficienciesNotFoundError({ teamId, skillId }))
+        : okAsync(undefined),
     )
   }
 }

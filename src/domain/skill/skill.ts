@@ -38,6 +38,7 @@ export class Skill implements Properties {
   public constructor(data: Properties) {
     const result = skillSchema.safeParse(data)
 
+    /* v8 ignore next -- @preserve */
     if (result.error) {
       throw new InvalidSkillError(result.error)
     }

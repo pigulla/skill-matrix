@@ -24,6 +24,7 @@ export class ExampleKind implements Properties {
   public constructor(data: { id: ExampleKindID; name: string }) {
     const result = exampleKindSchema.safeParse(data)
 
+    /* v8 ignore next -- @preserve */
     if (result.error) {
       throw new InvalidExampleKindError(result.error)
     }

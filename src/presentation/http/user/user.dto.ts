@@ -1,23 +1,28 @@
 import { createZodDto } from 'nestjs-zod'
-import { z } from 'zod'
 
 import { User, userSchema } from '#/domain/user/user.js'
-import { userIdSchema } from '#/domain/user/user-id.js'
 
-const baseUserFields = userSchema.pick({
-  email: true,
-  firstName: true,
-  lastName: true,
-  teamId: true,
-}).shape
+const createUserDTOSchema = userSchema
+  .pick({
+    email: true,
+    firstName: true,
+    lastName: true,
+    teamId: true,
+  })
+  .strict()
 
-const createUserDTOSchema = z.strictObject({ ...baseUserFields }).brand('create-user-dto')
-
-const updateUserDTOSchema = z
-  .strictObject({ ...baseUserFields, id: userIdSchema })
+const updateUserDTOSchema = userSchema
+  .pick({
+    id: true,
+    email: true,
+    firstName: true,
+    lastName: true,
+    teamId: true,
+  })
+  .strict()
   .brand('update-user-dto')
 
-const userDTOSchema = z.strictObject({ ...baseUserFields, id: userIdSchema }).brand('user-dto')
+const userDTOSchema = updateUserDTOSchema.brand('user-dto')
 
 export class CreateUserDTO extends createZodDto(createUserDTOSchema) {}
 

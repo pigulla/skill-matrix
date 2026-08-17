@@ -5,4 +5,5 @@ RETURNING
   id,
   first_name,
   last_name,
-  email;
+  email,
+  team_id;

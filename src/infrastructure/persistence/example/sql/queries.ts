@@ -4,7 +4,6 @@ export const QUERY = queryFiles(import.meta.dirname, [
   'delete',
   'get-all',
   'get',
-  'get-many',
   'insert',
   'update',
 ])

@@ -1,15 +1,18 @@
 import { createZodDto } from 'nestjs-zod'
-import { z } from 'zod'
 
 import { ExampleKind, exampleKindSchema } from '#/domain/example/kind/example-kind.js'
 
-const updateExampleKindDTOSchema = z.strictObject(exampleKindSchema.shape).brand('update-kind-dto')
+const createExampleKindDTOSchema = exampleKindSchema
+  .pick({ name: true })
+  .strict()
+  .brand('create-example-kind-dto')
 
-const createExampleKindDTOSchema = updateExampleKindDTOSchema
-  .omit({ id: true })
-  .brand('create-kind-dto')
+const updateExampleKindDTOSchema = exampleKindSchema
+  .pick({ id: true, name: true })
+  .strict()
+  .brand('update-example-kind-dto')
 
-const exampleKindDTOSchema = updateExampleKindDTOSchema.brand('kind-dto')
+const exampleKindDTOSchema = updateExampleKindDTOSchema.brand('example-kind-dto')
 
 export class CreateExampleKindDTO extends createZodDto(createExampleKindDTOSchema) {}
 

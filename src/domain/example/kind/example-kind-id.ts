@@ -7,10 +7,10 @@ export const exampleKindIdSchema = idSchema
   .refine(id => id.split('-')[1] === EntityIdMarker.EXAMPLE_KIND, {
     message: `ID must have marker '${EntityIdMarker.EXAMPLE_KIND}' in the second segment`,
   })
-  .brand('kind-id')
+  .brand('example-kind-id')
   .meta({
     description: 'The ID of the example kind.',
-    example: `00000000-${EntityIdMarker.EXAMPLE_KIND}-4000-8000-000000000000`,
+    example: `55555555-${EntityIdMarker.EXAMPLE_KIND}-4000-8000-111111111111`,
   })
 
 export type ExampleKindID = z.infer<typeof exampleKindIdSchema>

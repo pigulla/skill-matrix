@@ -1,11 +1,11 @@
 # compiled output
-/build
 /dist
 /node_modules
 /*.tsbuildinfo
 
 # Logs
 npm-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # OS
 .DS_Store
@@ -15,22 +15,7 @@ npm-debug.log*
 
 # IDEs and editors
 /.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+/.vscode
 
 # Apps-specific files
 /docs/openapi.html
@@ -44,4 +29,3 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 .mcp.json
 /src/version.json
-/dependency-graph.*

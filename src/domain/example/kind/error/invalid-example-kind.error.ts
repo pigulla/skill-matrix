@@ -5,6 +5,6 @@ import { ExampleKind } from '../example-kind.js'
 
 export class InvalidExampleKindError extends InvalidEntityError {
   public constructor(cause: ZodError) {
-    super(`An entity of type ${ExampleKind.name} has failed validation`, cause)
+    super(ExampleKind.name, cause)
   }
 }

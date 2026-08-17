@@ -10,7 +10,7 @@ export const exampleIdSchema = idSchema
   .brand('example-id')
   .meta({
     description: 'The ID of the example.',
-    example: `00000000-${EntityIdMarker.EXAMPLE}-4000-8000-000000000000`,
+    example: `44444444-${EntityIdMarker.EXAMPLE}-4000-8000-111111111111`,
   })
 
 export type ExampleID = z.infer<typeof exampleIdSchema>

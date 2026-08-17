@@ -10,7 +10,6 @@ export function mockExampleRepository(): ExampleRepositoryMock {
     delete: vi.fn(),
     get: vi.fn(),
     getAll: vi.fn(),
-    getMany: vi.fn(),
     update: vi.fn(),
   }
 }

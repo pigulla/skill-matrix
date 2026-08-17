@@ -45,7 +45,7 @@ export class UsersController {
 
   @Get()
   @ApiOperation({
-    operationId: 'users.getAll',
+    operationId: 'user.getAll',
     summary: 'Get all users.',
     description: 'Get all users.',
   })
@@ -61,7 +61,7 @@ export class UsersController {
 
   @Get(':id')
   @ApiOperation({
-    operationId: 'users.getOne',
+    operationId: 'user.getOne',
     summary: 'Get a user.',
     description: 'Get the user with the given id, if it exists.',
   })
@@ -86,7 +86,7 @@ export class UsersController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    operationId: 'users.delete',
+    operationId: 'user.delete',
     summary: 'Delete a user.',
     description: 'Delete the user with the given id, if it exists.',
   })
@@ -109,7 +109,7 @@ export class UsersController {
 
   @Post()
   @ApiOperation({
-    operationId: 'users.create',
+    operationId: 'user.create',
     summary: 'Create a new user.',
     description: 'Create a new user and return it.',
   })
@@ -140,7 +140,7 @@ export class UsersController {
   @Put(':id')
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_USER_ID })
   @ApiOperation({
-    operationId: 'users.update',
+    operationId: 'user.update',
     summary: 'Update an existing user.',
     description: 'Update an existing user, if it exists, and return it.',
   })
@@ -152,6 +152,10 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'The user with the given id was not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'A user with an identical email address already exists.',
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,

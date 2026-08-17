@@ -1,7 +1,8 @@
 INSERT INTO
-  example_kinds (id, name)
+  example_kinds (id, name, last_updated)
 VALUES
-  ($(id), $(name))
+  ($(id), $(name), $(lastUpdated))
 RETURNING
   id,
-  name;
+  name,
+  last_updated;

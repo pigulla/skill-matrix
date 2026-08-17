@@ -46,13 +46,13 @@ describe('MigrationRepository', () => {
       expect(result).not.toEqual([])
     })
 
-    it('should throw MissingMigrationsTableError when the migrations table does not exist', async () => {
+    it('should throw MissingMigrationsTableError if the table does not exist', async () => {
       await db.none('ALTER TABLE pgmigrations RENAME TO pgmigrations_renamed')
 
       await expect(migrationRepository.getAll()).rejects.toThrow(MissingMigrationsTableError)
     })
 
-    it('should throw UnexpectedPersistenceError when the query fails', async () => {
+    it('should throw UnexpectedPersistenceError if the query fails', async () => {
       await db.none('ALTER TABLE pgmigrations RENAME COLUMN name TO name_renamed')
 
       await expect(migrationRepository.getAll()).rejects.toThrow(UnexpectedPersistenceError)
