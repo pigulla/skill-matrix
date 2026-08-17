@@ -50,7 +50,7 @@
     "openapi:lint": "redocly lint docs/openapi.json",
     "start": "NODE_OPTIONS='--conditions development' jiti src/index.ts",
     "start:dist": "NODE_OPTIONS='--conditions dist' node dist/src/index.js",
-    "test": "npm run lint && npm run vitest:with-coverage && npm run openapi",
+    "test": "npm run lint && npm run vitest && npm run openapi",
     "vitest": "npm run vitest:unit && npm run vitest:integration",
     "vitest:integration": "vitest run --slowTestThreshold 10000 --testTimeout 15000 test/integration",
     "vitest:unit": "vitest run src",

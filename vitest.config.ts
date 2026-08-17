@@ -14,6 +14,7 @@ export default defineConfig({
     reporters: ['default'],
     coverage: {
       provider: 'v8',
+      reportOnFailure: true,
       include: ['src/**/*.ts'],
       exclude: [
         '**/*.config.ts',

@@ -1,4 +1,4 @@
-name: Deploy OpenAPI Docs
+name: Deploy Docs
 
 on:
   push:
@@ -31,10 +31,15 @@ jobs:
 
       - run: npm run openapi
 
+      - name: Run tests with coverage
+        continue-on-error: true
+        run: npm run vitest:with-coverage
+
       - name: Stage docs for Pages
         run: |
           mkdir -p pages
           cp docs/openapi.html pages/index.html
+          cp -r coverage pages/coverage
 
       - uses: actions/configure-pages@v5
 
