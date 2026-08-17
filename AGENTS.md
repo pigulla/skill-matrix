@@ -7,7 +7,7 @@ This file provides guidance to agents when working with code in this repository.
 ```bash
 # Development
 npm start                     # Run with jiti (TypeScript, development conditions)
-npm run build                 # Compile TypeScript + copy configs + copy SQL files
+npm run build                 # Compile TypeScript + copy configs + copy SQL files + write version.json
 
 # Testing
 npm run test                  # Run all tests and linting tasks.
@@ -20,9 +20,9 @@ npm run vitest                # All test categories
 npx vitest run path/to/file.test.ts
 
 # Lint & Format
-npm run lint                  # Full lint suite (tsc + architecture + biome + knip + sql + lockfile + package.json)
+npm run lint                  # Full lint suite (tsc + architecture + biome + knip + markdown + sql + lockfile + package.json)
 npm run lint:architecture     # Clean Architecture import-boundary check (dependency-cruiser)
-npm run format                # Format everything (biome + package.json + sql)
+npm run format                # Format everything (biome + markdown + package.json + sql)
 
 # OpenAPI docs
 npm run openapi               # Build, generate HTML, and validate spec
@@ -74,7 +74,7 @@ Concrete shape, layer by layer:
 - **Repository implementations** (`src/infrastructure/persistence/*/`): decorated with `@ResultTransactional()` only when a single repository method issues more than one DB statement that must succeed or fail together (e.g. an insert followed by writing associated rows) — this guarantees the method is safe on its own, even if it's ever called from something other than a service. A method that issues a single DB statement needs no decorator. Each method wraps its DB call(s) as `ResultAsync.fromPromise(promise, errorMapper)`. The `errorMapper` inspects the underlying `pg-promise` error — via `isUniqueConstraintViolation`/`isForeignKeyViolation`/`isRestrictViolation` — and `return`s a domain error instance to produce an `Err`; anything unrecognized is `throw`n as `UnexpectedPersistenceError`, which stays a genuine rejection, not an `Err`. Row-not-found (`oneOrNone` returning `null`) becomes `.andThen(row => row === null ? errAsync(new XNotFoundError(id)) : okAsync(...))`.
 - **Application services** (`src/application/*/`): compose repository calls with `.andThen(...)`/`.map(...)` combinators — no manual `await`/`try`/`catch`. Every public method is decorated with `@ResultTransactional()` (`src/util/result-transactional.decorator.ts`) instead of `@Transactional()`, including methods that make only a single repository call, for the same uniformity reason as above. The service-level transaction guarantees atomicity across multiple repository calls (or calls spanning multiple repositories) within one method — it composes correctly with any repository-level `@ResultTransactional()` from the point above, since a transaction already open in scope is reused rather than nested. `@ResultTransactional()` still runs the method inside a real DB transaction, but — unlike plain `@Transactional()` — it forces a genuine `ROLLBACK` when the wrapped method resolves `Err`, even if an earlier write in the same call already succeeded (a resolved `Err` is not a rejection, so plain `@Transactional()` would otherwise happily commit it). Never use plain `@Transactional()` on a method returning a `ResultAsync`, at either layer.
 - **Controllers** (`src/presentation/http/*/`): handler methods return `ResultAsync<Dto, E>` directly (instead of `Promise<Dto>`) and are additionally decorated with `@UnwrapResult()` (`src/util/unwrap-result.decorator.ts`), which awaits the result and either returns the `Ok` value or `throw`s the `Err` value — so the existing `DomainErrorsExceptionFilter` maps it to an HTTP status exactly as it would a direct throw, with no filter changes needed. Ideally, handler bodies should be one-liners, e.g. `return this.service.get(id).map(fromDomain)`.
-- **Tests**: integration tests assert on the resolved `Result` with `._unsafeUnwrap()` / `._unsafeUnwrapErr()` instead of `.resolves.toEqual(...)` / `.rejects.toThrow(SomeExpectedError)`. Genuinely unexpected errors (`UnexpectedPersistenceError`) still assert with `.rejects.toThrow(...)`, since those remain real rejections rather than `Err` values. Controller integration tests need no changes — HTTP status/body behavior is identical whether an error was thrown directly or unwrapped from a `Result`.
+- **Tests**: integration tests assert on the resolved `Result` itself, instead of `.resolves.toEqual(...)` / `.rejects.toThrow(SomeExpectedError)` — see the `writing-tests` skill for the exact assertion pattern. Genuinely unexpected errors (`UnexpectedPersistenceError`) still assert with `.rejects.toThrow(...)`, since those remain real rejections rather than `Err` values. Controller integration tests need no changes — HTTP status/body behavior is identical whether an error was thrown directly or unwrapped from a `Result`.
 
 ### Code Conventions
 
@@ -83,7 +83,7 @@ Concrete shape, layer by layer:
 - Always prefer Dayjs instances to native Date objects. Architecturally, don't consider Dayjs an external dependency but a pure domain object.
 - Only `throw` instances of `Error` (or one of its subclasses).
 - Do not use TypeScript's `enum` keyword. Instead, use `export const ENUM = { KEY: 'key' } as const` and export the type like so: `export type Enum = (typeof ENUM)[keyof typeof ENUM]`. The name of the keys are always in SCREAMING_SNAKE_CASE, the value are lower-kebab-cased.
-- All services and repositories must have an explicit interface definition as an abstract class. This abstract class doubles as the injection token for dependency injection. For example, a service named PaymentService must implement an IPaymentService interface defined as an abstract IPaymentService class. Implementations implement their corresponding interfaces, they do not extend them.
+- All services and repositories must have an explicit interface definition as an abstract class. This abstract class doubles as the injection token for dependency injection. For example, a service named PaymentService must implement an IPaymentService interface defined as an abstract IPaymentService class. The class actually registered against that DI token (the `provide: IPaymentService` in a module) must implement it, not extend it. This doesn't forbid a shared abstract base class between several concrete implementations that itself sits below the DI boundary — e.g. `UuidProvider` (`src/infrastructure/uuid/uuid-provider.ts`) provides a shared `generate()` template method and is extended by `SkillUuidProvider`/`UserUuidProvider`/etc.; neither `UuidProvider` nor its own parent `IUuidProvider` is ever used as a `provide:` token, only the concrete `I<Entity>UuidProvider`/`<Entity>UuidProvider` pairs are, and those still follow implements-not-extends.
 
 ### Testing
 
@@ -123,7 +123,8 @@ Because the build is ESM-first, always use `.js` extensions in import specifiers
 
 ## Toolchain notes
 
-- **Biome** replaces ESLint + Prettier. Run `npm run format:biome` to auto-fix formatting, `npm run lint:biome` to lint.
+- **Biome** replaces ESLint and is the formatter/linter for TypeScript, JavaScript and JSON. Run `npm run format:biome` to auto-fix formatting, `npm run lint:biome` to lint.
+- **Prettier** is used for Markdown files and nothing else — `.prettierignore` ignores `*` and re-includes only `!*.md`. It formats every `.md` file in the repo, including `AGENTS.md`, `docs/**` and `.claude/skills/**` (which Biome does not cover at all). Run `npm run format:markdown` to auto-fix, `npm run lint:markdown` to check; both are part of `npm run format` / `npm run lint`, so editing any Markdown file without formatting it fails the lint suite. Everything else is covered by Biome (above), sql-formatter (`format:sql`/`lint:sql`) and sort-package-json (`format:package-json`/`lint:package-json`).
 - **Knip** detects unused exports/dependencies — `npm run lint:knip`.
 - **dependency-cruiser** enforces the Clean Architecture import boundaries — `npm run lint:architecture`. Rules live in `.dependency-cruiser.cjs`.
 - **Integration tests** use Testcontainers (real PostgreSQL). They require Docker. See the `writing-tests` skill for test conventions (and the `database-changes` skill for repository/persistence specifics).

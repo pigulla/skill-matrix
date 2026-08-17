@@ -5,7 +5,7 @@ import type { ConcurrencyToken } from '#/domain/concurrency-token.js'
 import type { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
 import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
 import type { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
-import type { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
+import type { TeamInUseError } from '#/domain/team/error/team-in-use.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import type { Properties, Team } from '#/domain/team/team.js'
 import type { TeamID } from '#/domain/team/team-id.js'
@@ -18,7 +18,7 @@ export abstract class ITeamService {
   public abstract delete(
     id: TeamID,
     expectedToken: ConcurrencyToken,
-  ): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError | TeamConcurrencyError>
+  ): ResultAsync<void, TeamNotFoundError | TeamInUseError | TeamConcurrencyError>
   public abstract get(id: TeamID): ResultAsync<WithConcurrencyToken<Team>, TeamNotFoundError>
   public abstract getAll(): ResultAsync<Team[], never>
   public abstract update(

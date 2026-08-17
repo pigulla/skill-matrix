@@ -28,7 +28,7 @@ DROP TABLE widgets;
 
 ## Build
 
-`.sql` migrations are copied into `dist/migrations` at build time by `npm run build:copy-sql`. Keep them as real files; nothing generates them.
+`.sql` migrations are copied into `dist/migrations` at build time by `npm run build:copy:sql`. Keep them as real files; nothing generates them.
 
 ## Startup guard (how migrations are enforced)
 

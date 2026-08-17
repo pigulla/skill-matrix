@@ -39,14 +39,6 @@ export class SkillService implements ISkillService {
   }
 
   @ResultTransactional()
-  public delete(
-    id: SkillID,
-    expectedToken: ConcurrencyToken,
-  ): ResultAsync<void, SkillInUseError | SkillNotFoundError | SkillConcurrencyError> {
-    return this.skillRepository.delete(id, expectedToken)
-  }
-
-  @ResultTransactional()
   public create(
     properties: Except<Properties, 'id'>,
   ): ResultAsync<
@@ -80,5 +72,13 @@ export class SkillService implements ISkillService {
       .andThen(existing =>
         this.skillRepository.update(existing.value.update(properties), expectedToken),
       )
+  }
+
+  @ResultTransactional()
+  public delete(
+    id: SkillID,
+    expectedToken: ConcurrencyToken,
+  ): ResultAsync<void, SkillInUseError | SkillNotFoundError | SkillConcurrencyError> {
+    return this.skillRepository.delete(id, expectedToken)
   }
 }

@@ -33,8 +33,8 @@ export class TeamSkillProficiencies {
   public readonly teamId: TeamID
   public readonly skills: ReadonlyMap<SkillID, SkillProficiency>
 
-  public constructor(data: Properties) {
-    const result = teamSkillProficienciesSchema.safeParse(data)
+  public constructor(properties: Properties) {
+    const result = teamSkillProficienciesSchema.safeParse(properties)
 
     /* v8 ignore next -- @preserve */
     if (result.error) {

@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
 import dayjs from 'dayjs'
-import { err } from 'neverthrow'
+import { err, type Ok, ok } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
@@ -23,10 +23,9 @@ import { exampleKinds } from '../fixture/fixture.js'
 import { type ETags, getETags } from '../fixture/get-etags.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
-const now = dayjs('2026-01-01T00:00:00.000Z')
-
 describe('ExampleKindRepository', () => {
   const integrationTest = setupIntegrationTest()
+  const now = dayjs('2026-01-01T00:00:00.000Z')
 
   let app: INestApplication
   let exampleKindRepository: ExampleKindRepository
@@ -64,10 +63,12 @@ describe('ExampleKindRepository', () => {
     it('should return the example kind and its token', async () => {
       const result = await exampleKindRepository.get(exampleKinds.technology.id)
 
-      expect(result._unsafeUnwrap()).toEqual({
-        value: exampleKinds.technology,
-        token: etags.exampleKinds[exampleKinds.technology.id].token,
-      })
+      expect(result).toEqual(
+        ok({
+          value: exampleKinds.technology,
+          token: etags.exampleKinds[exampleKinds.technology.id].token,
+        }),
+      )
     })
 
     it('should return ExampleKindNotFoundError if the example kind does not exist', async () => {
@@ -89,7 +90,10 @@ describe('ExampleKindRepository', () => {
     it('should return all example kinds', async () => {
       const result = await exampleKindRepository.getAll()
 
-      expect(result._unsafeUnwrap()).to.have.deep.members(Object.values(exampleKinds))
+      expect(result.isOk()).toBe(true)
+      expect((result as Ok<unknown, unknown>).value).to.have.deep.members(
+        Object.values(exampleKinds),
+      )
     })
 
     it('should throw UnexpectedPersistenceError if the query fails', async () => {
@@ -105,10 +109,12 @@ describe('ExampleKindRepository', () => {
 
       const result = await exampleKindRepository.create(exampleKind)
 
-      expect(result._unsafeUnwrap()).toEqual({
-        value: exampleKind,
-        token: toConcurrencyToken(now),
-      })
+      expect(result).toEqual(
+        ok({
+          value: exampleKind,
+          token: toConcurrencyToken(now),
+        }),
+      )
 
       await expect(
         db.oneOrNone('SELECT * FROM example_kinds WHERE id=$(id)', { id: exampleKind.id }),
@@ -158,7 +164,12 @@ describe('ExampleKindRepository', () => {
         etags.exampleKinds[exampleKinds.pattern.id].token,
       )
 
-      expect(result._unsafeUnwrap()).toEqual({ value: updated, token: toConcurrencyToken(later) })
+      expect(result).toEqual(
+        ok({
+          value: updated,
+          token: toConcurrencyToken(later),
+        }),
+      )
 
       await expect(
         db.oneOrNone('SELECT * FROM example_kinds WHERE id=$(id)', { id: updated.id }),
@@ -183,7 +194,7 @@ describe('ExampleKindRepository', () => {
       expect(result).toEqual(err(new ExampleKindNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
     })
 
-    it('should return DuplicateExampleKindNameError if the name is taken', async () => {
+    it('should return DuplicateExampleKindNameError if the name already exists', async () => {
       const currentToken = etags.exampleKinds[exampleKinds.pattern.id].token
       const updated = ExampleKindBuilder.from(exampleKinds.pattern)
         .withName(exampleKinds.technology.name)
@@ -214,7 +225,7 @@ describe('ExampleKindRepository', () => {
 
       const result = await exampleKindRepository.delete(exampleKinds.concept.id, currentToken)
 
-      expect(result.isOk()).toBe(true)
+      expect(result).toEqual(ok(undefined))
 
       await expect(
         db.oneOrNone('SELECT * FROM example_kinds WHERE id=$(id)', { id: exampleKinds.concept.id }),

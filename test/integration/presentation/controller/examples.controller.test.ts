@@ -138,6 +138,12 @@ describe('ExamplesController', () => {
         })
         .expect(HttpStatus.BAD_REQUEST))
 
+    it('should return 409 Conflict if the name is not unique', () =>
+      request(app.getHttpServer())
+        .post('/examples')
+        .send({ name: examples.cobol.name, exampleKindId: exampleKinds.technology.id, url: null })
+        .expect(HttpStatus.CONFLICT))
+
     it('should return 422 Unprocessable Entity if a referenced example kind does not exist', () =>
       request(app.getHttpServer())
         .post('/examples')
@@ -146,39 +152,39 @@ describe('ExamplesController', () => {
   })
 
   describe('PUT /examples/:id', () => {
-    it('should return 200 OK', async () => {
-      const expected = ExampleBuilder.from(examples.cobol).withName('C0B01').build()
+    const body = ExampleBuilder.from(examples.cobol).withName('C0B01').build().toJSON()
 
+    it('should return 200 OK', async () => {
       const response = await request(app.getHttpServer())
-        .put(`/examples/${examples.cobol.id}`)
+        .put(`/examples/${body.id}`)
         .set('If-Match', etags.examples[examples.cobol.id].etag)
-        .send(expected.toJSON())
+        .send(body)
         .expect(HttpStatus.OK)
         .expect('etag', ETAG_PATTERN)
-        .expect(expected.toJSON())
+        .expect(body)
 
       expect(response.headers.etag).not.toEqual(etags.examples[examples.cobol.id].etag)
     })
 
     it('should return 400 Bad Request if a payload property is malformed', () =>
       request(app.getHttpServer())
-        .put(`/examples/${examples.cobol.id}`)
+        .put(`/examples/${body.id}`)
         .set('If-Match', etags.examples[examples.cobol.id].etag)
-        .send({ ...examples.cobol.toJSON(), url: 42 })
+        .send({ ...body, url: 42 })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the ids do not match', () =>
       request(app.getHttpServer())
-        .put(`/examples/${examples.cobol.id}`)
+        .put(`/examples/${body.id}`)
         .set('If-Match', etags.examples[examples.cobol.id].etag)
-        .send({ ...examples.cobol.toJSON(), id: examples.react.id })
+        .send({ ...body, id: examples.react.id })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the payload contains an unknown property', () =>
       request(app.getHttpServer())
-        .put(`/examples/${examples.cobol.id}`)
+        .put(`/examples/${body.id}`)
         .set('If-Match', etags.examples[examples.cobol.id].etag)
-        .send({ ...examples.cobol.toJSON(), extraneous: 'nope' })
+        .send({ ...body, extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 404 Not Found if the example does not exist', () =>
@@ -188,24 +194,31 @@ describe('ExamplesController', () => {
         .send(ExampleBuilder.from(examples.cobol).withId(UNKNOWN_EXAMPLE_ID).build().toJSON())
         .expect(HttpStatus.NOT_FOUND))
 
-    it('should return 422 Unprocessable Entity if a referenced example kind does not exist', () =>
+    it('should return 409 Conflict if the name is not unique', () =>
       request(app.getHttpServer())
-        .put(`/examples/${examples.cobol.id}`)
+        .put(`/examples/${body.id}`)
         .set('If-Match', etags.examples[examples.cobol.id].etag)
-        .send({ ...examples.cobol.toJSON(), exampleKindId: UNKNOWN_EXAMPLE_KIND_ID })
-        .expect(HttpStatus.UNPROCESSABLE_ENTITY))
+        .send({ ...body, name: examples.react.name })
+        .expect(HttpStatus.CONFLICT))
 
     it('should return 412 Precondition Failed if the If-Match header is stale', () =>
       request(app.getHttpServer())
-        .put(`/examples/${examples.cobol.id}`)
+        .put(`/examples/${body.id}`)
         .set('If-Match', STALE_ETAG)
         .send(examples.cobol.toJSON())
         .expect(HttpStatus.PRECONDITION_FAILED))
 
+    it('should return 422 Unprocessable Entity if a referenced example kind does not exist', () =>
+      request(app.getHttpServer())
+        .put(`/examples/${body.id}`)
+        .set('If-Match', etags.examples[examples.cobol.id].etag)
+        .send({ ...body, exampleKindId: UNKNOWN_EXAMPLE_KIND_ID })
+        .expect(HttpStatus.UNPROCESSABLE_ENTITY))
+
     it('should return 428 Precondition Required if the If-Match header is missing', () =>
       request(app.getHttpServer())
-        .put(`/examples/${examples.cobol.id}`)
-        .send(examples.cobol.toJSON())
+        .put(`/examples/${body.id}`)
+        .send(body)
         .expect(HttpStatus.PRECONDITION_REQUIRED))
   })
 })

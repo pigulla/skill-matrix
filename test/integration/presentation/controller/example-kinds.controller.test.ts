@@ -125,73 +125,85 @@ describe('ExampleKindsController', () => {
         .send({ name: 42 })
         .expect(HttpStatus.BAD_REQUEST))
 
-    it('should return 409 Conflict if the name is not unique', () =>
-      request(app.getHttpServer())
-        .post('/examples/kinds')
-        .send({ name: exampleKinds.technology.name })
-        .expect(HttpStatus.CONFLICT))
-
     it('should return 400 Bad Request if the payload contains an unknown property', () =>
       request(app.getHttpServer())
         .post('/examples/kinds')
         .send({ name: 'Tool', extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
+
+    it('should return 409 Conflict if the name is not unique', () =>
+      request(app.getHttpServer())
+        .post('/examples/kinds')
+        .send({ name: exampleKinds.technology.name })
+        .expect(HttpStatus.CONFLICT))
   })
 
   describe('PUT /examples/kinds/:id', () => {
-    const expected = ExampleKindBuilder.from(exampleKinds.concept).withName('Idea').build()
+    const body = ExampleKindBuilder.from(exampleKinds.concept).withName('Idea').build().toJSON()
 
     it('should return 200 OK', async () => {
       const response = await request(app.getHttpServer())
-        .put(`/examples/kinds/${exampleKinds.concept.id}`)
+        .put(`/examples/kinds/${body.id}`)
         .set('If-Match', etags.exampleKinds[exampleKinds.concept.id].etag)
-        .send(expected.toJSON())
+        .send(body)
         .expect(HttpStatus.OK)
         .expect('etag', ETAG_PATTERN)
-        .expect(expected.toJSON())
+        .expect(body)
 
       expect(response.headers.etag).not.toEqual(etags.exampleKinds[exampleKinds.concept.id].etag)
     })
 
     it('should return 400 Bad Request if a payload property is malformed', () =>
       request(app.getHttpServer())
-        .put(`/examples/kinds/${exampleKinds.concept.id}`)
+        .put(`/examples/kinds/${body.id}`)
         .set('If-Match', etags.exampleKinds[exampleKinds.concept.id].etag)
-        .send({ ...expected.toJSON(), name: 42 })
+        .send({ ...body, name: 42 })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the ids do not match', () =>
       request(app.getHttpServer())
-        .put(`/examples/kinds/${exampleKinds.concept.id}`)
+        .put(`/examples/kinds/${body.id}`)
         .set('If-Match', etags.exampleKinds[exampleKinds.concept.id].etag)
-        .send({ ...expected.toJSON(), id: exampleKinds.pattern.id })
+        .send({ ...body, id: exampleKinds.pattern.id })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the payload contains an unknown property', () =>
       request(app.getHttpServer())
-        .put(`/examples/kinds/${exampleKinds.concept.id}`)
+        .put(`/examples/kinds/${body.id}`)
         .set('If-Match', etags.exampleKinds[exampleKinds.concept.id].etag)
-        .send({ ...expected.toJSON(), extraneous: 'nope' })
+        .send({ ...body, extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 404 Not Found if the example kind does not exist', () =>
       request(app.getHttpServer())
         .put(`/examples/kinds/${UNKNOWN_EXAMPLE_KIND_ID}`)
         .set('If-Match', STALE_ETAG)
-        .send({ ...expected.toJSON(), id: UNKNOWN_EXAMPLE_KIND_ID })
+        .send({ ...body, id: UNKNOWN_EXAMPLE_KIND_ID })
         .expect(HttpStatus.NOT_FOUND))
+
+    it('should return 409 Conflict if the name is not unique', () =>
+      request(app.getHttpServer())
+        .put(`/examples/kinds/${body.id}`)
+        .set('If-Match', etags.exampleKinds[exampleKinds.concept.id].etag)
+        .send(
+          ExampleKindBuilder.from(exampleKinds.concept)
+            .withName(exampleKinds.technology.name)
+            .build()
+            .toJSON(),
+        )
+        .expect(HttpStatus.CONFLICT))
 
     it('should return 412 Precondition Failed if the If-Match header is stale', () =>
       request(app.getHttpServer())
-        .put(`/examples/kinds/${exampleKinds.concept.id}`)
+        .put(`/examples/kinds/${body.id}`)
         .set('If-Match', STALE_ETAG)
-        .send(expected.toJSON())
+        .send(body)
         .expect(HttpStatus.PRECONDITION_FAILED))
 
     it('should return 428 Precondition Required if the If-Match header is missing', () =>
       request(app.getHttpServer())
-        .put(`/examples/kinds/${exampleKinds.concept.id}`)
-        .send(expected.toJSON())
+        .put(`/examples/kinds/${body.id}`)
+        .send(body)
         .expect(HttpStatus.PRECONDITION_REQUIRED))
   })
 })

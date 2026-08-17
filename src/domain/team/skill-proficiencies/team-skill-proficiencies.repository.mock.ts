@@ -6,8 +6,8 @@ export type TeamSkillProficienciesRepositoryMock = Mocked<ITeamSkillProficiencie
 
 export function mockTeamSkillProficienciesRepository(): TeamSkillProficienciesRepositoryMock {
   return {
-    add: vi.fn(),
     get: vi.fn(),
+    add: vi.fn(),
     remove: vi.fn(),
     update: vi.fn(),
   }

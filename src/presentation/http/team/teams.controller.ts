@@ -19,15 +19,16 @@ import type { ConcurrencyToken } from '#/domain/concurrency-token.js'
 import type { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
 import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
 import type { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
-import type { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
+import type { TeamInUseError } from '#/domain/team/error/team-in-use.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
-import { EXAMPLE_ETAG } from '#/presentation/http/etag.js'
-import { ETagResponse } from '#/presentation/http/etag-response.decorator.js'
-import { IfMatchHeader } from '#/presentation/http/if-match-header.decorator.js'
-import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
+
+import { EXAMPLE_ETAG } from '../etag.js'
+import { ETagResponse } from '../etag-response.decorator.js'
+import { IfMatchHeader } from '../if-match-header.decorator.js'
+import { OpenApiTag } from '../openapi.tag.js'
 
 import { CreateTeamDTO, fromDomain, TeamDTO, UpdateTeamDTO } from './team.dto.js'
 
@@ -78,7 +79,7 @@ export class TeamsController {
     description: 'The operation completed successfully.',
     headers: {
       ETag: {
-        description: 'The team’s current ETag .',
+        description: 'The team’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -107,7 +108,7 @@ export class TeamsController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_TEAM_ID })
   @ApiHeader({
     name: 'If-Match',
-    description: 'The team’s current ETag .',
+    description: 'The team’s current ETag.',
     required: true,
     example: EXAMPLE_ETAG,
   })
@@ -136,7 +137,7 @@ export class TeamsController {
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: TeamID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
-  ): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError | TeamConcurrencyError> {
+  ): ResultAsync<void, TeamNotFoundError | TeamInUseError | TeamConcurrencyError> {
     return this.service.delete(id, expectedToken)
   }
 
@@ -152,7 +153,7 @@ export class TeamsController {
     type: TeamDTO,
     headers: {
       ETag: {
-        description: 'The team’s current ETag .',
+        description: 'The team’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -180,7 +181,7 @@ export class TeamsController {
   })
   @ApiHeader({
     name: 'If-Match',
-    description: 'The team’s current ETag .',
+    description: 'The team’s current ETag.',
     required: true,
     example: EXAMPLE_ETAG,
   })
@@ -190,7 +191,7 @@ export class TeamsController {
     type: TeamDTO,
     headers: {
       ETag: {
-        description: 'The team’s current ETag .',
+        description: 'The team’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },

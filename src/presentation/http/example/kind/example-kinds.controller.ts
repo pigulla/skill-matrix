@@ -26,11 +26,12 @@ import {
   type ExampleKindID,
 } from '#/domain/example/kind/example-kind-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
-import { EXAMPLE_ETAG } from '#/presentation/http/etag.js'
-import { ETagResponse } from '#/presentation/http/etag-response.decorator.js'
-import { IfMatchHeader } from '#/presentation/http/if-match-header.decorator.js'
-import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
+
+import { EXAMPLE_ETAG } from '../../etag.js'
+import { ETagResponse } from '../../etag-response.decorator.js'
+import { IfMatchHeader } from '../../if-match-header.decorator.js'
+import { OpenApiTag } from '../../openapi.tag.js'
 
 import {
   CreateExampleKindDTO,
@@ -86,7 +87,7 @@ export class ExampleKindsController {
     description: 'The operation completed successfully.',
     headers: {
       ETag: {
-        description: 'The example kind’s current ETag .',
+        description: 'The example kind’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -115,7 +116,7 @@ export class ExampleKindsController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_EXAMPLE_KIND_ID })
   @ApiHeader({
     name: 'If-Match',
-    description: 'The example kind’s current ETag .',
+    description: 'The example kind’s current ETag.',
     required: true,
     example: EXAMPLE_ETAG,
   })
@@ -163,7 +164,7 @@ export class ExampleKindsController {
     type: ExampleKindDTO,
     headers: {
       ETag: {
-        description: 'The example kind’s current ETag .',
+        description: 'The example kind’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -194,7 +195,7 @@ export class ExampleKindsController {
   })
   @ApiHeader({
     name: 'If-Match',
-    description: 'The example kind’s current ETag .',
+    description: 'The example kind’s current ETag.',
     required: true,
     example: EXAMPLE_ETAG,
   })
@@ -204,7 +205,7 @@ export class ExampleKindsController {
     type: ExampleKindDTO,
     headers: {
       ETag: {
-        description: 'The example kind’s current ETag .',
+        description: 'The example kind’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },

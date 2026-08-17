@@ -6,7 +6,7 @@ import type { ConcurrencyToken } from '#/domain/concurrency-token.js'
 import type { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
 import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
 import type { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
-import type { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
+import type { TeamInUseError } from '#/domain/team/error/team-in-use.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { type Properties, Team } from '#/domain/team/team.js'
 import { ITeamRepository } from '#/domain/team/team.repository.interface.js'
@@ -38,14 +38,6 @@ export class TeamService implements ITeamService {
   }
 
   @ResultTransactional()
-  public delete(
-    id: TeamID,
-    expectedToken: ConcurrencyToken,
-  ): ResultAsync<void, TeamNotFoundError | TeamNotEmptyError | TeamConcurrencyError> {
-    return this.teamRepository.delete(id, expectedToken)
-  }
-
-  @ResultTransactional()
   public create(
     properties: Except<Properties, 'id'>,
   ): ResultAsync<WithConcurrencyToken<Team>, DuplicateTeamIdError | DuplicateTeamNameError> {
@@ -68,5 +60,13 @@ export class TeamService implements ITeamService {
       .andThen(existing =>
         this.teamRepository.update(existing.value.update(properties), expectedToken),
       )
+  }
+
+  @ResultTransactional()
+  public delete(
+    id: TeamID,
+    expectedToken: ConcurrencyToken,
+  ): ResultAsync<void, TeamNotFoundError | TeamInUseError | TeamConcurrencyError> {
+    return this.teamRepository.delete(id, expectedToken)
   }
 }

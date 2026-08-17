@@ -22,7 +22,7 @@ import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
 import { isRestrictViolation } from '../error/is-restrict-violation.js'
 import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
 
-import { exampleDeleteRow, exampleRow, exampleUpdateRow } from './sql/examples.row.js'
+import { exampleDeleteRow, exampleRow, exampleUpdateRow } from './sql/example.row.js'
 import { QUERY } from './sql/queries.js'
 
 const { DELETE, GET_ALL, GET, INSERT, UPDATE } = QUERY
@@ -40,6 +40,12 @@ export class ExampleRepository implements IExampleRepository {
     this.timeProvider = timeProvider
   }
 
+  public getAll(): ResultAsync<Example[], never> {
+    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
+      throw new UnexpectedPersistenceError(error as Error)
+    }).map(rows => rows.map(row => exampleRow.parse(row).toDomain()))
+  }
+
   public get(id: ExampleID): ResultAsync<WithConcurrencyToken<Example>, ExampleNotFoundError> {
     return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(GET, { id }), error => {
       throw new UnexpectedPersistenceError(error as Error)
@@ -52,12 +58,6 @@ export class ExampleRepository implements IExampleRepository {
 
       return okAsync({ value: parsed.toDomain(), token: parsed.getConcurrencyToken() })
     })
-  }
-
-  public getAll(): ResultAsync<Example[], never> {
-    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
-      throw new UnexpectedPersistenceError(error as Error)
-    }).map(rows => rows.map(row => exampleRow.parse(row).toDomain()))
   }
 
   public create(
@@ -103,30 +103,39 @@ export class ExampleRepository implements IExampleRepository {
   > {
     const { id, name, exampleKindId, url } = example
     const lastUpdated = this.timeProvider.now().toDate()
-    const self = this
 
-    async function update(): Promise<WithConcurrencyToken<Example>> {
-      // oneOrNone yields: null (no such example), all-null columns (stale token), or a populated row (updated).
-      const row = await self.txHost.tx.oneOrNone<unknown>(UPDATE, {
+    return ResultAsync.fromPromise(
+      this.txHost.tx.oneOrNone<unknown>(UPDATE, {
         id,
         name,
         exampleKindId,
         url,
         lastUpdated,
         expectedToken,
-      })
+      }),
+      error => {
+        if (isUniqueConstraintViolation('examples_name', error)) {
+          return new DuplicateExampleNameError(name)
+        }
+        if (isForeignKeyViolation('examples_example_kind_id_fkey', error)) {
+          return new ExampleKindReferenceNotFoundError(exampleKindId)
+        }
 
+        throw new UnexpectedPersistenceError(error as Error)
+      },
+    ).andThen(row => {
+      // oneOrNone yields: null (no such example), all-null columns (stale token), or a populated row (updated).
       if (row === null) {
-        throw new ExampleNotFoundError(id)
+        return errAsync(new ExampleNotFoundError(id))
       }
 
       const parsed = exampleUpdateRow.parse(row)
 
       if (parsed.id === null) {
-        throw new ExampleConcurrencyError(id)
+        return errAsync(new ExampleConcurrencyError(id))
       }
 
-      return {
+      return okAsync({
         value: new Example({
           id: parsed.id,
           name: parsed.name,
@@ -134,21 +143,7 @@ export class ExampleRepository implements IExampleRepository {
           url: parsed.url,
         }),
         token: toConcurrencyToken(parsed.last_updated),
-      }
-    }
-
-    return ResultAsync.fromPromise(update(), error => {
-      if (error instanceof ExampleNotFoundError || error instanceof ExampleConcurrencyError) {
-        return error
-      }
-      if (isUniqueConstraintViolation('examples_name', error)) {
-        return new DuplicateExampleNameError(name)
-      }
-      if (isForeignKeyViolation('examples_example_kind_id_fkey', error)) {
-        return new ExampleKindReferenceNotFoundError(exampleKindId)
-      }
-
-      throw new UnexpectedPersistenceError(error as Error)
+      })
     })
   }
 

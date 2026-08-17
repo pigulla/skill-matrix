@@ -35,8 +35,8 @@ export class Skill implements Properties {
   public readonly description: string
   public readonly exampleIds: ReadonlySet<ExampleID>
 
-  public constructor(data: Properties) {
-    const result = skillSchema.safeParse(data)
+  public constructor(properties: Properties) {
+    const result = skillSchema.safeParse(properties)
 
     /* v8 ignore next -- @preserve */
     if (result.error) {
@@ -49,9 +49,9 @@ export class Skill implements Properties {
     this.exampleIds = new Set(result.data.exampleIds)
   }
 
-  public update(data: Partial<Except<Properties, 'id'>>): Skill {
+  public update(properties: Partial<Except<Properties, 'id'>>): Skill {
     // Let's not rely on TypeScript only. The id should never be accidentally overwritten.
-    return new Skill({ ...this, ...data, id: this.id })
+    return new Skill({ ...this, ...properties, id: this.id })
   }
 
   public toJSON(): JsonObject {

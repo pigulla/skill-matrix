@@ -15,18 +15,13 @@ import type { TeamSkillProficiencies } from '#/domain/team/skill-proficiencies/t
 import { ITeamSkillProficienciesRepository } from '#/domain/team/skill-proficiencies/team-skill-proficiencies.repository.interface.js'
 import type { TeamID } from '#/domain/team/team-id.js'
 
-import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
-import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
+import { isForeignKeyViolation } from '../../error/is-foreign-key-violation.js'
+import { isUniqueConstraintViolation } from '../../error/is-unique-constraint-violation.js'
 
 import { QUERY } from './sql/queries.js'
 import { teamSkillProficienciesRow } from './sql/team-skill-proficiencies.row.js'
 
-const {
-  DELETE_TEAM_SKILL_PROFICIENCY,
-  GET_TEAM_SKILL_PROFICIENCIES,
-  INSERT_TEAM_SKILL_PROFICIENCY,
-  UPDATE_TEAM_SKILL_PROFICIENCY,
-} = QUERY
+const { DELETE, GET, INSERT, UPDATE } = QUERY
 
 @Injectable()
 export class TeamSkillProficienciesRepository implements ITeamSkillProficienciesRepository {
@@ -38,7 +33,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
 
   public get(teamId: TeamID): ResultAsync<TeamSkillProficiencies, TeamNotFoundError> {
     return ResultAsync.fromPromise(
-      this.txHost.tx.oneOrNone<unknown>(GET_TEAM_SKILL_PROFICIENCIES, { team_id: teamId }),
+      this.txHost.tx.oneOrNone<unknown>(GET, { team_id: teamId }),
       error => {
         throw new UnexpectedPersistenceError(error as Error)
       },
@@ -59,7 +54,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
     const { skillId } = proficiency
 
     return ResultAsync.fromPromise(
-      this.txHost.tx.one<unknown>(INSERT_TEAM_SKILL_PROFICIENCY, {
+      this.txHost.tx.one<unknown>(INSERT, {
         team_id: teamId,
         skill_id: skillId,
         proficiency: proficiency.proficiency,
@@ -87,7 +82,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
     const { skillId } = proficiency
 
     return ResultAsync.fromPromise(
-      this.txHost.tx.oneOrNone<unknown>(UPDATE_TEAM_SKILL_PROFICIENCY, {
+      this.txHost.tx.oneOrNone<unknown>(UPDATE, {
         team_id: teamId,
         skill_id: skillId,
         proficiency: proficiency.proficiency,
@@ -107,7 +102,7 @@ export class TeamSkillProficienciesRepository implements ITeamSkillProficiencies
     skillId: SkillID,
   ): ResultAsync<void, TeamSkillProficienciesNotFoundError> {
     return ResultAsync.fromPromise(
-      this.txHost.tx.oneOrNone<unknown>(DELETE_TEAM_SKILL_PROFICIENCY, {
+      this.txHost.tx.oneOrNone<unknown>(DELETE, {
         team_id: teamId,
         skill_id: skillId,
       }),

@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
-import { err } from 'neverthrow'
+import { err, ok } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
@@ -10,7 +10,7 @@ import { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-n
 import { DuplicateTeamSkillProficienciesError } from '#/domain/team/skill-proficiencies/error/duplicate-team-skill-proficiencies.error.js'
 import { TeamSkillProficienciesNotFoundError } from '#/domain/team/skill-proficiencies/error/team-skill-proficiencies-not-found.error.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
-import { TeamSkillProficienciesRepository } from '#/infrastructure/persistence/team/team-skill-proficiencies.repository.js'
+import { TeamSkillProficienciesRepository } from '#/infrastructure/persistence/team/skill-proficiencies/team-skill-proficiencies.repository.js'
 
 import { SkillProficiencyBuilder } from '../../builder/skill-proficiency.builder.js'
 import { UNKNOWN_SKILL_ID, UNKNOWN_TEAM_ID } from '../../util/entity-ids.js'
@@ -51,13 +51,13 @@ describe('TeamSkillProficienciesRepository', () => {
     it('should return the skill proficiencies for a team', async () => {
       const result = await repository.get(teams.traffic.id)
 
-      expect(result._unsafeUnwrap()).toEqual(teamSkillProficiencies.traffic)
+      expect(result).toEqual(ok(teamSkillProficiencies.traffic))
     })
 
     it('should return an empty collection for a team with no skills', async () => {
       const result = await repository.get(teams.testing.id)
 
-      expect(result._unsafeUnwrap()).toEqual(teamSkillProficiencies.testing)
+      expect(result).toEqual(ok(teamSkillProficiencies.testing))
     })
 
     it('should return TeamNotFoundError if the team does not exist', async () => {
@@ -84,7 +84,7 @@ describe('TeamSkillProficienciesRepository', () => {
 
       const result = await repository.add(teams.traffic.id, created)
 
-      expect(result.isOk()).toBe(true)
+      expect(result).toEqual(ok(undefined))
 
       await expect(
         db.manyOrNone(
@@ -178,7 +178,7 @@ describe('TeamSkillProficienciesRepository', () => {
 
       const result = await repository.update(teams.traffic.id, updated)
 
-      expect(result.isOk()).toBe(true)
+      expect(result).toEqual(ok(undefined))
 
       await expect(
         db.oneOrNone(
@@ -228,7 +228,7 @@ describe('TeamSkillProficienciesRepository', () => {
     it('should remove the skill association', async () => {
       const result = await repository.remove(teams.traffic.id, skills.backendDevelopment.id)
 
-      expect(result.isOk()).toBe(true)
+      expect(result).toEqual(ok(undefined))
 
       await expect(
         db.manyOrNone(

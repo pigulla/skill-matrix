@@ -13,14 +13,17 @@ import type { Skill } from './skill.js'
 import type { SkillID } from './skill-id.js'
 
 export abstract class ISkillRepository {
+  public abstract getAll(): ResultAsync<Skill[], never>
+
+  public abstract get(id: SkillID): ResultAsync<WithConcurrencyToken<Skill>, SkillNotFoundError>
+
   public abstract create(
     skill: Skill,
   ): ResultAsync<
     WithConcurrencyToken<Skill>,
     DuplicateSkillIdError | DuplicateSkillNameError | ExampleReferenceNotFoundError
   >
-  public abstract get(id: SkillID): ResultAsync<WithConcurrencyToken<Skill>, SkillNotFoundError>
-  public abstract getAll(): ResultAsync<Skill[], never>
+
   public abstract update(
     skill: Skill,
     expectedToken: ConcurrencyToken,
@@ -31,6 +34,7 @@ export abstract class ISkillRepository {
     | ExampleReferenceNotFoundError
     | SkillConcurrencyError
   >
+
   public abstract delete(
     id: SkillID,
     expectedToken: ConcurrencyToken,

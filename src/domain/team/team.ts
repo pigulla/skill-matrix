@@ -21,8 +21,8 @@ export class Team implements Properties {
   public readonly id: TeamID
   public readonly name: string
 
-  public constructor(data: { id: TeamID; name: string }) {
-    const result = teamSchema.safeParse(data)
+  public constructor(properties: Properties) {
+    const result = teamSchema.safeParse(properties)
 
     /* v8 ignore next -- @preserve */
     if (result.error) {
@@ -33,9 +33,9 @@ export class Team implements Properties {
     this.name = result.data.name
   }
 
-  public update(data: Partial<Except<Properties, 'id'>>): Team {
+  public update(properties: Partial<Except<Properties, 'id'>>): Team {
     // Let's not rely on TypeScript only. The id should never be accidentally overwritten.
-    return new Team({ ...this, ...data, id: this.id })
+    return new Team({ ...this, ...properties, id: this.id })
   }
 
   public toJSON(): JsonObject {

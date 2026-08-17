@@ -29,13 +29,8 @@ export class Example implements Properties {
   public readonly exampleKindId: ExampleKindID
   public readonly url: string | null
 
-  public constructor(data: {
-    id: ExampleID
-    name: string
-    exampleKindId: ExampleKindID
-    url: string | null
-  }) {
-    const result = exampleSchema.safeParse(data)
+  public constructor(properties: Properties) {
+    const result = exampleSchema.safeParse(properties)
 
     /* v8 ignore next -- @preserve */
     if (result.error) {
@@ -48,9 +43,9 @@ export class Example implements Properties {
     this.url = result.data.url
   }
 
-  public update(data: Partial<Except<Properties, 'id'>>): Example {
+  public update(properties: Partial<Except<Properties, 'id'>>): Example {
     // Let's not rely on TypeScript only. The id should never be accidentally overwritten.
-    return new Example({ ...this, ...data, id: this.id })
+    return new Example({ ...this, ...properties, id: this.id })
   }
 
   public toJSON(): JsonObject {

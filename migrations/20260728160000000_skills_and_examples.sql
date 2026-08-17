@@ -19,7 +19,7 @@ CREATE TABLE example_kinds (
 CREATE TABLE examples (
   id UUID NOT NULL CONSTRAINT examples_pkey PRIMARY KEY,
   name VARCHAR NOT NULL CONSTRAINT examples_name UNIQUE,
-  example_kind_id UUID NOT NULL CONSTRAINT examples_example_kind_id_fkey REFERENCES example_kinds (id),
+  example_kind_id UUID NOT NULL CONSTRAINT examples_example_kind_id_fkey REFERENCES example_kinds (id) ON DELETE RESTRICT,
   url VARCHAR,
   last_updated TIMESTAMPTZ NOT NULL
 );

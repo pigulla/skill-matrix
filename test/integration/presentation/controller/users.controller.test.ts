@@ -136,15 +136,15 @@ describe('UsersController', () => {
   })
 
   describe('PUT /users/:id', () => {
-    const updated = UserBuilder.from(users.peter)
+    const body = UserBuilder.from(users.peter)
       .withLastName('Spaghetti')
       .withTeamId(teams.testing.id)
       .build()
-    const body = updated.toJSON()
+      .toJSON()
 
     it('should return 200 OK', async () => {
       await request(app.getHttpServer())
-        .put(`/users/${updated.id}`)
+        .put(`/users/${body.id}`)
         .send(body)
         .expect(HttpStatus.OK)
         .expect(body)
@@ -152,19 +152,19 @@ describe('UsersController', () => {
 
     it('should return 400 Bad Request if a payload property is malformed', () =>
       request(app.getHttpServer())
-        .put(`/users/${updated.id}`)
+        .put(`/users/${body.id}`)
         .send({ ...body, firstName: 42 })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the ids do not match', () =>
       request(app.getHttpServer())
-        .put(`/users/${updated.id}`)
+        .put(`/users/${body.id}`)
         .send({ ...body, id: users.clemens.id })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the payload contains an unknown property', () =>
       request(app.getHttpServer())
-        .put(`/users/${updated.id}`)
+        .put(`/users/${body.id}`)
         .send({ ...body, extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
 
@@ -176,7 +176,7 @@ describe('UsersController', () => {
 
     it('should return 409 Conflict if the email is not unique', () =>
       request(app.getHttpServer())
-        .put(`/users/${updated.id}`)
+        .put(`/users/${body.id}`)
         .send({
           ...body,
           email: users.cherie.email,
@@ -185,7 +185,7 @@ describe('UsersController', () => {
 
     it('should return 422 Unprocessable Entity if the referenced team does not exist', () =>
       request(app.getHttpServer())
-        .put(`/users/${updated.id}`)
+        .put(`/users/${body.id}`)
         .send({ ...body, teamId: UNKNOWN_TEAM_ID })
         .expect(HttpStatus.UNPROCESSABLE_ENTITY))
   })

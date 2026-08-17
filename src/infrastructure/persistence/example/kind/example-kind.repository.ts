@@ -17,14 +17,14 @@ import type { ExampleKindID } from '#/domain/example/kind/example-kind-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 
 import { toConcurrencyToken } from '../../concurrency-token.codec.js'
-import { isForeignKeyViolation } from '../../error/is-foreign-key-violation.js'
+import { isRestrictViolation } from '../../error/is-restrict-violation.js'
 import { isUniqueConstraintViolation } from '../../error/is-unique-constraint-violation.js'
 
 import {
   exampleKindDeleteRow,
   exampleKindRow,
   exampleKindUpdateRow,
-} from './sql/example-kinds.row.js'
+} from './sql/example-kind.row.js'
 import { QUERY } from './sql/queries.js'
 
 const { DELETE, GET, GET_ALL, INSERT, UPDATE } = QUERY
@@ -42,6 +42,12 @@ export class ExampleKindRepository implements IExampleKindRepository {
     this.timeProvider = timeProvider
   }
 
+  public getAll(): ResultAsync<ExampleKind[], never> {
+    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
+      throw new UnexpectedPersistenceError(error as Error)
+    }).map(rows => rows.map(row => exampleKindRow.parse(row).toDomain()))
+  }
+
   public get(
     id: ExampleKindID,
   ): ResultAsync<WithConcurrencyToken<ExampleKind>, ExampleKindNotFoundError> {
@@ -56,12 +62,6 @@ export class ExampleKindRepository implements IExampleKindRepository {
 
       return okAsync({ value: parsed.toDomain(), token: parsed.getConcurrencyToken() })
     })
-  }
-
-  public getAll(): ResultAsync<ExampleKind[], never> {
-    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
-      throw new UnexpectedPersistenceError(error as Error)
-    }).map(rows => rows.map(row => exampleKindRow.parse(row).toDomain()))
   }
 
   public create(
@@ -101,45 +101,36 @@ export class ExampleKindRepository implements IExampleKindRepository {
   > {
     const { id, name } = exampleKind
     const lastUpdated = this.timeProvider.now().toDate()
-    const self = this
 
-    async function update(): Promise<WithConcurrencyToken<ExampleKind>> {
-      // oneOrNone yields: null (no such example kind), all-null columns (stale token), or a populated row (updated).
-      const row = await self.txHost.tx.oneOrNone<unknown>(UPDATE, {
+    return ResultAsync.fromPromise(
+      this.txHost.tx.oneOrNone<unknown>(UPDATE, {
         id,
         name,
         lastUpdated,
         expectedToken,
-      })
+      }),
+      error => {
+        if (isUniqueConstraintViolation('example_kinds_name', error)) {
+          return new DuplicateExampleKindNameError(name)
+        }
 
+        throw new UnexpectedPersistenceError(error as Error)
+      },
+    ).andThen(row => {
       if (row === null) {
-        throw new ExampleKindNotFoundError(id)
+        return errAsync(new ExampleKindNotFoundError(id))
       }
 
       const parsed = exampleKindUpdateRow.parse(row)
 
       if (parsed.id === null) {
-        throw new ExampleKindConcurrencyError(id)
+        return errAsync(new ExampleKindConcurrencyError(id))
       }
 
-      return {
+      return okAsync({
         value: new ExampleKind({ id: parsed.id, name: parsed.name }),
         token: toConcurrencyToken(parsed.last_updated),
-      }
-    }
-
-    return ResultAsync.fromPromise(update(), error => {
-      if (
-        error instanceof ExampleKindNotFoundError ||
-        error instanceof ExampleKindConcurrencyError
-      ) {
-        return error
-      }
-      if (isUniqueConstraintViolation('example_kinds_name', error)) {
-        return new DuplicateExampleKindNameError(name)
-      }
-
-      throw new UnexpectedPersistenceError(error as Error)
+      })
     })
   }
 
@@ -150,17 +141,17 @@ export class ExampleKindRepository implements IExampleKindRepository {
     void,
     ExampleKindNotFoundError | ExampleKindInUseError | ExampleKindConcurrencyError
   > {
-    // oneOrNone yields: null (no such example kind), { id: null } (stale token), or { id } (deleted).
     return ResultAsync.fromPromise(
       this.txHost.tx.oneOrNone<unknown>(DELETE, { id, expectedToken }),
       error => {
-        if (isForeignKeyViolation('examples_example_kind_id_fkey', error)) {
+        if (isRestrictViolation('examples_example_kind_id_fkey', error)) {
           return new ExampleKindInUseError(id)
         }
 
         throw new UnexpectedPersistenceError(error as Error)
       },
     ).andThen(row => {
+      // oneOrNone yields: null (no such example kind), { id: null } (stale token), or { id } (deleted).
       if (row === null) {
         return errAsync(new ExampleKindNotFoundError(id))
       }

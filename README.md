@@ -34,10 +34,10 @@ Tear the stack down with `npm run docker:compose-down`.
 
 ```bash
 npm run build       # compile to dist/
-npm run test        # lint + full test suite + audit
+npm run test        # lint + full test suite + openapi (regenerates docs/openapi.json|html)
 npm run vitest       # unit + integration tests
-npm run lint         # tsc + architecture + biome + knip + sql + lockfile + package.json + prettier (markdown only)
-npm run format       # auto-fix formatting
+npm run lint         # tsc + architecture + biome + knip + markdown (prettier) + sql + lockfile + package.json
+npm run format       # auto-fix formatting (biome + markdown + package.json + sql)
 npm run openapi      # build + render + lint the OpenAPI spec
 ```
 
@@ -53,7 +53,7 @@ For reliable breakpoints, debug against a real `tsc` build instead of the jiti d
 
 ```bash
 npm run build:dev
-NODE_OPTIONS='--conditions dist' node dist/src/index.js
+npm run start:dist
 ```
 
 `tsc` emits accurate sourcemaps alongside `dist/src/index.js`, so breakpoints set in the `.ts` source line up correctly.

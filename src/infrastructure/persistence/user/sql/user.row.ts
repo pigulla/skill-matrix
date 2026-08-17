@@ -4,7 +4,7 @@ import { teamIdSchema } from '#/domain/team/team-id.js'
 import { User } from '#/domain/user/user.js'
 import { userIdSchema } from '#/domain/user/user-id.js'
 
-export const usersRow = z
+export const userRow = z
   .strictObject({
     id: userIdSchema,
     email: z.string(),
@@ -20,4 +20,4 @@ export const usersRow = z
     },
   }))
   .readonly()
-  .brand('users-row')
+  .brand('user-row')

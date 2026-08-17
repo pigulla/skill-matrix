@@ -7,14 +7,14 @@ import { dayjsSchema } from '#/util/dayjs.schema.js'
 
 import { toConcurrencyToken } from '../../concurrency-token.codec.js'
 
-const skillsRowSchema = z.strictObject({
+const skillRowSchema = z.strictObject({
   id: skillIdSchema,
   name: z.string(),
   description: z.string(),
   last_updated: dayjsSchema,
 })
 
-export const skillWithExampleIdsRow = skillsRowSchema
+export const skillWithExampleIdsRow = skillRowSchema
   .extend({
     example_ids: z.array(exampleIdSchema).refine(ids => new Set(ids).size === ids.length, {
       message: 'Duplicate example IDs in view result',

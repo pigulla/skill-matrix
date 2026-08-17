@@ -20,8 +20,8 @@ export class SkillProficiency implements Properties {
   public readonly skillId: SkillID
   public readonly proficiency: Proficiency
 
-  public constructor(data: Properties) {
-    const result = skillProficiencySchema.safeParse(data)
+  public constructor(properties: Properties) {
+    const result = skillProficiencySchema.safeParse(properties)
 
     /* v8 ignore next -- @preserve */
     if (result.error) {

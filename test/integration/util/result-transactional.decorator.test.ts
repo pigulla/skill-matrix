@@ -4,7 +4,7 @@ import type {
   Database,
   TransactionalAdapterPgPromise,
 } from '@nestjs-cls/transactional-adapter-pg-promise'
-import { errAsync, okAsync, ResultAsync } from 'neverthrow'
+import { err, errAsync, ok, okAsync, ResultAsync } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
@@ -99,7 +99,8 @@ describe('ResultTransactional', () => {
   it('commits the write if the method resolves Ok', async () => {
     const result = await testService.writeThenOk('committed')
 
-    expect(result.isOk()).toBe(true)
+    expect(result).toEqual(ok('committed'))
+
     await expect(db.manyOrNone('SELECT * FROM test_rows')).resolves.toEqual([
       { value: 'committed' },
     ])
@@ -108,8 +109,8 @@ describe('ResultTransactional', () => {
   it('rolls back the write if the method resolves Err', async () => {
     const result = await testService.writeThenErr('rolled-back')
 
-    expect(result.isErr()).toBe(true)
-    expect(result._unsafeUnwrapErr()).toBeInstanceOf(TestError)
+    expect(result).toEqual(err(new TestError('expected failure after a write')))
+
     await expect(db.manyOrNone('SELECT * FROM test_rows')).resolves.toEqual([])
   })
 
@@ -124,8 +125,8 @@ describe('ResultTransactional', () => {
   it('rolls back both writes if a later write resolves Err', async () => {
     const result = await testService.writeTwiceThenErr('first-write', 'second-write')
 
-    expect(result.isErr()).toBe(true)
-    expect(result._unsafeUnwrapErr()).toBeInstanceOf(TestError)
+    expect(result).toEqual(err(new TestError('expected failure after the second write')))
+
     await expect(db.manyOrNone('SELECT * FROM test_rows')).resolves.toEqual([])
   })
 })

@@ -24,11 +24,12 @@ import type { ExampleNotFoundError } from '#/domain/example/error/example-not-fo
 import { EXAMPLE_EXAMPLE_ID, type ExampleID } from '#/domain/example/example-id.js'
 import type { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
-import { EXAMPLE_ETAG } from '#/presentation/http/etag.js'
-import { ETagResponse } from '#/presentation/http/etag-response.decorator.js'
-import { IfMatchHeader } from '#/presentation/http/if-match-header.decorator.js'
-import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
+
+import { EXAMPLE_ETAG } from '../etag.js'
+import { ETagResponse } from '../etag-response.decorator.js'
+import { IfMatchHeader } from '../if-match-header.decorator.js'
+import { OpenApiTag } from '../openapi.tag.js'
 
 import { CreateExampleDTO, ExampleDTO, fromDomain, UpdateExampleDTO } from './example.dto.js'
 
@@ -63,7 +64,7 @@ export class ExamplesController {
   })
   @UnwrapResult()
   public getAll(): ResultAsync<ExampleDTO[], never> {
-    return this.service.getAll().map(examples => examples.map(example => fromDomain(example)))
+    return this.service.getAll().map(examples => examples.map(fromDomain))
   }
 
   @Get(':id')
@@ -79,7 +80,7 @@ export class ExamplesController {
     description: 'The operation completed successfully.',
     headers: {
       ETag: {
-        description: 'The example’s current ETag .',
+        description: 'The example’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -108,7 +109,7 @@ export class ExamplesController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_EXAMPLE_ID })
   @ApiHeader({
     name: 'If-Match',
-    description: 'The example’s current ETag .',
+    description: 'The example’s current ETag.',
     required: true,
     example: EXAMPLE_ETAG,
   })
@@ -153,7 +154,7 @@ export class ExamplesController {
     description: 'The operation completed successfully.',
     headers: {
       ETag: {
-        description: 'The example’s current ETag .',
+        description: 'The example’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -188,7 +189,7 @@ export class ExamplesController {
   })
   @ApiHeader({
     name: 'If-Match',
-    description: 'The example’s current ETag .',
+    description: 'The example’s current ETag.',
     required: true,
     example: EXAMPLE_ETAG,
   })
@@ -198,7 +199,7 @@ export class ExamplesController {
     description: 'The operation completed successfully.',
     headers: {
       ETag: {
-        description: 'The example’s current ETag .',
+        description: 'The example’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -213,12 +214,12 @@ export class ExamplesController {
     description: 'An example with an identical name already exists.',
   })
   @ApiResponse({
-    status: HttpStatus.UNPROCESSABLE_ENTITY,
-    description: 'The referenced example kind does not exist.',
-  })
-  @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
     description: 'The If-Match header does not match the example’s current ETag.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    description: 'The referenced example kind does not exist.',
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_REQUIRED,

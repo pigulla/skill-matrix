@@ -10,6 +10,7 @@ const createUserDTOSchema = userSchema
     teamId: true,
   })
   .strict()
+  .brand('create-user-dto')
 
 const updateUserDTOSchema = userSchema
   .pick({

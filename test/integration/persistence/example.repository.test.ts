@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
 import dayjs from 'dayjs'
-import { err } from 'neverthrow'
+import { err, type Ok, ok } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
@@ -24,10 +24,9 @@ import { exampleKinds, examples } from '../fixture/fixture.js'
 import { type ETags, getETags } from '../fixture/get-etags.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
-const now = dayjs('2026-01-01T00:00:00.000Z')
-
 describe('ExampleRepository', () => {
   const integrationTest = setupIntegrationTest()
+  const now = dayjs('2026-01-01T00:00:00.000Z')
 
   let app: INestApplication
   let exampleRepository: ExampleRepository
@@ -65,10 +64,12 @@ describe('ExampleRepository', () => {
     it('should return the example and its token', async () => {
       const result = await exampleRepository.get(examples.nestjs.id)
 
-      expect(result._unsafeUnwrap()).toEqual({
-        value: examples.nestjs,
-        token: etags.examples[examples.nestjs.id].token,
-      })
+      expect(result).toEqual(
+        ok({
+          value: examples.nestjs,
+          token: etags.examples[examples.nestjs.id].token,
+        }),
+      )
     })
 
     it('should return ExampleNotFoundError if the example does not exist', async () => {
@@ -90,7 +91,8 @@ describe('ExampleRepository', () => {
     it('should return all examples', async () => {
       const result = await exampleRepository.getAll()
 
-      expect(result._unsafeUnwrap()).to.have.deep.members(Object.values(examples))
+      expect(result.isOk()).toBe(true)
+      expect((result as Ok<unknown, unknown>).value).to.have.deep.members(Object.values(examples))
     })
 
     it('should throw UnexpectedPersistenceError if the query fails', async () => {
@@ -110,7 +112,12 @@ describe('ExampleRepository', () => {
 
       const result = await exampleRepository.create(graphql)
 
-      expect(result._unsafeUnwrap()).toEqual({ value: graphql, token: toConcurrencyToken(now) })
+      expect(result).toEqual(
+        ok({
+          value: graphql,
+          token: toConcurrencyToken(now),
+        }),
+      )
 
       await expect(
         db.oneOrNone('SELECT * FROM examples WHERE id=$(id)', { id: graphql.id }),
@@ -175,7 +182,12 @@ describe('ExampleRepository', () => {
         etags.examples[examples.nestjs.id].token,
       )
 
-      expect(result._unsafeUnwrap()).toEqual({ value: updated, token: toConcurrencyToken(later) })
+      expect(result).toEqual(
+        ok({
+          value: updated,
+          token: toConcurrencyToken(later),
+        }),
+      )
 
       await expect(
         db.oneOrNone('SELECT * FROM examples WHERE id=$(id)', { id: updated.id }),
@@ -248,7 +260,7 @@ describe('ExampleRepository', () => {
 
       const result = await exampleRepository.delete(examples.cobol.id, currentToken)
 
-      expect(result.isOk()).toBe(true)
+      expect(result).toEqual(ok(undefined))
 
       await expect(
         db.oneOrNone('SELECT * FROM examples WHERE id=$(id)', { id: examples.cobol.id }),

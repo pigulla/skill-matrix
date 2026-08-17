@@ -6,7 +6,7 @@ import { dayjsSchema } from '#/util/dayjs.schema.js'
 
 import { toConcurrencyToken } from '../../concurrency-token.codec.js'
 
-export const teamsRow = z
+export const teamRow = z
   .strictObject({
     id: teamIdSchema,
     name: z.string(),
@@ -18,9 +18,9 @@ export const teamsRow = z
     getConcurrencyToken: () => toConcurrencyToken(data.last_updated),
   }))
   .readonly()
-  .brand('teams-row')
+  .brand('team-row')
 
-export const teamsUpdateRow = z
+export const teamUpdateRow = z
   .union([
     z.strictObject({
       id: teamIdSchema,
@@ -34,9 +34,9 @@ export const teamsUpdateRow = z
     }),
   ])
   .readonly()
-  .brand('teams-update-row')
+  .brand('team-update-row')
 
-export const teamsDeleteRow = z
+export const teamDeleteRow = z
   .union([z.strictObject({ id: teamIdSchema }), z.strictObject({ id: z.null() })])
   .readonly()
-  .brand('teams-delete-row')
+  .brand('team-delete-row')

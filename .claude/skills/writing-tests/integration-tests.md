@@ -31,7 +31,8 @@ it("returns 404 when the user doesn't exist", () =>
     request(app.getHttpServer()).get(`/users/${unknownUserId}`).expect(HttpStatus.NOT_FOUND));
 ```
 
-- Test the HTTP contract: success bodies, validation failures (`it.each` over bad payloads → `400`), domain errors mapped to status codes (`404`/`409`/`422`/...), and `500` for unexpected errors.
+- Test the HTTP contract: success bodies, a single bad-payload case → `400` (no need to enumerate every invalid variant), and domain errors mapped to status codes (`404`/`409`/`422`/...).
+- **Don't test the 500/unexpected-error path.** There's no reliable way to force a real collaborator into an unexpected failure without mocking it, and controllers are never given a mocked service — so this path is left uncovered by default.
 - Controllers have no business logic and are never unit-tested — this is their only test coverage, so it must exercise the real service and real repository against the real database rather than a mocked service. There is no `mockUserService`/`useValue` override here, and no `*.mock.ts` factory for application services is used in these tests.
 - Use the existing fixture rows (`../fixture/fixture.js`) for read/update/delete cases and craft new payloads for creation cases — same template database described below.
 

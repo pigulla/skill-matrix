@@ -39,14 +39,6 @@ export class ExampleService implements IExampleService {
   }
 
   @ResultTransactional()
-  public delete(
-    id: ExampleID,
-    expectedToken: ConcurrencyToken,
-  ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError | ExampleConcurrencyError> {
-    return this.exampleRepository.delete(id, expectedToken)
-  }
-
-  @ResultTransactional()
   public create(
     properties: Except<Properties, 'id'>,
   ): ResultAsync<
@@ -75,5 +67,13 @@ export class ExampleService implements IExampleService {
       .andThen(existing =>
         this.exampleRepository.update(existing.value.update(properties), expectedToken),
       )
+  }
+
+  @ResultTransactional()
+  public delete(
+    id: ExampleID,
+    expectedToken: ConcurrencyToken,
+  ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError | ExampleConcurrencyError> {
+    return this.exampleRepository.delete(id, expectedToken)
   }
 }

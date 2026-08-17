@@ -12,28 +12,32 @@ import type { ExampleKind } from './example-kind.js'
 import type { ExampleKindID } from './example-kind-id.js'
 
 export abstract class IExampleKindRepository {
+  public abstract getAll(): ResultAsync<ExampleKind[], never>
+
+  public abstract get(
+    id: ExampleKindID,
+  ): ResultAsync<WithConcurrencyToken<ExampleKind>, ExampleKindNotFoundError>
+
   public abstract create(
     exampleKind: ExampleKind,
   ): ResultAsync<
     WithConcurrencyToken<ExampleKind>,
     DuplicateExampleKindIdError | DuplicateExampleKindNameError
   >
-  public abstract delete(
-    id: ExampleKindID,
-    expectedToken: ConcurrencyToken,
-  ): ResultAsync<
-    void,
-    ExampleKindNotFoundError | ExampleKindInUseError | ExampleKindConcurrencyError
-  >
-  public abstract get(
-    id: ExampleKindID,
-  ): ResultAsync<WithConcurrencyToken<ExampleKind>, ExampleKindNotFoundError>
-  public abstract getAll(): ResultAsync<ExampleKind[], never>
+
   public abstract update(
     exampleKind: ExampleKind,
     expectedToken: ConcurrencyToken,
   ): ResultAsync<
     WithConcurrencyToken<ExampleKind>,
     ExampleKindNotFoundError | DuplicateExampleKindNameError | ExampleKindConcurrencyError
+  >
+
+  public abstract delete(
+    id: ExampleKindID,
+    expectedToken: ConcurrencyToken,
+  ): ResultAsync<
+    void,
+    ExampleKindNotFoundError | ExampleKindInUseError | ExampleKindConcurrencyError
   >
 }

@@ -47,7 +47,7 @@ export class TeamSkillProficienciesService implements ITeamSkillProficienciesSer
     return this.repository.add(teamId, new SkillProficiency({ skillId, proficiency })).andThen(() =>
       this.repository.get(teamId).mapErr(error => /* v8 ignore next -- @preserve */ {
         if (error instanceof TeamNotFoundError) {
-          // This should never happen: the team existed when the transaction started (or the call to .add() would've
+          // This will never happen: the team existed when the transaction started (or the call to .add() would've
           // failed).
           throw new UnexpectedPersistenceError(error)
         }

@@ -166,68 +166,76 @@ describe('SkillsController', () => {
   })
 
   describe('PUT /skills/:id', () => {
-    it('should return 200 OK', async () => {
-      const expected = SkillBuilder.from(skills.backendDevelopment)
-        .withExamples([examples.cobol.id])
-        .build()
+    const body = SkillBuilder.from(skills.backendDevelopment)
+      .withExamples([examples.cobol.id])
+      .build()
+      .toJSON()
 
+    it('should return 200 OK', async () => {
       const response = await request(app.getHttpServer())
-        .put(`/skills/${skills.backendDevelopment.id}`)
+        .put(`/skills/${body.id}`)
         .set('If-Match', etags.skills[skills.backendDevelopment.id].etag)
-        .send(expected.toJSON())
+        .send(body)
         .expect(HttpStatus.OK)
         .expect('etag', ETAG_PATTERN)
-        .expect(expected.toJSON())
+        .expect(body)
 
       expect(response.headers.etag).not.toEqual(etags.skills[skills.backendDevelopment.id].etag)
     })
 
     it('should return 400 Bad Request if a payload property is malformed', () =>
       request(app.getHttpServer())
-        .put(`/skills/${skills.backendDevelopment.id}`)
+        .put(`/skills/${body.id}`)
         .set('If-Match', etags.skills[skills.backendDevelopment.id].etag)
-        .send({ ...skills.backendDevelopment.toJSON(), name: 42 })
+        .send({ ...body, name: 42 })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the ids do not match', () =>
       request(app.getHttpServer())
-        .put(`/skills/${skills.backendDevelopment.id}`)
+        .put(`/skills/${body.id}`)
         .set('If-Match', etags.skills[skills.backendDevelopment.id].etag)
-        .send({ ...skills.backendDevelopment.toJSON(), id: skills.frontendDevelopment.id })
+        .send({ ...body, id: skills.frontendDevelopment.id })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the payload contains an unknown property', () =>
       request(app.getHttpServer())
-        .put(`/skills/${skills.backendDevelopment.id}`)
+        .put(`/skills/${body.id}`)
         .set('If-Match', etags.skills[skills.backendDevelopment.id].etag)
-        .send({ ...skills.backendDevelopment.toJSON(), extraneous: 'nope' })
+        .send({ ...body, extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 404 Not Found if the skill does not exist', () =>
       request(app.getHttpServer())
         .put(`/skills/${UNKNOWN_SKILL_ID}`)
         .set('If-Match', STALE_ETAG)
-        .send({ ...skills.backendDevelopment.toJSON(), id: UNKNOWN_SKILL_ID })
+        .send({ ...body, id: UNKNOWN_SKILL_ID })
         .expect(HttpStatus.NOT_FOUND))
 
     it('should return 409 Conflict if the name is not unique', () =>
       request(app.getHttpServer())
-        .put(`/skills/${skills.backendDevelopment.id}`)
+        .put(`/skills/${body.id}`)
         .set('If-Match', etags.skills[skills.backendDevelopment.id].etag)
-        .send({ ...skills.backendDevelopment.toJSON(), name: skills.frontendDevelopment.name })
+        .send({ ...body, name: skills.frontendDevelopment.name })
         .expect(HttpStatus.CONFLICT))
 
     it('should return 412 Precondition Failed if the If-Match header is stale', () =>
       request(app.getHttpServer())
-        .put(`/skills/${skills.backendDevelopment.id}`)
+        .put(`/skills/${body.id}`)
         .set('If-Match', STALE_ETAG)
-        .send(skills.backendDevelopment.toJSON())
+        .send(body)
         .expect(HttpStatus.PRECONDITION_FAILED))
+
+    it('should return 422 Unprocessable Entity if a referenced example does not exist', () =>
+      request(app.getHttpServer())
+        .put(`/skills/${body.id}`)
+        .set('If-Match', etags.skills[skills.backendDevelopment.id].etag)
+        .send({ ...body, exampleIds: [examples.html.id, UNKNOWN_EXAMPLE_ID] })
+        .expect(HttpStatus.UNPROCESSABLE_ENTITY))
 
     it('should return 428 Precondition Required if the If-Match header is missing', () =>
       request(app.getHttpServer())
-        .put(`/skills/${skills.backendDevelopment.id}`)
-        .send(skills.backendDevelopment.toJSON())
+        .put(`/skills/${body.id}`)
+        .send(body)
         .expect(HttpStatus.PRECONDITION_REQUIRED))
   })
 })

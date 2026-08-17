@@ -35,8 +35,8 @@ export class User implements Properties {
   public readonly lastName: string
   public readonly teamId: TeamID
 
-  public constructor(data: Properties) {
-    const result = userSchema.safeParse(data)
+  public constructor(properties: Properties) {
+    const result = userSchema.safeParse(properties)
 
     /* v8 ignore next -- @preserve */
     if (result.error) {
@@ -50,9 +50,9 @@ export class User implements Properties {
     this.teamId = result.data.teamId
   }
 
-  public update(data: Partial<Except<Properties, 'id'>>): User {
+  public update(properties: Partial<Except<Properties, 'id'>>): User {
     // Let's not rely on TypeScript only. The id should never be accidentally overwritten.
-    return new User({ ...this, ...data, id: this.id })
+    return new User({ ...this, ...properties, id: this.id })
   }
 
   public toJSON(): JsonObject {

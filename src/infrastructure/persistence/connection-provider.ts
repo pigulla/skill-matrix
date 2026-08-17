@@ -65,6 +65,8 @@ export class ConnectionProvider
 
     try {
       row = await this.database.one<{ version: string }>(
+        // Deliberately inlined, not extracted to sql/: this is a one-off Postgres-version check with no parameters to
+        // name, gains nothing from npm run format:sql/lint:sql, Accepted exception, not an oversight.
         `SELECT current_setting('server_version_num') AS "version"`,
       )
     } catch (error) {

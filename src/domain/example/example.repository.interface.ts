@@ -13,20 +13,19 @@ import type { ExampleID } from './example-id.js'
 import type { ExampleKindReferenceNotFoundError } from './kind/error/example-kind-reference-not-found.error.js'
 
 export abstract class IExampleRepository {
+  public abstract getAll(): ResultAsync<Example[], never>
+
+  public abstract get(
+    id: ExampleID,
+  ): ResultAsync<WithConcurrencyToken<Example>, ExampleNotFoundError>
+
   public abstract create(
     example: Example,
   ): ResultAsync<
     WithConcurrencyToken<Example>,
     DuplicateExampleIdError | DuplicateExampleNameError | ExampleKindReferenceNotFoundError
   >
-  public abstract delete(
-    id: ExampleID,
-    expectedToken: ConcurrencyToken,
-  ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError | ExampleConcurrencyError>
-  public abstract get(
-    id: ExampleID,
-  ): ResultAsync<WithConcurrencyToken<Example>, ExampleNotFoundError>
-  public abstract getAll(): ResultAsync<Example[], never>
+
   public abstract update(
     example: Example,
     expectedToken: ConcurrencyToken,
@@ -37,4 +36,9 @@ export abstract class IExampleRepository {
     | ExampleKindReferenceNotFoundError
     | ExampleConcurrencyError
   >
+
+  public abstract delete(
+    id: ExampleID,
+    expectedToken: ConcurrencyToken,
+  ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError | ExampleConcurrencyError>
 }

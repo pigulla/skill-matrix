@@ -6,10 +6,10 @@ export type SkillRepositoryMock = Mocked<ISkillRepository>
 
 export function mockSkillRepository(): SkillRepositoryMock {
   return {
-    create: vi.fn(),
-    delete: vi.fn(),
-    get: vi.fn(),
     getAll: vi.fn(),
+    get: vi.fn(),
+    create: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
   }
 }

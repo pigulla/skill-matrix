@@ -22,12 +22,13 @@ import { TeamReferenceNotFoundError } from '#/domain/team/error/team-reference-n
 import type { DuplicateTeamSkillProficienciesError } from '#/domain/team/skill-proficiencies/error/duplicate-team-skill-proficiencies.error.js'
 import type { TeamSkillProficienciesNotFoundError } from '#/domain/team/skill-proficiencies/error/team-skill-proficiencies-not-found.error.js'
 import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
-import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
+import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
+
+import { OpenApiTag } from '../../openapi.tag.js'
 import {
   CreateSkillProficiencyDTO,
   UpdateSkillProficiencyDTO,
-} from '#/presentation/http/skill/skill-proficiency.dto.js'
-import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
+} from '../../skill/skill-proficiency.dto.js'
 
 import { fromDomain, TeamSkillProficienciesDTO } from './team-skill-proficiencies.dto.js'
 
@@ -54,6 +55,7 @@ export class TeamSkillProficienciesController {
   @ApiOperation({
     operationId: 'team.skill-proficiencies.get',
     summary: 'Get skill proficiencies for a team.',
+    description: 'Get all skill proficiencies for the given team.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -73,6 +75,7 @@ export class TeamSkillProficienciesController {
   @ApiOperation({
     operationId: 'team.skill-proficiencies.add',
     summary: 'Add a skill proficiency to a team.',
+    description: 'Add a skill proficiency to the given team.',
   })
   @ApiParam({ name: 'skillId', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiResponse({
@@ -118,6 +121,7 @@ export class TeamSkillProficienciesController {
   @ApiOperation({
     operationId: 'team.skill-proficiencies.update',
     summary: 'Update a skill proficiency on a team.',
+    description: 'Update an existing skill proficiency for the given team.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -148,6 +152,7 @@ export class TeamSkillProficienciesController {
   @ApiOperation({
     operationId: 'team.skill-proficiencies.remove',
     summary: 'Remove a skill proficiency from a team.',
+    description: 'Remove an existing skill proficiency from the given team.',
   })
   @ApiParam({ name: 'skillId', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiResponse({

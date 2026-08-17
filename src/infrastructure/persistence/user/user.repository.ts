@@ -16,7 +16,7 @@ import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
 import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
 
 import { QUERY } from './sql/queries.js'
-import { usersRow } from './sql/users.row.js'
+import { userRow } from './sql/user.row.js'
 
 const { DELETE, GET, GET_ALL, INSERT, UPDATE } = QUERY
 
@@ -28,45 +28,17 @@ export class UserRepository implements IUserRepository {
     this.txHost = txHost
   }
 
+  public getAll(): ResultAsync<User[], never> {
+    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
+      throw new UnexpectedPersistenceError(error as Error)
+    }).map(rows => rows.map(row => userRow.parse(row).toDomain()))
+  }
+
   public get(id: UserID): ResultAsync<User, UserNotFoundError> {
     return ResultAsync.fromPromise(this.txHost.tx.oneOrNone<unknown>(GET, { id }), error => {
       throw new UnexpectedPersistenceError(error as Error)
     }).andThen(row =>
-      row === null ? errAsync(new UserNotFoundError(id)) : okAsync(usersRow.parse(row).toDomain()),
-    )
-  }
-
-  public getAll(): ResultAsync<User[], never> {
-    return ResultAsync.fromPromise(this.txHost.tx.manyOrNone<unknown>(GET_ALL), error => {
-      throw new UnexpectedPersistenceError(error as Error)
-    }).map(rows => rows.map(row => usersRow.parse(row).toDomain()))
-  }
-
-  public update(
-    user: User,
-  ): ResultAsync<User, UserNotFoundError | DuplicateUserEmailError | TeamReferenceNotFoundError> {
-    const { id, firstName, lastName, email, teamId } = user
-
-    return ResultAsync.fromPromise(
-      this.txHost.tx.oneOrNone<unknown>(UPDATE, {
-        id,
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        team_id: teamId,
-      }),
-      error => {
-        if (isForeignKeyViolation('users_team_fkey', error)) {
-          return new TeamReferenceNotFoundError(teamId)
-        }
-        if (isUniqueConstraintViolation('users_email', error)) {
-          return new DuplicateUserEmailError(email)
-        }
-
-        throw new UnexpectedPersistenceError(error as Error)
-      },
-    ).andThen(row =>
-      row === null ? errAsync(new UserNotFoundError(id)) : okAsync(usersRow.parse(row).toDomain()),
+      row === null ? errAsync(new UserNotFoundError(id)) : okAsync(userRow.parse(row).toDomain()),
     )
   }
 
@@ -99,7 +71,35 @@ export class UserRepository implements IUserRepository {
 
         throw new UnexpectedPersistenceError(error as Error)
       },
-    ).map(row => usersRow.parse(row).toDomain())
+    ).map(row => userRow.parse(row).toDomain())
+  }
+
+  public update(
+    user: User,
+  ): ResultAsync<User, UserNotFoundError | DuplicateUserEmailError | TeamReferenceNotFoundError> {
+    const { id, firstName, lastName, email, teamId } = user
+
+    return ResultAsync.fromPromise(
+      this.txHost.tx.oneOrNone<unknown>(UPDATE, {
+        id,
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        team_id: teamId,
+      }),
+      error => {
+        if (isForeignKeyViolation('users_team_fkey', error)) {
+          return new TeamReferenceNotFoundError(teamId)
+        }
+        if (isUniqueConstraintViolation('users_email', error)) {
+          return new DuplicateUserEmailError(email)
+        }
+
+        throw new UnexpectedPersistenceError(error as Error)
+      },
+    ).andThen(row =>
+      row === null ? errAsync(new UserNotFoundError(id)) : okAsync(userRow.parse(row).toDomain()),
+    )
   }
 
   public delete(id: UserID): ResultAsync<void, UserNotFoundError> {

@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
 import dayjs from 'dayjs'
-import { err } from 'neverthrow'
+import { err, type Ok, ok } from 'neverthrow'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { UnexpectedPersistenceError } from '#/application/error/unexpected-persistence.error.js'
@@ -9,7 +9,7 @@ import { ITimeProvider } from '#/application/time-provider.interface.js'
 import { DuplicateTeamIdError } from '#/domain/team/error/duplicate-team-id.error.js'
 import { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.error.js'
 import { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
-import { TeamNotEmptyError } from '#/domain/team/error/team-not-empty.error.js'
+import { TeamInUseError } from '#/domain/team/error/team-in-use.error.js'
 import { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
 import { toConcurrencyToken } from '#/infrastructure/persistence/concurrency-token.codec.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
@@ -23,10 +23,9 @@ import { teams, users } from '../fixture/fixture.js'
 import { type ETags, getETags } from '../fixture/get-etags.js'
 import { setupIntegrationTest } from '../fixture/setup-integration-test.js'
 
-const now = dayjs('2026-01-01T00:00:00.000Z')
-
 describe('TeamRepository', () => {
   const integrationTest = setupIntegrationTest()
+  const now = dayjs('2026-01-01T00:00:00.000Z')
 
   let app: INestApplication
   let teamRepository: TeamRepository
@@ -64,10 +63,12 @@ describe('TeamRepository', () => {
     it('should return the team and its token', async () => {
       const result = await teamRepository.get(teams.traffic.id)
 
-      expect(result._unsafeUnwrap()).toEqual({
-        value: teams.traffic,
-        token: etags.teams[teams.traffic.id].token,
-      })
+      expect(result).toEqual(
+        ok({
+          value: teams.traffic,
+          token: etags.teams[teams.traffic.id].token,
+        }),
+      )
     })
 
     it('should return TeamNotFoundError if the team does not exist', async () => {
@@ -87,7 +88,8 @@ describe('TeamRepository', () => {
     it('should return all teams', async () => {
       const result = await teamRepository.getAll()
 
-      expect(result._unsafeUnwrap()).to.have.deep.members(Object.values(teams))
+      expect(result.isOk()).toBe(true)
+      expect((result as Ok<unknown, unknown>).value).to.have.deep.members(Object.values(teams))
     })
 
     it('should throw UnexpectedPersistenceError if the query fails', async () => {
@@ -105,7 +107,12 @@ describe('TeamRepository', () => {
 
       const result = await teamRepository.create(team)
 
-      expect(result._unsafeUnwrap()).toEqual({ value: team, token: toConcurrencyToken(now) })
+      expect(result).toEqual(
+        ok({
+          value: team,
+          token: toConcurrencyToken(now),
+        }),
+      )
 
       await expect(
         db.oneOrNone('SELECT * FROM teams WHERE id=$(id)', { id: team.id }),
@@ -153,7 +160,12 @@ describe('TeamRepository', () => {
 
       const result = await teamRepository.update(updated, etags.teams[teams.traffic.id].token)
 
-      expect(result._unsafeUnwrap()).toEqual({ value: updated, token: toConcurrencyToken(later) })
+      expect(result).toEqual(
+        ok({
+          value: updated,
+          token: toConcurrencyToken(later),
+        }),
+      )
 
       await expect(
         db.oneOrNone('SELECT * FROM teams WHERE id=$(id)', { id: updated.id }),
@@ -179,7 +191,7 @@ describe('TeamRepository', () => {
       expect(result).toEqual(err(new TeamNotFoundError(UNKNOWN_TEAM_ID)))
     })
 
-    it('should return DuplicateTeamNameError if the name is taken', async () => {
+    it('should return DuplicateTeamNameError if the name already exists', async () => {
       const currentToken = etags.teams[teams.traffic.id].token
       const updated = TeamBuilder.from(teams.traffic).withName(teams.testing.name).build()
 
@@ -206,7 +218,7 @@ describe('TeamRepository', () => {
 
       const result = await teamRepository.delete(teams.testing.id, currentToken)
 
-      expect(result.isOk()).toBe(true)
+      expect(result).toEqual(ok(undefined))
 
       await expect(
         db.oneOrNone('SELECT name FROM teams WHERE id=$(id)', { id: teams.testing.id }),
@@ -225,12 +237,12 @@ describe('TeamRepository', () => {
       expect(result).toEqual(err(new TeamNotFoundError(UNKNOWN_TEAM_ID)))
     })
 
-    it('should return TeamNotEmptyError if the team still has members', async () => {
+    it('should return TeamInUseError if the team still has members', async () => {
       const currentToken = etags.teams[users.peter.teamId].token
 
       const result = await teamRepository.delete(users.peter.teamId, currentToken)
 
-      expect(result).toEqual(err(new TeamNotEmptyError(users.peter.teamId)))
+      expect(result).toEqual(err(new TeamInUseError(users.peter.teamId)))
     })
 
     it('should throw UnexpectedPersistenceError if the query fails', async () => {

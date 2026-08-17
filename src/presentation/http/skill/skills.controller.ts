@@ -80,7 +80,7 @@ export class SkillsController {
     description: 'The operation completed successfully.',
     headers: {
       ETag: {
-        description: 'The skill’s current ETag .',
+        description: 'The skill’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -109,7 +109,7 @@ export class SkillsController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', example: EXAMPLE_SKILL_ID })
   @ApiHeader({
     name: 'If-Match',
-    description: 'The skill’s current ETag .',
+    description: 'The skill’s current ETag.',
     required: true,
     example: EXAMPLE_ETAG,
   })
@@ -154,7 +154,7 @@ export class SkillsController {
     description: 'The operation completed successfully.',
     headers: {
       ETag: {
-        description: 'The skill’s current ETag .',
+        description: 'The skill’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -195,7 +195,7 @@ export class SkillsController {
   })
   @ApiHeader({
     name: 'If-Match',
-    description: 'The skill’s current ETag .',
+    description: 'The skill’s current ETag.',
     required: true,
     example: EXAMPLE_ETAG,
   })
@@ -205,7 +205,7 @@ export class SkillsController {
     type: SkillDTO,
     headers: {
       ETag: {
-        description: 'The skill’s current ETag .',
+        description: 'The skill’s current ETag.',
         schema: { type: 'string' },
         example: EXAMPLE_ETAG,
       },
@@ -220,12 +220,12 @@ export class SkillsController {
     description: `A uniqueness constraint on one of the skill's properties is being violated.`,
   })
   @ApiResponse({
-    status: HttpStatus.UNPROCESSABLE_ENTITY,
-    description: 'A referenced example was not found.',
-  })
-  @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
     description: 'The If-Match header does not match the skill’s current ETag.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    description: 'A referenced example was not found.',
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_REQUIRED,

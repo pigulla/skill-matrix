@@ -20,8 +20,9 @@ import type { DuplicateUserEmailError } from '#/domain/user/error/duplicate-user
 import type { DuplicateUserIdError } from '#/domain/user/error/duplicate-user-id.error.js'
 import type { UserNotFoundError } from '#/domain/user/error/user-not-found.error.js'
 import { EXAMPLE_USER_ID, type UserID } from '#/domain/user/user-id.js'
-import { OpenApiTag } from '#/presentation/http/openapi.tag.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
+
+import { OpenApiTag } from '../openapi.tag.js'
 
 import { CreateUserDTO, fromDomain, UpdateUserDTO, UserDTO } from './user.dto.js'
 

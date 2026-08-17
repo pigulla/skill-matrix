@@ -85,6 +85,12 @@ describe('TeamsController', () => {
         .set('If-Match', STALE_ETAG)
         .expect(HttpStatus.NOT_FOUND))
 
+    it('should return 409 Conflict if the team is still referenced by a user', () =>
+      request(app.getHttpServer())
+        .delete(`/teams/${teams.platformEngineering.id}`)
+        .set('If-Match', etags.teams[teams.platformEngineering.id].etag)
+        .expect(HttpStatus.CONFLICT))
+
     it('should return 412 Precondition Failed if the If-Match header is stale', () =>
       request(app.getHttpServer())
         .delete(`/teams/${teams.testing.id}`)
@@ -137,59 +143,66 @@ describe('TeamsController', () => {
   })
 
   describe('PUT /teams/:id', () => {
-    const expected = TeamBuilder.from(teams.testing).withName('QA').build()
+    const body = TeamBuilder.from(teams.testing).withName('QA').build().toJSON()
 
     it('should return 200 OK', async () => {
       const response = await request(app.getHttpServer())
-        .put(`/teams/${teams.testing.id}`)
+        .put(`/teams/${body.id}`)
         .set('If-Match', etags.teams[teams.testing.id].etag)
-        .send(expected.toJSON())
+        .send(body)
         .expect(HttpStatus.OK)
         .expect('etag', ETAG_PATTERN)
-        .expect(expected.toJSON())
+        .expect(body)
 
       expect(response.headers.etag).not.toEqual(etags.teams[teams.testing.id].etag)
     })
 
     it('should return 400 Bad Request if a payload property is malformed', () =>
       request(app.getHttpServer())
-        .put(`/teams/${teams.testing.id}`)
+        .put(`/teams/${body.id}`)
         .set('If-Match', etags.teams[teams.testing.id].etag)
-        .send({ ...expected.toJSON(), name: 42 })
+        .send({ ...body, name: 42 })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the ids do not match', () =>
       request(app.getHttpServer())
-        .put(`/teams/${teams.testing.id}`)
+        .put(`/teams/${body.id}`)
         .set('If-Match', etags.teams[teams.testing.id].etag)
-        .send({ ...expected.toJSON(), id: teams.traffic.id })
+        .send({ ...body, id: teams.traffic.id })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 400 Bad Request if the payload contains an unknown property', () =>
       request(app.getHttpServer())
-        .put(`/teams/${teams.testing.id}`)
+        .put(`/teams/${body.id}`)
         .set('If-Match', etags.teams[teams.testing.id].etag)
-        .send({ ...expected.toJSON(), extraneous: 'nope' })
+        .send({ ...body, extraneous: 'nope' })
         .expect(HttpStatus.BAD_REQUEST))
 
     it('should return 404 Not Found if the team does not exist', () =>
       request(app.getHttpServer())
         .put(`/teams/${UNKNOWN_TEAM_ID}`)
         .set('If-Match', STALE_ETAG)
-        .send({ ...expected.toJSON(), id: UNKNOWN_TEAM_ID })
+        .send({ ...body, id: UNKNOWN_TEAM_ID })
         .expect(HttpStatus.NOT_FOUND))
+
+    it('should return 409 Conflict if the name is not unique', () =>
+      request(app.getHttpServer())
+        .put(`/teams/${body.id}`)
+        .set('If-Match', etags.teams[teams.testing.id].etag)
+        .send({ ...body, name: teams.platformEngineering.name })
+        .expect(HttpStatus.CONFLICT))
 
     it('should return 412 Precondition Failed if the If-Match header is stale', () =>
       request(app.getHttpServer())
-        .put(`/teams/${teams.testing.id}`)
+        .put(`/teams/${body.id}`)
         .set('If-Match', STALE_ETAG)
-        .send(expected.toJSON())
+        .send(body)
         .expect(HttpStatus.PRECONDITION_FAILED))
 
     it('should return 428 Precondition Required if the If-Match header is missing', () =>
       request(app.getHttpServer())
-        .put(`/teams/${teams.testing.id}`)
-        .send(expected.toJSON())
+        .put(`/teams/${body.id}`)
+        .send(body)
         .expect(HttpStatus.PRECONDITION_REQUIRED))
   })
 })

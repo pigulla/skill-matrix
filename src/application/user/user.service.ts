@@ -35,29 +35,29 @@ export class UserService implements IUserService {
   }
 
   @ResultTransactional()
-  public delete(id: UserID): ResultAsync<void, UserNotFoundError> {
-    return this.userRepository.delete(id)
-  }
-
-  @ResultTransactional()
   public create(
-    data: Except<Properties, 'id'>,
+    properties: Except<Properties, 'id'>,
   ): ResultAsync<
     User,
     DuplicateUserIdError | DuplicateUserEmailError | TeamReferenceNotFoundError
   > {
     const id = this.uuidProvider.generate()
-    const user = new User({ ...data, id })
+    const user = new User({ ...properties, id })
 
     return this.userRepository.create(user)
   }
 
   @ResultTransactional()
   public update(
-    data: SetRequired<Partial<Properties>, 'id'>,
+    properties: SetRequired<Partial<Properties>, 'id'>,
   ): ResultAsync<User, UserNotFoundError | DuplicateUserEmailError | TeamReferenceNotFoundError> {
     return this.userRepository
-      .get(data.id)
-      .andThen(existing => this.userRepository.update(existing.update(data)))
+      .get(properties.id)
+      .andThen(existing => this.userRepository.update(existing.update(properties)))
+  }
+
+  @ResultTransactional()
+  public delete(id: UserID): ResultAsync<void, UserNotFoundError> {
+    return this.userRepository.delete(id)
   }
 }

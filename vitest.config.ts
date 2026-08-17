@@ -1,6 +1,9 @@
 import swc from 'unplugin-swc'
 import { defineConfig } from 'vitest/config'
 
+// biome-ignore lint/style/noProcessEnv: It's fine.
+const isRunningOnGitHub = process.env.GITHUB_ACTIONS === 'true'
+
 export default defineConfig({
   // @swc/core does not yet accept the `es2025` jsc target inherited from
   // @tsconfig/node26, so pin the test-transform target explicitly. This is
@@ -33,5 +36,7 @@ export default defineConfig({
         'src/presentation/**/*.ts': { branches: 100 },
       },
     },
+    testTimeout: isRunningOnGitHub ? 30_000 : 15_000,
+    hookTimeout: isRunningOnGitHub ? 20_000 : 10_000,
   },
 })
