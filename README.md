@@ -19,6 +19,8 @@ Expected domain errors (not found, duplicate, still-in-use, missing reference, e
 
 - [001 – Persistence Strategy](docs/001-persistence-strategy.md)
 - [002 – Error Handling Strategy](docs/002-error-handling-strategy.md)
+- [003 – Concurrency Token Hashing](docs/003-concurrency-token-hashing.md)
+- [004 – DTO Construction](docs/004-dto-construction.md)
 
 ## Setup
 

@@ -49,7 +49,7 @@ See [Imports](#imports) for how imports between and within layers are handled.
 HTTP → Controller (presentation) → Domain interface → Repository impl (infrastructure) → PostgreSQL
 ```
 
-DTOs are validated at the boundary with Zod (`nestjs-zod`). Domain objects are immutable Zod-validated value objects. Explicit `toDomain()` / `fromDomain()` converters live in the DTO file.
+DTOs are validated at the boundary with Zod (`nestjs-zod`). Domain objects are immutable Zod-validated value objects. Explicit `fromDomain()` converters live in the DTO file; there is no `toDomain()` counterpart, because entities are constructed in the application layer, which owns ID generation.
 
 ### Key patterns
 
