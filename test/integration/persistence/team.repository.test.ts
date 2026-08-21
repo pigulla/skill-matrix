@@ -211,6 +211,33 @@ describe('TeamRepository', () => {
         UnexpectedPersistenceError,
       )
     })
+
+    it('should give two updates that land in the same instant distinct tokens, so a stale token is rejected', async () => {
+      // The time provider is never advanced in this test, so both updates below genuinely share one
+      // `last_updated` instant. Under the old timestamp-derived token, that made the token minted by
+      // the first update indistinguishable from the token minted by the second - a stale `If-Match`
+      // could still match. With a monotonic `version`, the two tokens must differ regardless of timing.
+      const initialToken = etags.teams[teams.traffic.id].token
+      const firstUpdate = TeamBuilder.from(teams.traffic).withName('Infrastructure').build()
+      const secondUpdate = TeamBuilder.from(teams.traffic).withName('Platform').build()
+
+      const firstResult = await teamRepository.update(firstUpdate, initialToken)
+      const firstToken = (await getETags(db)).teams[teams.traffic.id].token
+
+      expect(firstResult).toEqual(ok({ value: firstUpdate, token: firstToken }))
+
+      const secondResult = await teamRepository.update(secondUpdate, firstToken)
+      const secondToken = (await getETags(db)).teams[teams.traffic.id].token
+
+      expect(secondResult).toEqual(ok({ value: secondUpdate, token: secondToken }))
+      expect(secondToken).not.toEqual(firstToken)
+
+      // Replaying the first update with the token it originally minted - now stale, because the second
+      // update has since moved the row on - must be rejected.
+      const replayResult = await teamRepository.update(firstUpdate, firstToken)
+
+      expect(replayResult).toEqual(err(new TeamConcurrencyError(teams.traffic.id)))
+    })
   })
 
   describe('delete', () => {
