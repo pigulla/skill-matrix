@@ -77,6 +77,8 @@ Concrete shape, layer by layer:
 - **Controllers** (`src/presentation/http/*/`): handler methods return `ResultAsync<Dto, E>` directly (instead of `Promise<Dto>`) and are additionally decorated with `@UnwrapResult()` (`src/util/unwrap-result.decorator.ts`), which awaits the result and either returns the `Ok` value or `throw`s the `Err` value — so the existing `DomainErrorsExceptionFilter` maps it to an HTTP status exactly as it would a direct throw, with no filter changes needed. Ideally, handler bodies should be one-liners, e.g. `return this.service.get(id).map(fromDomain)`.
 - **Tests**: integration tests assert on the resolved `Result` itself, instead of `.resolves.toEqual(...)` / `.rejects.toThrow(SomeExpectedError)` — see the `writing-tests` skill for the exact assertion pattern. Genuinely unexpected errors (`UnexpectedPersistenceError`) still assert with `.rejects.toThrow(...)`, since those remain real rejections rather than `Err` values. Controller integration tests need no changes — HTTP status/body behavior is identical whether an error was thrown directly or unwrapped from a `Result`.
 
+`@ResultTransactional()` also translates `40001`/`40P01` (serialization failure, deadlock) into a thrown `TransactionConflictError`, which `DomainErrorsExceptionFilter` maps to `409 Conflict` — a third category, alongside the two-channel model above, for failures that are neither an expected domain `Err` nor a bug. No new invariant is introduced: the decorated method body is never re-executed.
+
 ### Code Conventions
 
 - Prefer functional style over imperative style, e.g. using `.map()`, `.reduce()`, and `.filter()` over `for` loops.

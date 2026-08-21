@@ -46,6 +46,10 @@ module.exports = {
     },
     {
       name: 'util-must-not-import-application-domain-presentation-infrastructure-or-module',
+      comment:
+        'Exceptions: src/infrastructure/persistence/error/ (a constant table plus pure DatabaseError predicates) and ' +
+        'src/application/error/ (thrown-not-Err error classes) are both small, pure — no DI, no framework types, no ' +
+        'side effects — so util may reach into either directly rather than duplicating their contents.',
       severity: 'error',
       from: { path: '^src/util/' },
       to: {
@@ -56,6 +60,7 @@ module.exports = {
           '^src/infrastructure/',
           '^src/module/',
         ],
+        pathNot: ['^src/infrastructure/persistence/error/', '^src/application/error/'],
       },
     },
   ],

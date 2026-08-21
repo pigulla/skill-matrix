@@ -32,7 +32,9 @@ Under serializable isolation those errors are not bugs; they are the documented,
 
 **Suggestion:** add a bounded, jittered retry for `40001`/`40P01` inside `ResultTransactional` (the one place that owns the transaction boundary), and reconsider the blanket isolation level — the write paths are already guarded by the optimistic-concurrency predicate, so `READ COMMITTED` plus that predicate is the more conventional pairing. If serializable stays, `READ ONLY DEFERRABLE` for pure-read methods is worth having.
 
-**Extracted as an executable plan:** [`task-serialization-failure-retries.md`](task-serialization-failure-retries.md) — self-contained, ready for a dedicated session.
+**Extracted as an executable plan:** [`task-serialization-failure-conflict.md`](task-serialization-failure-conflict.md) — self-contained, ready for a dedicated session.
+
+**Resolved**, for the first half of this finding. `40001`/`40P01` are now recognized by `isTransientTransactionError` (`src/infrastructure/persistence/error/is-transient-transaction-error.ts`) and translated, at the transaction boundary inside `ResultTransactional`, into a thrown `TransactionConflictError`, which `DomainErrorsExceptionFilter` maps to `409 Conflict` instead of falling through to `UnexpectedPersistenceError` → `500` — the same treatment this API already gives its two other conflict types. No retry was added; a `409` gets the caller the same honest signal without forcing a new invariant onto every `@ResultTransactional()` method. See [ADR 005](005-transaction-conflict-response.md). **The second half of this finding is still open**: every read path still pays for `SERIALIZABLE` isolation's round trip and SIREAD predicate-lock bookkeeping, and whether the blanket isolation level itself should change is deliberately undecided — ADR 005 records dropping to `READ COMMITTED` as a live follow-up option, not a rejected one.
 
 ### 3. `util` is where the layer boundary gets circumvented — and it costs the whole application layer its unit tests
 

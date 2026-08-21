@@ -55,6 +55,20 @@ export class UsersController {
     type: [UserDTO],
     description: 'The operation completed successfully.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public getAll(): ResultAsync<UserDTO[], never> {
     return this.service.getAll().map(users => users.map(fromDomain))
@@ -75,6 +89,20 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'The user with the given id was not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @UnwrapResult()
   public getOne(
@@ -100,6 +128,20 @@ export class UsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'The user with the given id was not found.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The write conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public delete(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
@@ -121,7 +163,25 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'A user with an identical email address already exists.',
+    description:
+      'A user with an identical email address already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateEmail: {
+        summary: 'A user with this email address already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type User ((email=peter.pan@example.com))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -156,7 +216,25 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'A user with an identical email address already exists.',
+    description:
+      'A user with an identical email address already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateEmail: {
+        summary: 'A user with this email address already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type User ((email=peter.pan@example.com))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,

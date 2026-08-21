@@ -63,6 +63,20 @@ export class TeamSkillProficienciesController {
     description: 'The operation completed successfully.',
   })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'The team was not found.' })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public get(
     @Param('teamId', new ParseUUIDPipe({ version: '4' }))
@@ -86,7 +100,25 @@ export class TeamSkillProficienciesController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'The team or skill was not found.' })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'The skill is already associated with the team.',
+    description:
+      'The skill is already associated with the team, or the write conflicted with another one running at the same time.',
+    examples: {
+      alreadyAssociated: {
+        summary: 'The skill is already associated with the team',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: `Duplicate entity of type TeamSkillProficiencies ((teamId=${EXAMPLE_TEAM_ID},skillId=${EXAMPLE_SKILL_ID}))`,
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiBody({ type: CreateSkillProficiencyDTO })
   @UnwrapResult()
@@ -132,6 +164,20 @@ export class TeamSkillProficienciesController {
     status: HttpStatus.NOT_FOUND,
     description: 'The team, skill, or the association between them was not found.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The write conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @ApiBody({ type: UpdateSkillProficiencyDTO })
   @UnwrapResult()
   public update(
@@ -163,6 +209,20 @@ export class TeamSkillProficienciesController {
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'The team, skill, or the association between them was not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The write conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @UnwrapResult()
   public remove(
