@@ -4,7 +4,7 @@ Worked reference: the `user` slice. Copy its shape for any new entity. Steps bel
 
 ## 1. Migration for the table
 
-Add the schema first. See [migrations.md](migrations.md). The table's columns are `snake_case`.
+Add the schema first. See [migrations.md](migrations.md). The table's columns are `snake_case`. If the table has a foreign key, index the referencing column too — see [migrations.md § Indexing foreign keys](migrations.md#indexing-foreign-keys) — unless that column is already the leading column of a composite primary key.
 
 ## 2. Domain repository interface (the DI token)
 
