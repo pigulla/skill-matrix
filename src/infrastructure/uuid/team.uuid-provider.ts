@@ -1,11 +1,18 @@
+import { Injectable } from '@nestjs/common'
+
 import type { ITeamUuidProvider } from '#/application/team/team-uuid-provider.interface.js'
-import { EntityIdMarker } from '#/domain/id-markers.js'
+import { IUuidGenerator } from '#/application/uuid-generator.interface.js'
 import { type TeamID, teamIdSchema } from '#/domain/team/team-id.js'
 
-import { UuidProvider } from './uuid-provider.js'
+@Injectable()
+export class TeamUuidProvider implements ITeamUuidProvider {
+  private readonly uuidGenerator: IUuidGenerator
 
-export class TeamUuidProvider extends UuidProvider<TeamID> implements ITeamUuidProvider {
-  public constructor() {
-    super(EntityIdMarker.TEAM, teamIdSchema)
+  public constructor(uuidGenerator: IUuidGenerator) {
+    this.uuidGenerator = uuidGenerator
+  }
+
+  public generate(): TeamID {
+    return teamIdSchema.parse(this.uuidGenerator.generate())
   }
 }

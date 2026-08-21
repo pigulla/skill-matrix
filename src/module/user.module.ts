@@ -9,9 +9,10 @@ import { UserUuidProvider } from '#/infrastructure/uuid/user.uuid-provider.js'
 import { UsersController } from '#/presentation/http/user/users.controller.js'
 
 import { DatabaseModule } from './database.module.js'
+import { UtilityModule } from './utility.module.js'
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, UtilityModule],
   controllers: [UsersController],
   providers: [
     { provide: IUserRepository, useClass: UserRepository },

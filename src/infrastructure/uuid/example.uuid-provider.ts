@@ -1,11 +1,18 @@
+import { Injectable } from '@nestjs/common'
+
 import type { IExampleUuidProvider } from '#/application/example/example-uuid-provider.interface.js'
+import { IUuidGenerator } from '#/application/uuid-generator.interface.js'
 import { type ExampleID, exampleIdSchema } from '#/domain/example/example-id.js'
-import { EntityIdMarker } from '#/domain/id-markers.js'
 
-import { UuidProvider } from './uuid-provider.js'
+@Injectable()
+export class ExampleUuidProvider implements IExampleUuidProvider {
+  private readonly uuidGenerator: IUuidGenerator
 
-export class ExampleUuidProvider extends UuidProvider<ExampleID> implements IExampleUuidProvider {
-  public constructor() {
-    super(EntityIdMarker.EXAMPLE, exampleIdSchema)
+  public constructor(uuidGenerator: IUuidGenerator) {
+    this.uuidGenerator = uuidGenerator
+  }
+
+  public generate(): ExampleID {
+    return exampleIdSchema.parse(this.uuidGenerator.generate())
   }
 }

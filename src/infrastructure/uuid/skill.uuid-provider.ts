@@ -1,11 +1,18 @@
+import { Injectable } from '@nestjs/common'
+
 import type { ISkillUuidProvider } from '#/application/skill/skill-uuid-provider.interface.js'
-import { EntityIdMarker } from '#/domain/id-markers.js'
+import { IUuidGenerator } from '#/application/uuid-generator.interface.js'
 import { type SkillID, skillIdSchema } from '#/domain/skill/skill-id.js'
 
-import { UuidProvider } from './uuid-provider.js'
+@Injectable()
+export class SkillUuidProvider implements ISkillUuidProvider {
+  private readonly uuidGenerator: IUuidGenerator
 
-export class SkillUuidProvider extends UuidProvider<SkillID> implements ISkillUuidProvider {
-  public constructor() {
-    super(EntityIdMarker.SKILL, skillIdSchema)
+  public constructor(uuidGenerator: IUuidGenerator) {
+    this.uuidGenerator = uuidGenerator
+  }
+
+  public generate(): SkillID {
+    return skillIdSchema.parse(this.uuidGenerator.generate())
   }
 }
