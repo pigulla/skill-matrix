@@ -113,3 +113,13 @@ Put `@Transactional()` on the **application service** method that orchestrates t
 ## 9. Integration test
 
 `test/integration/persistence/widget.repository.test.ts`, modeled on `user.repository.test.ts`: use `setupDatabaseIntegrationTest()` (real PostgreSQL via Testcontainers — Docker required), seed with a `fixture.sql`, assert both the returned domain object and the raw DB state, and assert that error cases throw the domain error (`*NotFoundError`, `Duplicate*Error`). Run with `npm run vitest:integration`.
+
+## 10. Concurrency token
+
+If `widget` is mutable, it needs the same optimistic-concurrency mechanism as every other mutable entity ([ADR 003](../../../docs/003-concurrency-token-hashing.md)) — or an explicit note in the ADR explaining why it's exempt. Checklist:
+
+- **Migration (step 1):** the table has `version BIGINT NOT NULL DEFAULT 1`.
+- **SQL files (step 3):** `update.sql` sets `version = version + 1` alongside the other columns; both `update.sql` and `delete.sql` add `AND concurrency_token (version) = $(expectedToken)` to the `WHERE` clause; every `SELECT`/`RETURNING` that needs the token projects `concurrency_token (version) AS concurrency_token` — never a bare `version`.
+- **Row schema (step 5):** the row schema's `.transform()` adds `getConcurrencyToken: () => data.concurrency_token`.
+- **Repository interface (step 2):** methods that read or write a token-carrying row return `WithConcurrencyToken<Widget>`, not a bare `Widget`.
+- `version` itself never appears in a row schema field or a repository return type — only `concurrency_token` crosses the infrastructure boundary.

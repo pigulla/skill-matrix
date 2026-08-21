@@ -22,6 +22,8 @@ Token equality is therefore not equivalent to "the row has not changed":
 
 **Extracted as an executable plan:** [`task-monotonic-concurrency-tokens.md`](task-monotonic-concurrency-tokens.md) — self-contained, ready for a dedicated session.
 
+**Resolved.** The token is now derived from a monotonic per-row `version BIGINT NOT NULL DEFAULT 1` column rather than `last_updated`: every `update`/`delete` increments it in the same statement its `WHERE` clause guards (`concurrency_token(version) = $(expectedToken)`), so token equality is exactly row-change equality with no clock dependency and no cross-instance coordination needed. `concurrency_token()` now takes a `BIGINT`, hashing is computed entirely in PostgreSQL, and the TypeScript-side codec and its parity test are gone. See [ADR 003](003-concurrency-token-hashing.md), rewritten in place to describe the version-based design.
+
 ### 2. `SERIALIZABLE` everywhere, no serialization-failure retry
 
 `DEFAULT_TX_OPTIONS` (`src/infrastructure/persistence/default-transaction-options.ts`) sets serializable isolation, and every public method of every application service carries `@ResultTransactional()`. There is no handling for `40001 serialization_failure` or `40P01 deadlock_detected` anywhere — `grep` finds neither outside the unused `error-codes.ts` table — so both fall into the `throw new UnexpectedPersistenceError(...)` fallback and surface as `500`.
@@ -30,7 +32,7 @@ Under serializable isolation those errors are not bugs; they are the documented,
 
 **Suggestion:** add a bounded, jittered retry for `40001`/`40P01` inside `ResultTransactional` (the one place that owns the transaction boundary), and reconsider the blanket isolation level — the write paths are already guarded by the optimistic-concurrency predicate, so `READ COMMITTED` plus that predicate is the more conventional pairing. If serializable stays, `READ ONLY DEFERRABLE` for pure-read methods is worth having.
 
-**Extracted as an executable plan:** [`task-serialization-failure-retries.md`](task-serialization-failure-retries.md) — self-contained, ready for a dedicated session.
+**Extracted as an executable plan:** [`task-serialization-failure-conflict.md`](task-serialization-failure-conflict.md) — self-contained, ready for a dedicated session.
 
 ### 3. `util` is where the layer boundary gets circumvented — and it costs the whole application layer its unit tests
 
