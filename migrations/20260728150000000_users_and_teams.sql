@@ -13,6 +13,8 @@ CREATE TABLE users (
   team_id UUID NOT NULL CONSTRAINT users_team_fkey REFERENCES teams (id) ON DELETE RESTRICT
 );
 
+CREATE INDEX users_team_id_idx ON users (team_id);
+
 CREATE VIEW view_teams_with_members AS
 SELECT
   teams.id,

@@ -24,11 +24,15 @@ CREATE TABLE examples (
   last_updated TIMESTAMPTZ NOT NULL
 );
 
+CREATE INDEX examples_example_kind_id_idx ON examples (example_kind_id);
+
 CREATE TABLE examples_to_skills (
   skill_id UUID NOT NULL CONSTRAINT examples_to_skills_skill_fkey REFERENCES skills (id) ON DELETE CASCADE,
   example_id UUID NOT NULL CONSTRAINT examples_to_skills_example_fkey REFERENCES examples (id) ON DELETE RESTRICT,
   CONSTRAINT examples_to_skills_pkey PRIMARY KEY (skill_id, example_id)
 );
+
+CREATE INDEX examples_to_skills_example_id_idx ON examples_to_skills (example_id);
 
 CREATE VIEW view_skills_with_examples AS
 SELECT
