@@ -63,11 +63,11 @@ Each of those is a sequential scan today. The `RESTRICT` checks are what raise `
 
 Integration tests are the _only_ coverage for controllers and repositories (by design, per the `writing-tests` skill), which means they must exercise the production wiring. As it stands, adding a global interceptor, changing the isolation level, or swapping the validation pipe changes production behaviour while the tests keep validating the old arrangement, and nothing fails.
 
-**Resolved.** The shared wiring now lives in two modules imported by both `MainModule` and the integration-test harness: `TransactionalModule` (`src/module/transactional.module.ts`) owns the CLS plugin and `DEFAULT_TX_OPTIONS`, and `HttpCoreModule` (`src/module/http-core.module.ts`) provides `APP_PIPE`/`APP_FILTER`/`APP_INTERCEPTOR`. The harness's only remaining bespoke wiring is a silent logger swapped in for `LoggingModule`, with a comment explaining why.
-
 **Suggestion:** extract the shared wiring into modules imported by both — e.g. a `CoreHttpModule` providing the three globals and a `TransactionalModule` owning the CLS plugin and `DEFAULT_TX_OPTIONS`. The harness then composes production modules plus test overrides rather than reimplementing them.
 
 **Extracted as an executable plan:** [`task-shared-composition-root.md`](task-shared-composition-root.md) — self-contained, ready for a dedicated session.
+
+**Resolved.** The plan above has been executed: the shared wiring now lives in two modules imported by both `MainModule` and the integration-test harness: `TransactionalModule` (`src/module/transactional.module.ts`) owns the CLS plugin and `DEFAULT_TX_OPTIONS`, and `HttpCoreModule` (`src/module/http-core.module.ts`) provides `APP_PIPE`/`APP_FILTER`/`APP_INTERCEPTOR`. The harness's only remaining bespoke wiring is a silent logger swapped in for `LoggingModule`, with a comment explaining why.
 
 ---
 
@@ -189,6 +189,6 @@ Listed separately because these files are what agents follow, so drift here repr
 
 1. Findings 1 and 2 — both are correctness under concurrency, and both touch the same write path, so they are cheaper to fix together than apart.
 2. Finding 4 — one migration, no code change.
-3. Findings 3 and 5 — these unblock unit-testing the application layer and stop the test harness from drifting.
+3. Finding 3 — this unblocks unit-testing the application layer.
 4. The documentation drift section — cheap, and it stops findings 9 and 10 from recurring in the next slice.
 5. Findings 6–16 as capacity allows; 13 and 14 are the lowest-risk visible wins.

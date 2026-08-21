@@ -4,7 +4,7 @@ Live under `test/integration/**/*.test.ts`. Runner: `npm run vitest:integration`
 
 ## HTTP / controller tests
 
-Boot the real feature module — not a hand-picked list of providers — via the shared harness `../../../test/integration/fixture/setup-integration-test.ts` (see "Persistence / repository tests" below for what it sets up), wire the global pipe/filter/interceptor, and drive it with **supertest**. Nothing is mocked: the application service and repository are real, backed by the real database. Assert status code + response body against actual database state.
+Boot the real feature module — not a hand-picked list of providers — via the shared harness `../../../test/integration/fixture/setup-integration-test.ts` (see "Persistence / repository tests" below for what it sets up, including composing `HttpCoreModule`, so the global pipe/filter/interceptor are already in place), and drive it with **supertest**. Nothing is mocked: the application service and repository are real, backed by the real database. Assert status code + response body against actual database state.
 
 ```ts
 const integrationTest = setupIntegrationTest();
