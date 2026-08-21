@@ -12,10 +12,11 @@ WITH
     SET
       name = $(name),
       description = $(description),
-      last_updated = $(lastUpdated)
+      last_updated = $(lastUpdated),
+      version = version + 1
     WHERE
       id = $(id)
-      AND concurrency_token (last_updated) = $(expectedToken)
+      AND concurrency_token (version) = $(expectedToken)
     RETURNING
       id
   )

@@ -2,7 +2,7 @@ SELECT
   id,
   name,
   description,
-  last_updated,
+  concurrency_token (version) AS concurrency_token,
   example_ids
 FROM
   view_skills_with_examples;

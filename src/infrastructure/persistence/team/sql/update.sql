@@ -11,19 +11,20 @@ WITH
     UPDATE teams
     SET
       name = $(name),
-      last_updated = $(lastUpdated)
+      last_updated = $(lastUpdated),
+      version = version + 1
     WHERE
       id = $(id)
-      AND concurrency_token (last_updated) = $(expectedToken)
+      AND concurrency_token (version) = $(expectedToken)
     RETURNING
       id,
       name,
-      last_updated
+      concurrency_token (version) AS concurrency_token
   )
 SELECT
   updated_row.id,
   updated_row.name,
-  updated_row.last_updated
+  updated_row.concurrency_token
 FROM
   current_row
   LEFT JOIN updated_row ON TRUE;

@@ -13,4 +13,4 @@ RETURNING
   name,
   example_kind_id,
   url,
-  last_updated;
+  concurrency_token (version) AS concurrency_token;

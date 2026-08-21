@@ -1,7 +1,7 @@
 SELECT
   id,
   name,
-  last_updated
+  concurrency_token (version) AS concurrency_token
 FROM
   teams
 ORDER BY

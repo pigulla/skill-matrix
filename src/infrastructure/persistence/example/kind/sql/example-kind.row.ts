@@ -1,21 +1,19 @@
 import z from 'zod'
 
+import { concurrencyTokenSchema } from '#/domain/concurrency-token.js'
 import { ExampleKind } from '#/domain/example/kind/example-kind.js'
 import { exampleKindIdSchema } from '#/domain/example/kind/example-kind-id.js'
-import { dayjsSchema } from '#/util/dayjs.schema.js'
-
-import { toConcurrencyToken } from '../../../concurrency-token.codec.js'
 
 export const exampleKindRow = z
   .strictObject({
     id: exampleKindIdSchema,
     name: z.string(),
-    last_updated: dayjsSchema,
+    concurrency_token: concurrencyTokenSchema,
   })
   .transform(data => ({
     ...data,
     toDomain: () => new ExampleKind({ id: data.id, name: data.name }),
-    getConcurrencyToken: () => toConcurrencyToken(data.last_updated),
+    getConcurrencyToken: () => data.concurrency_token,
   }))
   .readonly()
   .brand('example-kind-row')
@@ -25,12 +23,12 @@ export const exampleKindUpdateRow = z
     z.strictObject({
       id: exampleKindIdSchema,
       name: z.string(),
-      last_updated: dayjsSchema,
+      concurrency_token: concurrencyTokenSchema,
     }),
     z.strictObject({
       id: z.null(),
       name: z.null(),
-      last_updated: z.null(),
+      concurrency_token: z.null(),
     }),
   ])
   .readonly()

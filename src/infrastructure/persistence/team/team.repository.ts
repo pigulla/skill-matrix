@@ -16,7 +16,6 @@ import { ITeamRepository } from '#/domain/team/team.repository.interface.js'
 import type { TeamID } from '#/domain/team/team-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 
-import { toConcurrencyToken } from '../concurrency-token.codec.js'
 import { isRestrictViolation } from '../error/is-restrict-violation.js'
 import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
 
@@ -120,7 +119,7 @@ export class TeamRepository implements ITeamRepository {
 
       return okAsync({
         value: new Team({ id: parsed.id, name: parsed.name }),
-        token: toConcurrencyToken(parsed.last_updated),
+        token: parsed.concurrency_token,
       })
     })
   }

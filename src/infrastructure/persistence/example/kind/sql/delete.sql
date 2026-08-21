@@ -11,7 +11,7 @@ WITH
     DELETE FROM example_kinds
     WHERE
       id = $(id)
-      AND concurrency_token (last_updated) = $(expectedToken)
+      AND concurrency_token (version) = $(expectedToken)
     RETURNING
       id
   )

@@ -17,7 +17,6 @@ import type { ExampleID } from '#/domain/example/example-id.js'
 import { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 
-import { toConcurrencyToken } from '../concurrency-token.codec.js'
 import { isForeignKeyViolation } from '../error/is-foreign-key-violation.js'
 import { isRestrictViolation } from '../error/is-restrict-violation.js'
 import { isUniqueConstraintViolation } from '../error/is-unique-constraint-violation.js'
@@ -142,7 +141,7 @@ export class ExampleRepository implements IExampleRepository {
           exampleKindId: parsed.example_kind_id,
           url: parsed.url,
         }),
-        token: toConcurrencyToken(parsed.last_updated),
+        token: parsed.concurrency_token,
       })
     })
   }

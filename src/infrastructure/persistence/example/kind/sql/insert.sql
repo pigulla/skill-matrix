@@ -5,4 +5,4 @@ VALUES
 RETURNING
   id,
   name,
-  last_updated;
+  concurrency_token (version) AS concurrency_token;
