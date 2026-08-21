@@ -637,4 +637,4 @@ git commit -m "docs: update ADR 003 for version-based concurrency tokens"
 - Extending optimistic concurrency to `users` or `team-skill-proficiencies` (review findings 9 and 10).
 - Moving `last_updated` from the application clock to a SQL-side `now()`.
 - `If-None-Match` / `304` support (review finding 11).
-- The transaction-retry work in [`task-serialization-failure-retries.md`](task-serialization-failure-retries.md).
+- The transaction-conflict-response work in [`task-serialization-failure-conflict.md`](task-serialization-failure-conflict.md).

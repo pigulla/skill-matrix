@@ -6,7 +6,7 @@
 
 **Origin:** critical finding 4 of [`architecture-review.md`](architecture-review.md).
 
-This plan is independent of the other two extracted findings ([`task-monotonic-concurrency-tokens.md`](task-monotonic-concurrency-tokens.md), [`task-serialization-failure-retries.md`](task-serialization-failure-retries.md)) and can run before, after, or alongside either. It touches no TypeScript source at all — three migration edits, three doc edits.
+This plan is independent of the other two extracted findings ([`task-monotonic-concurrency-tokens.md`](task-monotonic-concurrency-tokens.md), [`task-serialization-failure-conflict.md`](task-serialization-failure-conflict.md)) and can run before, after, or alongside either. It touches no TypeScript source at all — three migration edits, three doc edits.
 
 ---
 
@@ -51,7 +51,7 @@ So: **every `DELETE` the API exposes performs at least one full table scan**, an
 At fixture scale — a handful of rows per table — these scans cost microseconds, and the planner would choose a sequential scan even if the indexes existed. **You are not firefighting a live performance problem.** Three reasons to fix it now anyway:
 
 1. **The cost is unbounded and invisible.** It grows linearly with table size and shows up as a slow `DELETE`, which is the last place anyone looks. `users` and `examples_to_skills` are exactly the tables that grow.
-2. **It interacts badly with this application's isolation level.** Every request runs in a `SERIALIZABLE` transaction (`default-transaction-options.ts`). Per PostgreSQL's own SSI performance guidance, a sequential scan must take a _relation-level_ predicate lock rather than tuple- or page-level ones, which raises the rate of serialization failures — and those currently surface as `500`s (see [`task-serialization-failure-retries.md`](task-serialization-failure-retries.md)). Removing avoidable sequential scans narrows that blast radius.
+2. **It interacts badly with this application's isolation level.** Every request runs in a `SERIALIZABLE` transaction (`default-transaction-options.ts`). Per PostgreSQL's own SSI performance guidance, a sequential scan must take a _relation-level_ predicate lock rather than tuple- or page-level ones, which raises the rate of serialization failures — and those currently surface as `500`s (see [`task-serialization-failure-conflict.md`](task-serialization-failure-conflict.md)). Removing avoidable sequential scans narrows that blast radius.
 3. **This is a reference codebase.** Unindexed foreign keys are the best-known PostgreSQL schema footgun, and a project that hand-writes all of its SQL specifically to keep the database legible should not ship the canonical example of the mistake.
 
 ---
