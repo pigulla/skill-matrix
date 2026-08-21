@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common'
 
 import { ITimeProvider } from '#/application/time-provider.interface.js'
-import { IUuidGenerator } from '#/application/uuid-generator.interface.js'
+import { IUuidProvider } from '#/application/uuid-provider.interface.js'
 import { TimeProvider } from '#/infrastructure/time-provider.js'
-import { UuidGenerator } from '#/infrastructure/uuid/uuid-generator.js'
+import { UuidProvider } from '#/infrastructure/uuid-provider.js'
 
 @Module({
   providers: [
     { provide: ITimeProvider, useClass: TimeProvider },
-    { provide: IUuidGenerator, useClass: UuidGenerator },
+    { provide: IUuidProvider, useClass: UuidProvider },
   ],
-  exports: [ITimeProvider, IUuidGenerator],
+  exports: [ITimeProvider, IUuidProvider],
 })
 export class UtilityModule {}
