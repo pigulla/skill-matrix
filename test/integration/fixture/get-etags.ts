@@ -1,12 +1,10 @@
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
-import type { Dayjs } from 'dayjs'
 
-import type { ConcurrencyToken } from '#/domain/concurrency-token.js'
+import { type ConcurrencyToken, concurrencyTokenSchema } from '#/domain/concurrency-token.js'
 import type { ExampleID } from '#/domain/example/example-id.js'
 import type { ExampleKindID } from '#/domain/example/kind/example-kind-id.js'
 import type { SkillID } from '#/domain/skill/skill-id.js'
 import type { TeamID } from '#/domain/team/team-id.js'
-import { toConcurrencyToken } from '#/infrastructure/persistence/concurrency-token.codec.js'
 import { type ETag, toETag } from '#/presentation/http/etag.js'
 
 import { STALE_CONCURRENCY_TOKEN } from '../../util/concurrency-tokens.js'
@@ -22,25 +20,29 @@ export const STALE_ETAG = toETag(STALE_CONCURRENCY_TOKEN)
 
 export async function getETags(db: Database): Promise<ETags> {
   const [skillRows, exampleRows, exampleKindRows, teamRows] = await Promise.all([
-    db.manyOrNone<{ id: SkillID; last_updated: Dayjs }>('SELECT id, last_updated FROM skills'),
-    db.manyOrNone<{ id: ExampleID; last_updated: Dayjs }>('SELECT id, last_updated FROM examples'),
-    db.manyOrNone<{ id: ExampleKindID; last_updated: Dayjs }>(
-      'SELECT id, last_updated FROM example_kinds',
+    db.manyOrNone<{ id: SkillID; token: string }>(
+      'SELECT id, concurrency_token (version) AS token FROM skills',
     ),
-    db.manyOrNone<{ id: TeamID; last_updated: Dayjs }>('SELECT id, last_updated FROM teams'),
+    db.manyOrNone<{ id: ExampleID; token: string }>(
+      'SELECT id, concurrency_token (version) AS token FROM examples',
+    ),
+    db.manyOrNone<{ id: ExampleKindID; token: string }>(
+      'SELECT id, concurrency_token (version) AS token FROM example_kinds',
+    ),
+    db.manyOrNone<{ id: TeamID; token: string }>(
+      'SELECT id, concurrency_token (version) AS token FROM teams',
+    ),
   ])
 
-  function toEntry(lastUpdated: Dayjs): { etag: ETag; token: ConcurrencyToken } {
-    const token = toConcurrencyToken(lastUpdated)
-    return { etag: toETag(token), token }
+  function toEntry(token: string): { etag: ETag; token: ConcurrencyToken } {
+    const parsed = concurrencyTokenSchema.parse(token)
+    return { etag: toETag(parsed), token: parsed }
   }
 
   return {
-    skills: Object.fromEntries(skillRows.map(row => [row.id, toEntry(row.last_updated)])),
-    examples: Object.fromEntries(exampleRows.map(row => [row.id, toEntry(row.last_updated)])),
-    exampleKinds: Object.fromEntries(
-      exampleKindRows.map(row => [row.id, toEntry(row.last_updated)]),
-    ),
-    teams: Object.fromEntries(teamRows.map(row => [row.id, toEntry(row.last_updated)])),
+    skills: Object.fromEntries(skillRows.map(row => [row.id, toEntry(row.token)])),
+    examples: Object.fromEntries(exampleRows.map(row => [row.id, toEntry(row.token)])),
+    exampleKinds: Object.fromEntries(exampleKindRows.map(row => [row.id, toEntry(row.token)])),
+    teams: Object.fromEntries(teamRows.map(row => [row.id, toEntry(row.token)])),
   }
 }

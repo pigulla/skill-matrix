@@ -12,7 +12,6 @@ import { ExampleConcurrencyError } from '#/domain/example/error/example-concurre
 import { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
 import { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
 import { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
-import { toConcurrencyToken } from '#/infrastructure/persistence/concurrency-token.codec.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ExampleRepository } from '#/infrastructure/persistence/example/example.repository.js'
 import { mockTimeProvider, type TimeProviderMock } from '#/mocks.js'
@@ -111,11 +110,12 @@ describe('ExampleRepository', () => {
       })
 
       const result = await exampleRepository.create(graphql)
+      const token = (await getETags(db)).examples[graphql.id].token
 
       expect(result).toEqual(
         ok({
           value: graphql,
-          token: toConcurrencyToken(now),
+          token,
         }),
       )
 
@@ -181,11 +181,12 @@ describe('ExampleRepository', () => {
         updated,
         etags.examples[examples.nestjs.id].token,
       )
+      const token = (await getETags(db)).examples[updated.id].token
 
       expect(result).toEqual(
         ok({
           value: updated,
-          token: toConcurrencyToken(later),
+          token,
         }),
       )
 
@@ -226,7 +227,7 @@ describe('ExampleRepository', () => {
         exampleKindId: exampleKinds.concept.id,
       })
 
-      const result = await exampleRepository.update(ghost, toConcurrencyToken(now))
+      const result = await exampleRepository.update(ghost, STALE_CONCURRENCY_TOKEN)
 
       expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
@@ -282,7 +283,7 @@ describe('ExampleRepository', () => {
     })
 
     it('should return ExampleNotFoundError if the example does not exist', async () => {
-      const result = await exampleRepository.delete(UNKNOWN_EXAMPLE_ID, toConcurrencyToken(now))
+      const result = await exampleRepository.delete(UNKNOWN_EXAMPLE_ID, STALE_CONCURRENCY_TOKEN)
 
       expect(result).toEqual(err(new ExampleNotFoundError(UNKNOWN_EXAMPLE_ID)))
     })
