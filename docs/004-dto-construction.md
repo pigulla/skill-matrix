@@ -83,5 +83,3 @@ Chosen option: "DTO schemas derived from the domain schema, with property docume
 ## More Information
 
 This builds on [002](002-error-handling-strategy.md). The decision there to _throw_ `InvalidEntityError` rather than return it — a domain object should never be constructible in an invalid state, so reaching that path is a programmer error — is what makes boundary validation load-bearing: if the DTO layer ever stops guaranteeing that the domain will accept what it forwards, the result is a `500` rather than a `400`.
-
-The reasoning here was worked out while reviewing [`architecture-review.md`](architecture-review.md) finding 6, which proposed moving `.meta()` into the presentation layer; that proposal was rejected for the reasons recorded above, and the finding has been revised to match. `AGENTS.md` § Architecture carries the short form of these rules.
