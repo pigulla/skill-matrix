@@ -58,6 +58,7 @@ DTOs are validated at the boundary with Zod (`nestjs-zod`). Domain objects are i
 - **Config:** Node-Config (`config/`) with Zod-validated schemas in `src/infrastructure/config/`
 - **Logging:** Pino via `nestjs-pino`; no `console.*` allowed (Biome enforces this)
 - **Controllers:** Controllers never contain business logic. They serve exclusively as an adapter from HTTP to the application layer (or in trivial cases the domain layer). All business logic must be in application services.
+- **Modules:** Global HTTP enhancers (`APP_PIPE`/`APP_FILTER`/`APP_INTERCEPTOR`/`APP_GUARD`) belong in `HttpCoreModule`; the CLS transaction plugin belongs in `TransactionalModule`. The integration-test harness composes those two modules directly rather than `MainModule`, so wiring declared anywhere else exists in production only.
 
 ### Error handling
 

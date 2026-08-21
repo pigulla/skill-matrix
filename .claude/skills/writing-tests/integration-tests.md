@@ -39,7 +39,7 @@ it("returns 404 when the user doesn't exist", () =>
 
 ## Persistence / repository tests
 
-Use the shared harness `../../../test/integration/fixture/setup-integration-test.ts`. It starts one `postgres:18-alpine` Testcontainer per test file (`beforeAll`/`afterAll`). In `beforeAll` it also runs all migrations and seeds `fixture.sql` **once**, then marks that database as a Postgres template (`IS_TEMPLATE = true`). Each test's `beforeEach`/`afterEach` then just clones (`CREATE DATABASE ... TEMPLATE ...`) and drops a fresh per-test database — no migrations run per test. `createModule` wires `DatabaseModule` + the transactional CLS plugin and points the DB config at that test's database.
+Use the shared harness `../../../test/integration/fixture/setup-integration-test.ts`. It starts one `postgres:18-alpine` Testcontainer per test file (`beforeAll`/`afterAll`). In `beforeAll` it also runs all migrations and seeds `fixture.sql` **once**, then marks that database as a Postgres template (`IS_TEMPLATE = true`). Each test's `beforeEach`/`afterEach` then just clones (`CREATE DATABASE ... TEMPLATE ...`) and drops a fresh per-test database — no migrations run per test. The harness composes the same `TransactionalModule` and `HttpCoreModule` the application does, adds a silent logger in place of `LoggingModule`, and overrides `DATABASE_CONFIG` to point at the test's database. A new global enhancer (pipe/filter/interceptor/guard) belongs in `HttpCoreModule`, never in the harness.
 
 ```ts
 const integrationTest = setupIntegrationTest();
