@@ -62,6 +62,20 @@ export class ExamplesController {
     type: [ExampleDTO],
     description: 'The operation completed successfully.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public getAll(): ResultAsync<ExampleDTO[], never> {
     return this.service.getAll().map(examples => examples.map(fromDomain))
@@ -89,6 +103,20 @@ export class ExamplesController {
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'The example with the given id was not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ETagResponse()
   @UnwrapResult()
@@ -123,7 +151,25 @@ export class ExamplesController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'The example is still referenced by a skill.',
+    description:
+      'The example is still referenced by a skill, or the write conflicted with another one running at the same time.',
+    examples: {
+      inUse: {
+        summary: 'The example is still referenced by a skill',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'The example is still referenced by a skill.',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -162,7 +208,25 @@ export class ExamplesController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'An example with an identical name already exists.',
+    description:
+      'An example with an identical name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'An example with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'An example with this name already exists.',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -211,7 +275,25 @@ export class ExamplesController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'An example with an identical name already exists.',
+    description:
+      'An example with an identical name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'An example with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'An example with this name already exists.',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,

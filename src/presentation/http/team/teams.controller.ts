@@ -61,6 +61,20 @@ export class TeamsController {
     type: [TeamDTO],
     description: 'The operation completed successfully.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public getAll(): ResultAsync<TeamDTO[], never> {
     return this.service.getAll().map(teams => teams.map(fromDomain))
@@ -88,6 +102,20 @@ export class TeamsController {
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'The team with the given id was not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ETagResponse()
   @UnwrapResult()
@@ -122,7 +150,25 @@ export class TeamsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'The team still has members and cannot be deleted.',
+    description:
+      'The team still has members and cannot be deleted, or the write conflicted with another one running at the same time.',
+    examples: {
+      inUse: {
+        summary: 'The team still has members and cannot be deleted',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'The team still has members and cannot be deleted.',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -161,7 +207,25 @@ export class TeamsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'A team with the given name already exists.',
+    description:
+      'A team with the given name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'A team with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'A team with this name already exists.',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiBody({ type: CreateTeamDTO })
   @ETagResponse()
@@ -203,7 +267,25 @@ export class TeamsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'A team with the given name already exists.',
+    description:
+      'A team with the given name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'A team with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'A team with this name already exists.',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
