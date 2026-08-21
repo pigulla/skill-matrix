@@ -157,7 +157,7 @@ export class TeamsController {
         summary: 'The team still has members and cannot be deleted',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'The team still has members and cannot be deleted.',
+          message: `Entity of type Team identified by (id=${EXAMPLE_TEAM_ID}) is in use`,
         },
       },
       transactionConflict: {
@@ -214,7 +214,7 @@ export class TeamsController {
         summary: 'A team with this name already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'A team with this name already exists.',
+          message: 'Duplicate entity of type Team ((name=Platform))',
         },
       },
       transactionConflict: {
@@ -274,7 +274,7 @@ export class TeamsController {
         summary: 'A team with this name already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'A team with this name already exists.',
+          message: 'Duplicate entity of type Team ((name=Platform))',
         },
       },
       transactionConflict: {

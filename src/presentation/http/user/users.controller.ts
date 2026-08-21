@@ -170,7 +170,7 @@ export class UsersController {
         summary: 'A user with this email address already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'A user with this email address already exists.',
+          message: 'Duplicate entity of type User ((email=peter.pan@example.com))',
         },
       },
       transactionConflict: {
@@ -223,7 +223,7 @@ export class UsersController {
         summary: 'A user with this email address already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'A user with this email address already exists.',
+          message: 'Duplicate entity of type User ((email=peter.pan@example.com))',
         },
       },
       transactionConflict: {

@@ -157,7 +157,7 @@ export class SkillsController {
         summary: `The skill is in use and can't be deleted`,
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: `The skill is in use and can't be deleted.`,
+          message: `Entity of type Skill identified by (id=${EXAMPLE_SKILL_ID}) is in use`,
         },
       },
       transactionConflict: {
@@ -213,7 +213,7 @@ export class SkillsController {
         summary: 'A skill with this name already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'A skill with this name already exists.',
+          message: 'Duplicate entity of type Skill ((name=Backend Development))',
         },
       },
       transactionConflict: {
@@ -285,7 +285,7 @@ export class SkillsController {
         summary: 'A skill with this name already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'A skill with this name already exists.',
+          message: 'Duplicate entity of type Skill ((name=Backend Development))',
         },
       },
       transactionConflict: {

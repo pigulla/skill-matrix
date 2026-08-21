@@ -165,7 +165,7 @@ export class ExampleKindsController {
         summary: 'The example kind is still referenced by an example',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'The example kind is still referenced by an example.',
+          message: `Entity of type ExampleKind identified by (id=${EXAMPLE_EXAMPLE_KIND_ID}) is in use`,
         },
       },
       transactionConflict: {
@@ -225,7 +225,7 @@ export class ExampleKindsController {
         summary: 'An example kind with this name already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'An example kind with this name already exists.',
+          message: 'Duplicate entity of type ExampleKind ((name=Technology))',
         },
       },
       transactionConflict: {
@@ -288,7 +288,7 @@ export class ExampleKindsController {
         summary: 'An example kind with this name already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'An example kind with this name already exists.',
+          message: 'Duplicate entity of type ExampleKind ((name=Technology))',
         },
       },
       transactionConflict: {

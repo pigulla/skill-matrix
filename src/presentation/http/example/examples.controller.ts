@@ -158,7 +158,7 @@ export class ExamplesController {
         summary: 'The example is still referenced by a skill',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'The example is still referenced by a skill.',
+          message: `Entity of type Example identified by (id=${EXAMPLE_EXAMPLE_ID}) is in use`,
         },
       },
       transactionConflict: {
@@ -215,7 +215,7 @@ export class ExamplesController {
         summary: 'An example with this name already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'An example with this name already exists.',
+          message: 'Duplicate entity of type Example ((name=NestJS))',
         },
       },
       transactionConflict: {
@@ -282,7 +282,7 @@ export class ExamplesController {
         summary: 'An example with this name already exists',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'An example with this name already exists.',
+          message: 'Duplicate entity of type Example ((name=NestJS))',
         },
       },
       transactionConflict: {

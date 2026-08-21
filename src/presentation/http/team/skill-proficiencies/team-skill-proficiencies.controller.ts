@@ -107,7 +107,7 @@ export class TeamSkillProficienciesController {
         summary: 'The skill is already associated with the team',
         value: {
           statusCode: HttpStatus.CONFLICT,
-          message: 'The skill is already associated with the team.',
+          message: `Duplicate entity of type TeamSkillProficiencies ((teamId=${EXAMPLE_TEAM_ID},skillId=${EXAMPLE_SKILL_ID}))`,
         },
       },
       transactionConflict: {
