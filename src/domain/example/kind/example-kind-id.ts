@@ -3,15 +3,10 @@ import z from 'zod'
 import { EntityIdMarker } from '../../id-markers.js'
 import { idSchema } from '../../id-schema.js'
 
-export const exampleKindIdSchema = idSchema
-  .refine(id => id.split('-')[1] === EntityIdMarker.EXAMPLE_KIND, {
-    message: `ID must have marker '${EntityIdMarker.EXAMPLE_KIND}' in the second segment`,
-  })
-  .brand('example-kind-id')
-  .meta({
-    description: 'The ID of the example kind.',
-    example: `55555555-${EntityIdMarker.EXAMPLE_KIND}-4000-8000-111111111111`,
-  })
+export const exampleKindIdSchema = idSchema.brand('example-kind-id').meta({
+  description: 'The ID of the example kind.',
+  example: `55555555-${EntityIdMarker.EXAMPLE_KIND}-4000-8000-111111111111`,
+})
 
 export type ExampleKindID = z.infer<typeof exampleKindIdSchema>
 
