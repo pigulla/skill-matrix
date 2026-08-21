@@ -16,15 +16,16 @@ export function createOpenApiDocument(
     .setLicense(settings.license.name, settings.license.url)
     .setContact(settings.contact.name, settings.contact.url, settings.contact.email)
     .addServer(settings.server)
-    .addBearerAuth()
-    .addSecurityRequirements('bearer')
 
   // biome-ignore lint/suspicious/useIterableCallbackReturn: It's fine.
   Object.values(OpenApiTag).forEach(({ name, description }) =>
     documentBuilder.addTag(name, description),
   )
 
-  const document = SwaggerModule.createDocument(app, documentBuilder.build())
+  const document = SwaggerModule.createDocument(app, {
+    ...documentBuilder.build(),
+    security: [],
+  })
 
   return cleanupOpenApiDoc(document)
 }

@@ -76,7 +76,7 @@
     "nestjs-pino": "4.6.1",
     "nestjs-zod": "5.5.0",
     "neverthrow": "8.2.0",
-    "pg-promise": "12.7.0",
+    "pg-promise": "12.7.1",
     "pg-protocol": "1.16.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
@@ -87,7 +87,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
     "@nestjs/testing": "11.2.1",
-    "@redocly/cli": "2.46.2",
+    "@redocly/cli": "2.47.0",
     "@swc/core": "1.16.1",
     "@testcontainers/postgresql": "12.1.0",
     "@tsconfig/node-ts": "23.6.4",
