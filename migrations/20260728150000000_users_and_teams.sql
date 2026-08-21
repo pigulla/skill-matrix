@@ -2,7 +2,8 @@
 CREATE TABLE teams (
   id UUID NOT NULL CONSTRAINT teams_pkey PRIMARY KEY,
   name VARCHAR NOT NULL CONSTRAINT teams_name UNIQUE,
-  last_updated TIMESTAMPTZ NOT NULL
+  last_updated TIMESTAMPTZ NOT NULL,
+  version BIGINT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE users (
