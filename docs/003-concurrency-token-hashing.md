@@ -35,6 +35,7 @@ Chosen option: "MD5 hash of the version, computed entirely in PostgreSQL", becau
 - **TypeScript**: there is no codec. Row schemas parse the `concurrency_token` column straight into the domain's existing `ConcurrencyToken` type (`z.hash('md5')`, unchanged) — the token crosses the infrastructure boundary already in its final form.
 - `version` itself never appears in a row schema or a repository return type — it exists purely as a column `concurrency_token()` reads inside SQL. Nothing in `src/` derives, parses, or brands a version number.
 - Every mutable entity (`teams`, `skills`, `example_kinds`, `examples`) carries its own `version BIGINT NOT NULL DEFAULT 1`. `last_updated` stays on each table too, populated by the application clock (`ITimeProvider`) — a plain audit column, entirely independent of the concurrency mechanism.
+- `users` and `skills_to_teams_with_proficiency` are also mutable entities but are currently exempt from this mechanism, deliberately left out of scope for this plan — see [architecture-review.md](architecture-review.md) findings 9 and 10.
 
 ### Consequences
 

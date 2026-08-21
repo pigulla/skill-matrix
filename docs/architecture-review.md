@@ -32,7 +32,7 @@ Under serializable isolation those errors are not bugs; they are the documented,
 
 **Suggestion:** add a bounded, jittered retry for `40001`/`40P01` inside `ResultTransactional` (the one place that owns the transaction boundary), and reconsider the blanket isolation level — the write paths are already guarded by the optimistic-concurrency predicate, so `READ COMMITTED` plus that predicate is the more conventional pairing. If serializable stays, `READ ONLY DEFERRABLE` for pure-read methods is worth having.
 
-**Extracted as an executable plan:** [`task-serialization-failure-conflict.md`](task-serialization-failure-conflict.md) — self-contained, ready for a dedicated session.
+**Extracted as an executable plan:** [`task-serialization-failure-retries.md`](task-serialization-failure-retries.md) — self-contained, ready for a dedicated session.
 
 ### 3. `util` is where the layer boundary gets circumvented — and it costs the whole application layer its unit tests
 
