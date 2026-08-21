@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -21,13 +19,14 @@ import type { DuplicateExampleNameError } from '#/domain/example/error/duplicate
 import type { ExampleConcurrencyError } from '#/domain/example/error/example-concurrency.error.js'
 import type { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
 import type { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
-import { EXAMPLE_EXAMPLE_ID, type ExampleID } from '#/domain/example/example-id.js'
+import { EXAMPLE_EXAMPLE_ID, type ExampleID, exampleIdSchema } from '#/domain/example/example-id.js'
 import type { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { EXAMPLE_ETAG } from '../etag.js'
 import { ETagResponse } from '../etag-response.decorator.js'
+import { IdParam } from '../id-param.decorator.js'
 import { IfMatchHeader } from '../if-match-header.decorator.js'
 import { OpenApiTag } from '../openapi.tag.js'
 
@@ -121,8 +120,7 @@ export class ExamplesController {
   @ETagResponse()
   @UnwrapResult()
   public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleID,
+    @IdParam('id', exampleIdSchema) id: ExampleID,
   ): ResultAsync<WithConcurrencyToken<ExampleDTO>, ExampleNotFoundError> {
     return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
@@ -181,8 +179,7 @@ export class ExamplesController {
   })
   @UnwrapResult()
   public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleID,
+    @IdParam('id', exampleIdSchema) id: ExampleID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError | ExampleConcurrencyError> {
     return this.service.delete(id, expectedToken)
@@ -311,8 +308,7 @@ export class ExamplesController {
   @ETagResponse()
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleID,
+    @IdParam('id', exampleIdSchema) id: ExampleID,
     @Body() dto: UpdateExampleDTO,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<

@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -22,12 +20,13 @@ import type { DuplicateSkillNameError } from '#/domain/skill/error/duplicate-ski
 import type { SkillConcurrencyError } from '#/domain/skill/error/skill-concurrency.error.js'
 import type { SkillInUseError } from '#/domain/skill/error/skill-in-use.error.js'
 import type { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
-import { EXAMPLE_SKILL_ID, type SkillID } from '#/domain/skill/skill-id.js'
+import { EXAMPLE_SKILL_ID, type SkillID, skillIdSchema } from '#/domain/skill/skill-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { EXAMPLE_ETAG } from '../etag.js'
 import { ETagResponse } from '../etag-response.decorator.js'
+import { IdParam } from '../id-param.decorator.js'
 import { IfMatchHeader } from '../if-match-header.decorator.js'
 import { OpenApiTag } from '../openapi.tag.js'
 
@@ -121,8 +120,7 @@ export class SkillsController {
   @ETagResponse()
   @UnwrapResult()
   public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: SkillID,
+    @IdParam('id', skillIdSchema) id: SkillID,
   ): ResultAsync<WithConcurrencyToken<SkillDTO>, SkillNotFoundError> {
     return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
@@ -180,8 +178,7 @@ export class SkillsController {
   })
   @UnwrapResult()
   public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: SkillID,
+    @IdParam('id', skillIdSchema) id: SkillID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<void, SkillInUseError | SkillNotFoundError | SkillConcurrencyError> {
     return this.service.delete(id, expectedToken)
@@ -314,8 +311,7 @@ export class SkillsController {
   @ETagResponse()
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: SkillID,
+    @IdParam('id', skillIdSchema) id: SkillID,
     @Body() dto: UpdateSkillDTO,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<

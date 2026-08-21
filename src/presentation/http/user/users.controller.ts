@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -19,9 +17,10 @@ import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-refere
 import type { DuplicateUserEmailError } from '#/domain/user/error/duplicate-user-email.error.js'
 import type { DuplicateUserIdError } from '#/domain/user/error/duplicate-user-id.error.js'
 import type { UserNotFoundError } from '#/domain/user/error/user-not-found.error.js'
-import { EXAMPLE_USER_ID, type UserID } from '#/domain/user/user-id.js'
+import { EXAMPLE_USER_ID, type UserID, userIdSchema } from '#/domain/user/user-id.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
+import { IdParam } from '../id-param.decorator.js'
 import { OpenApiTag } from '../openapi.tag.js'
 
 import { CreateUserDTO, fromDomain, UpdateUserDTO, UserDTO } from './user.dto.js'
@@ -105,10 +104,7 @@ export class UsersController {
     },
   })
   @UnwrapResult()
-  public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: UserID,
-  ): ResultAsync<UserDTO, UserNotFoundError> {
+  public getOne(@IdParam('id', userIdSchema) id: UserID): ResultAsync<UserDTO, UserNotFoundError> {
     return this.service.get(id).map(fromDomain)
   }
 
@@ -143,10 +139,7 @@ export class UsersController {
     },
   })
   @UnwrapResult()
-  public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: UserID,
-  ): ResultAsync<void, UserNotFoundError> {
+  public delete(@IdParam('id', userIdSchema) id: UserID): ResultAsync<void, UserNotFoundError> {
     return this.service.delete(id)
   }
 
@@ -243,8 +236,7 @@ export class UsersController {
   @ApiBody({ type: UpdateUserDTO })
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: UserID,
+    @IdParam('id', userIdSchema) id: UserID,
     @Body() dto: UpdateUserDTO,
   ): ResultAsync<
     UserDTO,

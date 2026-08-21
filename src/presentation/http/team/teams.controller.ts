@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -21,12 +19,13 @@ import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-
 import type { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
 import type { TeamInUseError } from '#/domain/team/error/team-in-use.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
-import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
+import { EXAMPLE_TEAM_ID, type TeamID, teamIdSchema } from '#/domain/team/team-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { EXAMPLE_ETAG } from '../etag.js'
 import { ETagResponse } from '../etag-response.decorator.js'
+import { IdParam } from '../id-param.decorator.js'
 import { IfMatchHeader } from '../if-match-header.decorator.js'
 import { OpenApiTag } from '../openapi.tag.js'
 
@@ -120,8 +119,7 @@ export class TeamsController {
   @ETagResponse()
   @UnwrapResult()
   public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: TeamID,
+    @IdParam('id', teamIdSchema) id: TeamID,
   ): ResultAsync<WithConcurrencyToken<TeamDTO>, TeamNotFoundError> {
     return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
@@ -180,8 +178,7 @@ export class TeamsController {
   })
   @UnwrapResult()
   public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: TeamID,
+    @IdParam('id', teamIdSchema) id: TeamID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<void, TeamNotFoundError | TeamInUseError | TeamConcurrencyError> {
     return this.service.delete(id, expectedToken)
@@ -299,8 +296,7 @@ export class TeamsController {
   @ETagResponse()
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: TeamID,
+    @IdParam('id', teamIdSchema) id: TeamID,
     @Body() dto: UpdateTeamDTO,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<

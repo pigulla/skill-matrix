@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -24,12 +22,14 @@ import type { ExampleKindNotFoundError } from '#/domain/example/kind/error/examp
 import {
   EXAMPLE_EXAMPLE_KIND_ID,
   type ExampleKindID,
+  exampleKindIdSchema,
 } from '#/domain/example/kind/example-kind-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { EXAMPLE_ETAG } from '../../etag.js'
 import { ETagResponse } from '../../etag-response.decorator.js'
+import { IdParam } from '../../id-param.decorator.js'
 import { IfMatchHeader } from '../../if-match-header.decorator.js'
 import { OpenApiTag } from '../../openapi.tag.js'
 
@@ -128,8 +128,7 @@ export class ExampleKindsController {
   @ETagResponse()
   @UnwrapResult()
   public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleKindID,
+    @IdParam('id', exampleKindIdSchema) id: ExampleKindID,
   ): ResultAsync<WithConcurrencyToken<ExampleKindDTO>, ExampleKindNotFoundError> {
     return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
@@ -188,8 +187,7 @@ export class ExampleKindsController {
   })
   @UnwrapResult()
   public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleKindID,
+    @IdParam('id', exampleKindIdSchema) id: ExampleKindID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<
     void,
@@ -313,8 +311,7 @@ export class ExampleKindsController {
   @ETagResponse()
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleKindID,
+    @IdParam('id', exampleKindIdSchema) id: ExampleKindID,
     @Body() dto: UpdateExampleKindDTO,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<

@@ -180,6 +180,23 @@ describe('ExamplesController', () => {
         .send({ ...body, id: examples.react.id })
         .expect(HttpStatus.BAD_REQUEST))
 
+    it('should treat an upper-cased id in the route as the same id as in the payload', () => {
+      // The route id and the payload id are the same UUID in different cases. Only the payload id is
+      // normalized by its schema, so an un-normalized route id makes the handler's id comparison
+      // reject a request that is perfectly well-formed.
+      const upperCased = ExampleBuilder.from(examples.infrastructureAsCode)
+        .withName('IaC')
+        .build()
+        .toJSON()
+
+      return request(app.getHttpServer())
+        .put(`/examples/${(upperCased.id as string).toUpperCase()}`)
+        .set('If-Match', etags.examples[examples.infrastructureAsCode.id].etag)
+        .send(upperCased)
+        .expect(HttpStatus.OK)
+        .expect(upperCased)
+    })
+
     it('should return 400 Bad Request if the payload contains an unknown property', () =>
       request(app.getHttpServer())
         .put(`/examples/${body.id}`)
