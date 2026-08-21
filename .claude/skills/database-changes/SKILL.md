@@ -54,6 +54,10 @@ The `user` slice is the canonical, complete example. Read it before writing new 
 - Adding a new entity/repository end to end → [adding-a-repository.md](adding-a-repository.md)
 - Writing or changing migrations → [migrations.md](migrations.md)
 
+## Database views
+
+SQL views may exist in migrations purely for **developer convenience** — to make the schema easier to explore, debug, or query by hand — even when no application code currently references them. This is an intentional, accepted pattern, not a gap. Do not flag a view as unused or unnecessary just because no `.sql` query file references it.
+
 ## Common mistakes
 
 - Inlining a SQL string in the repository instead of adding a `.sql` file + `queries.ts` entry.
