@@ -1,25 +1,20 @@
 import { join } from 'node:path'
 
 import type { ModuleMetadata } from '@nestjs/common'
-import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { Test, type TestingModuleBuilder } from '@nestjs/testing'
-import { ClsPluginTransactional } from '@nestjs-cls/transactional'
 import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
-import { TransactionalAdapterPgPromise } from '@nestjs-cls/transactional-adapter-pg-promise'
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
-import { ClsModule } from 'nestjs-cls'
 import { LoggerModule } from 'nestjs-pino'
-import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod'
 import { runner } from 'node-pg-migrate'
-import pgPromise, { txMode } from 'pg-promise'
+import pgPromise from 'pg-promise'
 import { expect } from 'vitest'
 
 import { createDatabaseConfig, DATABASE_CONFIG } from '#/infrastructure/config/database.config.js'
-import { DB_CONNECTION } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ConfigModule } from '#/module/config.module.js'
 import { DatabaseModule } from '#/module/database.module.js'
-import { DomainErrorsExceptionFilter } from '#/presentation/http/domain-errors-exception-filter.js'
+import { HttpCoreModule } from '#/module/http-core.module.js'
+import { TransactionalModule } from '#/module/transactional.module.js'
 
 import pgPromiseConfig from '../../../.pgmigrate.json' with { type: 'json' }
 
@@ -119,32 +114,19 @@ export function setupIntegrationTest(
       imports: [
         ConfigModule,
         DatabaseModule,
+        TransactionalModule,
+        HttpCoreModule,
+        // Deliberately not LoggingModule: it builds a pino transport, and a transport spawns a worker
+        // thread per application instance. These tests construct one app per test case, so they use a
+        // transport-free silent logger instead. This is the one piece of wiring that is meant to differ.
         LoggerModule.forRoot({
           pinoHttp: {
             enabled: false,
           },
         }),
-        ClsModule.forRoot({
-          plugins: [
-            new ClsPluginTransactional({
-              imports: [DatabaseModule],
-              adapter: new TransactionalAdapterPgPromise({
-                dbInstanceToken: DB_CONNECTION,
-                defaultTxOptions: {
-                  mode: new txMode.TransactionMode({ tiLevel: txMode.isolationLevel.serializable }),
-                },
-              }),
-            }),
-          ],
-        }),
         ...(options?.imports ?? []),
       ],
-      providers: [
-        { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
-        { provide: APP_FILTER, useClass: DomainErrorsExceptionFilter },
-        { provide: APP_PIPE, useClass: ZodValidationPipe },
-        ...(options?.providers ?? []),
-      ],
+      providers: options?.providers ?? [],
       exports: options?.exports ?? [],
     })
       .overrideProvider(DATABASE_CONFIG)
