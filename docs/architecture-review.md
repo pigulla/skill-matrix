@@ -57,6 +57,8 @@ Each of those is a sequential scan today. The `RESTRICT` checks are what raise `
 
 **Extracted as an executable plan:** [`task-foreign-key-indexes.md`](task-foreign-key-indexes.md) — self-contained, ready for a dedicated session.
 
+**Resolved.** Four indexes were added across the three existing migrations: `users_team_id_idx` in `migrations/20260728150000000_users_and_teams.sql`; `examples_example_kind_id_idx` and `examples_to_skills_example_id_idx` in `migrations/20260728160000000_skills_and_examples.sql`; and `skills_to_teams_with_proficiency_skill_id_idx` in `migrations/20260729000000000_skills_to_team_proficiencies.sql`. Each index was proven usable by its `ON DELETE RESTRICT` predicate under `SET enable_seqscan = off`. The `database-changes` skill, `adding-a-repository.md`, and `migrations.md` now state the rule — every FK referencing column gets an index, named `<table>_<column>_idx`, except one that is already the leading column of a composite primary key — so new slices don't repeat the gap.
+
 ### 5. The composition root exists twice
 
 `test/integration/fixture/setup-integration-test.ts` re-declares, by hand, what `src/module/main.module.ts` wires: `APP_PIPE`/`APP_FILTER`/`APP_INTERCEPTOR` and the `ClsPluginTransactional` registration — including a second, literal copy of the serializable transaction mode instead of importing `DEFAULT_TX_OPTIONS`.
