@@ -112,7 +112,7 @@
     "type-fest": "5.8.0",
     "typescript": "7.0.2",
     "unplugin-swc": "1.5.11",
-    "vite": "8.2.1",
+    "vite": "8.2.2",
     "vitest": "4.1.11",
     "yaml": "2.9.0"
   },
