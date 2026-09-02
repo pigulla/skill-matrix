@@ -87,7 +87,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
     "@nestjs/testing": "11.2.1",
-    "@redocly/cli": "2.46.2",
+    "@redocly/cli": "2.49.0",
     "@swc/core": "1.16.1",
     "@testcontainers/postgresql": "12.1.0",
     "@tsconfig/node-ts": "23.6.4",
