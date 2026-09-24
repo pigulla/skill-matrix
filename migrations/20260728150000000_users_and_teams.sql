@@ -2,7 +2,8 @@
 CREATE TABLE teams (
   id UUID NOT NULL CONSTRAINT teams_pkey PRIMARY KEY,
   name VARCHAR NOT NULL CONSTRAINT teams_name UNIQUE,
-  last_updated TIMESTAMPTZ NOT NULL
+  last_updated TIMESTAMPTZ NOT NULL,
+  version BIGINT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE users (
@@ -12,6 +13,8 @@ CREATE TABLE users (
   last_name VARCHAR NOT NULL,
   team_id UUID NOT NULL CONSTRAINT users_team_fkey REFERENCES teams (id) ON DELETE RESTRICT
 );
+
+CREATE INDEX users_team_id_idx ON users (team_id);
 
 CREATE VIEW view_teams_with_members AS
 SELECT

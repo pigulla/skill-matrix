@@ -1,5 +1,6 @@
 import { HttpStatus } from '@nestjs/common'
 import type { NestExpressApplication } from '@nestjs/platform-express'
+import type { Database } from '@nestjs-cls/transactional-adapter-pg-promise'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
@@ -15,6 +16,49 @@ import { type ETags, getETags, STALE_ETAG } from '../../fixture/get-etags.js'
 import { setupIntegrationTest } from '../../fixture/setup-integration-test.js'
 
 const ETAG_PATTERN = /^W\/".+"$/
+
+const LOCK_WAIT_POLL_INTERVAL_MS = 10
+const LOCK_WAIT_TIMEOUT_MS = 5_000
+
+// Deliberately inlined rather than extracted to sql/: these belong to a single test, are never run by the
+// application and would only add noise to the repository's query files.
+const BLOCKED_BACKENDS = `
+  SELECT count(*)::int AS blocked
+  FROM pg_stat_activity
+  WHERE datname = current_database()
+    AND pid <> pg_backend_pid()
+    AND wait_event_type = 'Lock'
+    AND query ILIKE '%skills%'`
+const LOCK_SKILL_ROW = 'SELECT id FROM skills WHERE id = $(id) FOR UPDATE'
+const TOUCH_SKILL_ROW = 'UPDATE skills SET last_updated = now() WHERE id = $(id)'
+
+/**
+ * Resolves as soon as PostgreSQL itself reports another backend of this database as parked on a lock
+ * involving the skills table.
+ *
+ * This is what keeps the transaction-conflict test below deterministic: rather than sleeping for an
+ * arbitrary duration and hoping the request got far enough, it waits for observed server state — the
+ * request's own UPDATE having reached PostgreSQL and blocked on the row lock the test is holding.
+ */
+async function waitUntilBlockedOnSkillsLock(database: Database): Promise<void> {
+  const deadline = Date.now() + LOCK_WAIT_TIMEOUT_MS
+
+  while (Date.now() < deadline) {
+    const { blocked } = await database.one<{ blocked: number }>(BLOCKED_BACKENDS)
+
+    if (blocked > 0) {
+      return
+    }
+
+    await new Promise(resolve => {
+      setTimeout(resolve, LOCK_WAIT_POLL_INTERVAL_MS)
+    })
+  }
+
+  throw new Error(
+    `No backend blocked on a skills row lock within ${LOCK_WAIT_TIMEOUT_MS} ms, so the request under test never reached the lock`,
+  )
+}
 
 describe('SkillsController', () => {
   const integrationTest = setupIntegrationTest()
@@ -217,6 +261,56 @@ describe('SkillsController', () => {
         .set('If-Match', etags.skills[skills.backendDevelopment.id].etag)
         .send({ ...body, name: skills.frontendDevelopment.name })
         .expect(HttpStatus.CONFLICT))
+
+    it('should return 409 Conflict if the write conflicts with a concurrent transaction', async () => {
+      const database = app.get(IConnectionProvider).database
+
+      let resolveLockAcquired!: () => void
+      let resolveReleaseLock!: () => void
+
+      const lockAcquired = new Promise<void>(resolve => {
+        resolveLockAcquired = resolve
+      })
+      const releaseLock = new Promise<void>(resolve => {
+        resolveReleaseLock = resolve
+      })
+
+      // A second, manually driven transaction takes an explicit row lock on the skill the request below
+      // is about to update, holds it, and only then modifies the row itself and commits.
+      const concurrentTransaction = database.tx(async transaction => {
+        await transaction.one(LOCK_SKILL_ROW, { id: body.id })
+        resolveLockAcquired()
+        await releaseLock
+        await transaction.none(TOUCH_SKILL_ROW, { id: body.id })
+      })
+
+      await lockAcquired
+
+      // Calling `then` is what makes supertest actually send the request. Its serializable transaction
+      // reads the skill (taking its snapshot) and then blocks on the row lock held above.
+      const pendingResponse = request(app.getHttpServer())
+        .put(`/skills/${body.id}`)
+        .set('If-Match', etags.skills[skills.backendDevelopment.id].etag)
+        .send(body)
+        .then(response => response)
+
+      try {
+        await waitUntilBlockedOnSkillsLock(database)
+      } finally {
+        // Once the lock holder commits its own change, the blocked UPDATE resumes, finds the row changed
+        // by a transaction that committed after its snapshot and fails with SQLSTATE 40001.
+        resolveReleaseLock()
+      }
+
+      await concurrentTransaction
+
+      const response = await pendingResponse
+
+      expect(response.status).toBe(HttpStatus.CONFLICT)
+      expect(response.body).toMatchObject({
+        message: expect.stringContaining('conflicted with another one running at the same time'),
+      })
+    })
 
     it('should return 412 Precondition Failed if the If-Match header is stale', () =>
       request(app.getHttpServer())

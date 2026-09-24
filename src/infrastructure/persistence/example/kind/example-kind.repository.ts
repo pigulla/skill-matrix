@@ -16,7 +16,6 @@ import { IExampleKindRepository } from '#/domain/example/kind/example-kind.repos
 import type { ExampleKindID } from '#/domain/example/kind/example-kind-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 
-import { toConcurrencyToken } from '../../concurrency-token.codec.js'
 import { isRestrictViolation } from '../../error/is-restrict-violation.js'
 import { isUniqueConstraintViolation } from '../../error/is-unique-constraint-violation.js'
 
@@ -129,7 +128,7 @@ export class ExampleKindRepository implements IExampleKindRepository {
 
       return okAsync({
         value: new ExampleKind({ id: parsed.id, name: parsed.name }),
-        token: toConcurrencyToken(parsed.last_updated),
+        token: parsed.concurrency_token,
       })
     })
   }

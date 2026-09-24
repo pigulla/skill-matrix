@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -22,12 +20,13 @@ import type { DuplicateSkillNameError } from '#/domain/skill/error/duplicate-ski
 import type { SkillConcurrencyError } from '#/domain/skill/error/skill-concurrency.error.js'
 import type { SkillInUseError } from '#/domain/skill/error/skill-in-use.error.js'
 import type { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
-import { EXAMPLE_SKILL_ID, type SkillID } from '#/domain/skill/skill-id.js'
+import { EXAMPLE_SKILL_ID, type SkillID, skillIdSchema } from '#/domain/skill/skill-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { EXAMPLE_ETAG } from '../etag.js'
 import { ETagResponse } from '../etag-response.decorator.js'
+import { IdParam } from '../id-param.decorator.js'
 import { IfMatchHeader } from '../if-match-header.decorator.js'
 import { OpenApiTag } from '../openapi.tag.js'
 
@@ -62,6 +61,20 @@ export class SkillsController {
     type: [SkillDTO],
     description: 'The operation completed successfully.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public getAll(): ResultAsync<SkillDTO[], never> {
     return this.service.getAll().map(skills => skills.map(fromDomain))
@@ -90,11 +103,24 @@ export class SkillsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The skill with the given id was not found.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @ETagResponse()
   @UnwrapResult()
   public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: SkillID,
+    @IdParam('id', skillIdSchema) id: SkillID,
   ): ResultAsync<WithConcurrencyToken<SkillDTO>, SkillNotFoundError> {
     return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
@@ -123,7 +149,24 @@ export class SkillsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: `The skill is in use and can't be deleted.`,
+    description: `The skill is in use and can't be deleted, or the write conflicted with another one running at the same time.`,
+    examples: {
+      inUse: {
+        summary: `The skill is in use and can't be deleted`,
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: `Entity of type Skill identified by (id=${EXAMPLE_SKILL_ID}) is in use`,
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -135,8 +178,7 @@ export class SkillsController {
   })
   @UnwrapResult()
   public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: SkillID,
+    @IdParam('id', skillIdSchema) id: SkillID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<void, SkillInUseError | SkillNotFoundError | SkillConcurrencyError> {
     return this.service.delete(id, expectedToken)
@@ -162,7 +204,24 @@ export class SkillsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: `A uniqueness constraint on one of the skill's properties is being violated.`,
+    description: `A uniqueness constraint on one of the skill's properties is being violated, or the write conflicted with another one running at the same time.`,
+    examples: {
+      duplicateName: {
+        summary: 'A skill with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type Skill ((name=Backend Development))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -217,7 +276,24 @@ export class SkillsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: `A uniqueness constraint on one of the skill's properties is being violated.`,
+    description: `A uniqueness constraint on one of the skill's properties is being violated, or the write conflicted with another one running at the same time.`,
+    examples: {
+      duplicateName: {
+        summary: 'A skill with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type Skill ((name=Backend Development))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -235,8 +311,7 @@ export class SkillsController {
   @ETagResponse()
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: SkillID,
+    @IdParam('id', skillIdSchema) id: SkillID,
     @Body() dto: UpdateSkillDTO,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<

@@ -1,17 +1,15 @@
 import z from 'zod'
 
+import { concurrencyTokenSchema } from '#/domain/concurrency-token.js'
 import { exampleIdSchema } from '#/domain/example/example-id.js'
 import { Skill } from '#/domain/skill/skill.js'
 import { skillIdSchema } from '#/domain/skill/skill-id.js'
-import { dayjsSchema } from '#/util/dayjs.schema.js'
-
-import { toConcurrencyToken } from '../../concurrency-token.codec.js'
 
 const skillRowSchema = z.strictObject({
   id: skillIdSchema,
   name: z.string(),
   description: z.string(),
-  last_updated: dayjsSchema,
+  concurrency_token: concurrencyTokenSchema,
 })
 
 export const skillWithExampleIdsRow = skillRowSchema
@@ -29,7 +27,7 @@ export const skillWithExampleIdsRow = skillRowSchema
         description: data.description,
         exampleIds: new Set(data.example_ids),
       }),
-    getConcurrencyToken: () => toConcurrencyToken(data.last_updated),
+    getConcurrencyToken: () => data.concurrency_token,
   }))
   .readonly()
   .brand('skill-with-examples-row')
