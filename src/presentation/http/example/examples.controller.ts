@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -21,13 +19,14 @@ import type { DuplicateExampleNameError } from '#/domain/example/error/duplicate
 import type { ExampleConcurrencyError } from '#/domain/example/error/example-concurrency.error.js'
 import type { ExampleInUseError } from '#/domain/example/error/example-in-use.error.js'
 import type { ExampleNotFoundError } from '#/domain/example/error/example-not-found.error.js'
-import { EXAMPLE_EXAMPLE_ID, type ExampleID } from '#/domain/example/example-id.js'
+import { EXAMPLE_EXAMPLE_ID, type ExampleID, exampleIdSchema } from '#/domain/example/example-id.js'
 import type { ExampleKindReferenceNotFoundError } from '#/domain/example/kind/error/example-kind-reference-not-found.error.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { EXAMPLE_ETAG } from '../etag.js'
 import { ETagResponse } from '../etag-response.decorator.js'
+import { IdParam } from '../id-param.decorator.js'
 import { IfMatchHeader } from '../if-match-header.decorator.js'
 import { OpenApiTag } from '../openapi.tag.js'
 
@@ -62,6 +61,20 @@ export class ExamplesController {
     type: [ExampleDTO],
     description: 'The operation completed successfully.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public getAll(): ResultAsync<ExampleDTO[], never> {
     return this.service.getAll().map(examples => examples.map(fromDomain))
@@ -90,11 +103,24 @@ export class ExamplesController {
     status: HttpStatus.NOT_FOUND,
     description: 'The example with the given id was not found.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @ETagResponse()
   @UnwrapResult()
   public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleID,
+    @IdParam('id', exampleIdSchema) id: ExampleID,
   ): ResultAsync<WithConcurrencyToken<ExampleDTO>, ExampleNotFoundError> {
     return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
@@ -123,7 +149,25 @@ export class ExamplesController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'The example is still referenced by a skill.',
+    description:
+      'The example is still referenced by a skill, or the write conflicted with another one running at the same time.',
+    examples: {
+      inUse: {
+        summary: 'The example is still referenced by a skill',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: `Entity of type Example identified by (id=${EXAMPLE_EXAMPLE_ID}) is in use`,
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -135,8 +179,7 @@ export class ExamplesController {
   })
   @UnwrapResult()
   public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleID,
+    @IdParam('id', exampleIdSchema) id: ExampleID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<void, ExampleNotFoundError | ExampleInUseError | ExampleConcurrencyError> {
     return this.service.delete(id, expectedToken)
@@ -162,7 +205,25 @@ export class ExamplesController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'An example with an identical name already exists.',
+    description:
+      'An example with an identical name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'An example with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type Example ((name=NestJS))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -211,7 +272,25 @@ export class ExamplesController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'An example with an identical name already exists.',
+    description:
+      'An example with an identical name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'An example with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type Example ((name=NestJS))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -229,8 +308,7 @@ export class ExamplesController {
   @ETagResponse()
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleID,
+    @IdParam('id', exampleIdSchema) id: ExampleID,
     @Body() dto: UpdateExampleDTO,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<

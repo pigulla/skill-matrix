@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -19,9 +17,10 @@ import type { TeamReferenceNotFoundError } from '#/domain/team/error/team-refere
 import type { DuplicateUserEmailError } from '#/domain/user/error/duplicate-user-email.error.js'
 import type { DuplicateUserIdError } from '#/domain/user/error/duplicate-user-id.error.js'
 import type { UserNotFoundError } from '#/domain/user/error/user-not-found.error.js'
-import { EXAMPLE_USER_ID, type UserID } from '#/domain/user/user-id.js'
+import { EXAMPLE_USER_ID, type UserID, userIdSchema } from '#/domain/user/user-id.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
+import { IdParam } from '../id-param.decorator.js'
 import { OpenApiTag } from '../openapi.tag.js'
 
 import { CreateUserDTO, fromDomain, UpdateUserDTO, UserDTO } from './user.dto.js'
@@ -55,6 +54,20 @@ export class UsersController {
     type: [UserDTO],
     description: 'The operation completed successfully.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public getAll(): ResultAsync<UserDTO[], never> {
     return this.service.getAll().map(users => users.map(fromDomain))
@@ -76,11 +89,22 @@ export class UsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'The user with the given id was not found.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
-  public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: UserID,
-  ): ResultAsync<UserDTO, UserNotFoundError> {
+  public getOne(@IdParam('id', userIdSchema) id: UserID): ResultAsync<UserDTO, UserNotFoundError> {
     return this.service.get(id).map(fromDomain)
   }
 
@@ -100,11 +124,22 @@ export class UsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'The user with the given id was not found.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The write conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
-  public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: UserID,
-  ): ResultAsync<void, UserNotFoundError> {
+  public delete(@IdParam('id', userIdSchema) id: UserID): ResultAsync<void, UserNotFoundError> {
     return this.service.delete(id)
   }
 
@@ -121,7 +156,25 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'A user with an identical email address already exists.',
+    description:
+      'A user with an identical email address already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateEmail: {
+        summary: 'A user with this email address already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type User ((email=peter.pan@example.com))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -156,7 +209,25 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'A user with an identical email address already exists.',
+    description:
+      'A user with an identical email address already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateEmail: {
+        summary: 'A user with this email address already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type User ((email=peter.pan@example.com))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -165,8 +236,7 @@ export class UsersController {
   @ApiBody({ type: UpdateUserDTO })
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: UserID,
+    @IdParam('id', userIdSchema) id: UserID,
     @Body() dto: UpdateUserDTO,
   ): ResultAsync<
     UserDTO,

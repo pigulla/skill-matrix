@@ -12,7 +12,6 @@ import { DuplicateSkillNameError } from '#/domain/skill/error/duplicate-skill-na
 import { SkillConcurrencyError } from '#/domain/skill/error/skill-concurrency.error.js'
 import { SkillInUseError } from '#/domain/skill/error/skill-in-use.error.js'
 import { SkillNotFoundError } from '#/domain/skill/error/skill-not-found.error.js'
-import { toConcurrencyToken } from '#/infrastructure/persistence/concurrency-token.codec.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { SkillRepository } from '#/infrastructure/persistence/skill/skill.repository.js'
 import { mockTimeProvider, type TimeProviderMock } from '#/mocks.js'
@@ -115,11 +114,12 @@ describe('SkillRepository', () => {
       })
 
       const result = await skillRepository.create(skill)
+      const token = (await getETags(db)).skills[skill.id].token
 
       expect(result).toEqual(
         ok({
           value: skill,
-          token: toConcurrencyToken(now),
+          token,
         }),
       )
 
@@ -208,11 +208,12 @@ describe('SkillRepository', () => {
         updated,
         etags.skills[skills.backendDevelopment.id].token,
       )
+      const token = (await getETags(db)).skills[updated.id].token
 
       expect(result).toEqual(
         ok({
           value: updated,
-          token: toConcurrencyToken(later),
+          token,
         }),
       )
 
@@ -261,7 +262,7 @@ describe('SkillRepository', () => {
     it('should return SkillNotFoundError if the skill does not exist', async () => {
       const skill = SkillBuilder.create({ id: UNKNOWN_SKILL_ID })
 
-      const result = await skillRepository.update(skill, toConcurrencyToken(now))
+      const result = await skillRepository.update(skill, STALE_CONCURRENCY_TOKEN)
 
       expect(result).toEqual(err(new SkillNotFoundError(UNKNOWN_SKILL_ID)))
     })

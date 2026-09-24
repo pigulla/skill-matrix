@@ -6,4 +6,4 @@ RETURNING
   id,
   name,
   description,
-  last_updated;
+  concurrency_token (version) AS concurrency_token;

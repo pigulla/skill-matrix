@@ -6,6 +6,8 @@ CREATE TABLE skills_to_teams_with_proficiency (
   CONSTRAINT skills_to_teams_with_proficiency_pkey PRIMARY KEY (team_id, skill_id)
 );
 
+CREATE INDEX skills_to_teams_with_proficiency_skill_id_idx ON skills_to_teams_with_proficiency (skill_id);
+
 CREATE VIEW view_team_skill_proficiencies AS
 SELECT
   teams.id AS team_id,

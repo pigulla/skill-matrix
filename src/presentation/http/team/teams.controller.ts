@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -21,12 +19,13 @@ import type { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-
 import type { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
 import type { TeamInUseError } from '#/domain/team/error/team-in-use.error.js'
 import type { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
-import { EXAMPLE_TEAM_ID, type TeamID } from '#/domain/team/team-id.js'
+import { EXAMPLE_TEAM_ID, type TeamID, teamIdSchema } from '#/domain/team/team-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { EXAMPLE_ETAG } from '../etag.js'
 import { ETagResponse } from '../etag-response.decorator.js'
+import { IdParam } from '../id-param.decorator.js'
 import { IfMatchHeader } from '../if-match-header.decorator.js'
 import { OpenApiTag } from '../openapi.tag.js'
 
@@ -61,6 +60,20 @@ export class TeamsController {
     type: [TeamDTO],
     description: 'The operation completed successfully.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public getAll(): ResultAsync<TeamDTO[], never> {
     return this.service.getAll().map(teams => teams.map(fromDomain))
@@ -89,11 +102,24 @@ export class TeamsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The team with the given id was not found.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @ETagResponse()
   @UnwrapResult()
   public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: TeamID,
+    @IdParam('id', teamIdSchema) id: TeamID,
   ): ResultAsync<WithConcurrencyToken<TeamDTO>, TeamNotFoundError> {
     return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
@@ -122,7 +148,25 @@ export class TeamsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'The team still has members and cannot be deleted.',
+    description:
+      'The team still has members and cannot be deleted, or the write conflicted with another one running at the same time.',
+    examples: {
+      inUse: {
+        summary: 'The team still has members and cannot be deleted',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: `Entity of type Team identified by (id=${EXAMPLE_TEAM_ID}) is in use`,
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -134,8 +178,7 @@ export class TeamsController {
   })
   @UnwrapResult()
   public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: TeamID,
+    @IdParam('id', teamIdSchema) id: TeamID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<void, TeamNotFoundError | TeamInUseError | TeamConcurrencyError> {
     return this.service.delete(id, expectedToken)
@@ -161,7 +204,25 @@ export class TeamsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'A team with the given name already exists.',
+    description:
+      'A team with the given name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'A team with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type Team ((name=Platform))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiBody({ type: CreateTeamDTO })
   @ETagResponse()
@@ -203,7 +264,25 @@ export class TeamsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'A team with the given name already exists.',
+    description:
+      'A team with the given name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'A team with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type Team ((name=Platform))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -217,8 +296,7 @@ export class TeamsController {
   @ETagResponse()
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: TeamID,
+    @IdParam('id', teamIdSchema) id: TeamID,
     @Body() dto: UpdateTeamDTO,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<

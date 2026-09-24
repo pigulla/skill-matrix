@@ -6,8 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common'
@@ -24,12 +22,14 @@ import type { ExampleKindNotFoundError } from '#/domain/example/kind/error/examp
 import {
   EXAMPLE_EXAMPLE_KIND_ID,
   type ExampleKindID,
+  exampleKindIdSchema,
 } from '#/domain/example/kind/example-kind-id.js'
 import type { WithConcurrencyToken } from '#/domain/with-concurrency-token.js'
 import { UnwrapResult } from '#/util/unwrap-result.decorator.js'
 
 import { EXAMPLE_ETAG } from '../../etag.js'
 import { ETagResponse } from '../../etag-response.decorator.js'
+import { IdParam } from '../../id-param.decorator.js'
 import { IfMatchHeader } from '../../if-match-header.decorator.js'
 import { OpenApiTag } from '../../openapi.tag.js'
 
@@ -69,6 +69,20 @@ export class ExampleKindsController {
     type: [ExampleKindDTO],
     description: 'The operation completed successfully.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @UnwrapResult()
   public getAll(): ResultAsync<ExampleKindDTO[], never> {
     return this.service.getAll().map(exampleKinds => exampleKinds.map(fromDomain))
@@ -97,11 +111,24 @@ export class ExampleKindsController {
     status: HttpStatus.NOT_FOUND,
     description: 'The example kind with the given id was not found.',
   })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'The read conflicted with another transaction running at the same time.',
+    examples: {
+      transactionConflict: {
+        summary: 'The read conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
+  })
   @ETagResponse()
   @UnwrapResult()
   public getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleKindID,
+    @IdParam('id', exampleKindIdSchema) id: ExampleKindID,
   ): ResultAsync<WithConcurrencyToken<ExampleKindDTO>, ExampleKindNotFoundError> {
     return this.service.get(id).map(({ value, token }) => ({ value: fromDomain(value), token }))
   }
@@ -130,7 +157,25 @@ export class ExampleKindsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'The example kind is still referenced by an example.',
+    description:
+      'The example kind is still referenced by an example, or the write conflicted with another one running at the same time.',
+    examples: {
+      inUse: {
+        summary: 'The example kind is still referenced by an example',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: `Entity of type ExampleKind identified by (id=${EXAMPLE_EXAMPLE_KIND_ID}) is in use`,
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -142,8 +187,7 @@ export class ExampleKindsController {
   })
   @UnwrapResult()
   public delete(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleKindID,
+    @IdParam('id', exampleKindIdSchema) id: ExampleKindID,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<
     void,
@@ -172,7 +216,25 @@ export class ExampleKindsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'An example kind with the given name already exists.',
+    description:
+      'An example kind with the given name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'An example kind with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type ExampleKind ((name=Technology))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiBody({ type: CreateExampleKindDTO })
   @ETagResponse()
@@ -217,7 +279,25 @@ export class ExampleKindsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'An example kind with the given name already exists.',
+    description:
+      'An example kind with the given name already exists, or the write conflicted with another one running at the same time.',
+    examples: {
+      duplicateName: {
+        summary: 'An example kind with this name already exists',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Duplicate entity of type ExampleKind ((name=Technology))',
+        },
+      },
+      transactionConflict: {
+        summary: 'The write conflicted with a concurrent transaction',
+        value: {
+          statusCode: HttpStatus.CONFLICT,
+          message:
+            'The transaction was rolled back because it conflicted with another one running at the same time. Retrying the request may succeed.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.PRECONDITION_FAILED,
@@ -231,8 +311,7 @@ export class ExampleKindsController {
   @ETagResponse()
   @UnwrapResult()
   public update(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
-    id: ExampleKindID,
+    @IdParam('id', exampleKindIdSchema) id: ExampleKindID,
     @Body() dto: UpdateExampleKindDTO,
     @IfMatchHeader() expectedToken: ConcurrencyToken,
   ): ResultAsync<

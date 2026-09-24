@@ -11,7 +11,6 @@ import { DuplicateTeamNameError } from '#/domain/team/error/duplicate-team-name.
 import { TeamConcurrencyError } from '#/domain/team/error/team-concurrency.error.js'
 import { TeamInUseError } from '#/domain/team/error/team-in-use.error.js'
 import { TeamNotFoundError } from '#/domain/team/error/team-not-found.error.js'
-import { toConcurrencyToken } from '#/infrastructure/persistence/concurrency-token.codec.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { TeamRepository } from '#/infrastructure/persistence/team/team.repository.js'
 import { mockTimeProvider, type TimeProviderMock } from '#/mocks.js'
@@ -106,11 +105,12 @@ describe('TeamRepository', () => {
       })
 
       const result = await teamRepository.create(team)
+      const token = (await getETags(db)).teams[team.id].token
 
       expect(result).toEqual(
         ok({
           value: team,
-          token: toConcurrencyToken(now),
+          token,
         }),
       )
 
@@ -159,11 +159,12 @@ describe('TeamRepository', () => {
       timeProviderMock.now.mockReturnValue(later)
 
       const result = await teamRepository.update(updated, etags.teams[teams.traffic.id].token)
+      const token = (await getETags(db)).teams[updated.id].token
 
       expect(result).toEqual(
         ok({
           value: updated,
-          token: toConcurrencyToken(later),
+          token,
         }),
       )
 
@@ -186,7 +187,7 @@ describe('TeamRepository', () => {
     it('should return TeamNotFoundError if the team does not exist', async () => {
       const team = new TeamBuilder().withId(UNKNOWN_TEAM_ID).build()
 
-      const result = await teamRepository.update(team, toConcurrencyToken(now))
+      const result = await teamRepository.update(team, STALE_CONCURRENCY_TOKEN)
 
       expect(result).toEqual(err(new TeamNotFoundError(UNKNOWN_TEAM_ID)))
     })
@@ -210,6 +211,33 @@ describe('TeamRepository', () => {
         UnexpectedPersistenceError,
       )
     })
+
+    it('should give two updates that land in the same instant distinct tokens, so a stale token is rejected', async () => {
+      // The time provider is never advanced in this test, so both updates below genuinely share one
+      // `last_updated` instant. Under the old timestamp-derived token, that made the token minted by
+      // the first update indistinguishable from the token minted by the second - a stale `If-Match`
+      // could still match. With a monotonic `version`, the two tokens must differ regardless of timing.
+      const initialToken = etags.teams[teams.traffic.id].token
+      const firstUpdate = TeamBuilder.from(teams.traffic).withName('Infrastructure').build()
+      const secondUpdate = TeamBuilder.from(teams.traffic).withName('Platform').build()
+
+      const firstResult = await teamRepository.update(firstUpdate, initialToken)
+      const firstToken = (await getETags(db)).teams[teams.traffic.id].token
+
+      expect(firstResult).toEqual(ok({ value: firstUpdate, token: firstToken }))
+
+      const secondResult = await teamRepository.update(secondUpdate, firstToken)
+      const secondToken = (await getETags(db)).teams[teams.traffic.id].token
+
+      expect(secondResult).toEqual(ok({ value: secondUpdate, token: secondToken }))
+      expect(secondToken).not.toEqual(firstToken)
+
+      // Replaying the first update with the token it originally minted - now stale, because the second
+      // update has since moved the row on - must be rejected.
+      const replayResult = await teamRepository.update(firstUpdate, firstToken)
+
+      expect(replayResult).toEqual(err(new TeamConcurrencyError(teams.traffic.id)))
+    })
   })
 
   describe('delete', () => {
@@ -232,7 +260,7 @@ describe('TeamRepository', () => {
     })
 
     it('should return TeamNotFoundError if the team does not exist', async () => {
-      const result = await teamRepository.delete(UNKNOWN_TEAM_ID, toConcurrencyToken(now))
+      const result = await teamRepository.delete(UNKNOWN_TEAM_ID, STALE_CONCURRENCY_TOKEN)
 
       expect(result).toEqual(err(new TeamNotFoundError(UNKNOWN_TEAM_ID)))
     })

@@ -49,7 +49,7 @@ See [Imports](#imports) for how imports between and within layers are handled.
 HTTP → Controller (presentation) → Domain interface → Repository impl (infrastructure) → PostgreSQL
 ```
 
-DTOs are validated at the boundary with Zod (`nestjs-zod`). Domain objects are immutable Zod-validated value objects. Explicit `toDomain()` / `fromDomain()` converters live in the DTO file.
+DTOs are validated at the boundary with Zod (`nestjs-zod`). Domain objects are immutable Zod-validated value objects. Explicit `fromDomain()` converters live in the DTO file; there is no `toDomain()` counterpart, because entities are constructed in the application layer, which owns ID generation.
 
 ### Key patterns
 
@@ -58,6 +58,7 @@ DTOs are validated at the boundary with Zod (`nestjs-zod`). Domain objects are i
 - **Config:** Node-Config (`config/`) with Zod-validated schemas in `src/infrastructure/config/`
 - **Logging:** Pino via `nestjs-pino`; no `console.*` allowed (Biome enforces this)
 - **Controllers:** Controllers never contain business logic. They serve exclusively as an adapter from HTTP to the application layer (or in trivial cases the domain layer). All business logic must be in application services.
+- **Modules:** Global HTTP enhancers (`APP_PIPE`/`APP_FILTER`/`APP_INTERCEPTOR`/`APP_GUARD`) belong in `HttpCoreModule`; the CLS transaction plugin belongs in `TransactionalModule`. The integration-test harness composes those two modules directly rather than `MainModule`, so wiring declared anywhere else exists in production only.
 
 ### Error handling
 
@@ -76,6 +77,8 @@ Concrete shape, layer by layer:
 - **Controllers** (`src/presentation/http/*/`): handler methods return `ResultAsync<Dto, E>` directly (instead of `Promise<Dto>`) and are additionally decorated with `@UnwrapResult()` (`src/util/unwrap-result.decorator.ts`), which awaits the result and either returns the `Ok` value or `throw`s the `Err` value — so the existing `DomainErrorsExceptionFilter` maps it to an HTTP status exactly as it would a direct throw, with no filter changes needed. Ideally, handler bodies should be one-liners, e.g. `return this.service.get(id).map(fromDomain)`.
 - **Tests**: integration tests assert on the resolved `Result` itself, instead of `.resolves.toEqual(...)` / `.rejects.toThrow(SomeExpectedError)` — see the `writing-tests` skill for the exact assertion pattern. Genuinely unexpected errors (`UnexpectedPersistenceError`) still assert with `.rejects.toThrow(...)`, since those remain real rejections rather than `Err` values. Controller integration tests need no changes — HTTP status/body behavior is identical whether an error was thrown directly or unwrapped from a `Result`.
 
+`@ResultTransactional()` also translates `40001`/`40P01` (serialization failure, deadlock) into a thrown `TransactionConflictError`, which `DomainErrorsExceptionFilter` maps to `409 Conflict` — a third category, alongside the two-channel model above, for failures that are neither an expected domain `Err` nor a bug. No new invariant is introduced: the decorated method body is never re-executed.
+
 ### Code Conventions
 
 - Prefer functional style over imperative style, e.g. using `.map()`, `.reduce()`, and `.filter()` over `for` loops.
@@ -83,7 +86,7 @@ Concrete shape, layer by layer:
 - Always prefer Dayjs instances to native Date objects. Architecturally, don't consider Dayjs an external dependency but a pure domain object.
 - Only `throw` instances of `Error` (or one of its subclasses).
 - Do not use TypeScript's `enum` keyword. Instead, use `export const ENUM = { KEY: 'key' } as const` and export the type like so: `export type Enum = (typeof ENUM)[keyof typeof ENUM]`. The name of the keys are always in SCREAMING_SNAKE_CASE, the value are lower-kebab-cased.
-- All services and repositories must have an explicit interface definition as an abstract class. This abstract class doubles as the injection token for dependency injection. For example, a service named PaymentService must implement an IPaymentService interface defined as an abstract IPaymentService class. The class actually registered against that DI token (the `provide: IPaymentService` in a module) must implement it, not extend it. This doesn't forbid a shared abstract base class between several concrete implementations that itself sits below the DI boundary — e.g. `UuidProvider` (`src/infrastructure/uuid/uuid-provider.ts`) provides a shared `generate()` template method and is extended by `SkillUuidProvider`/`UserUuidProvider`/etc.; neither `UuidProvider` nor its own parent `IUuidProvider` is ever used as a `provide:` token, only the concrete `I<Entity>UuidProvider`/`<Entity>UuidProvider` pairs are, and those still follow implements-not-extends.
+- All services and repositories must have an explicit interface definition as an abstract class. This abstract class doubles as the injection token for dependency injection. For example, a service named PaymentService must implement an IPaymentService interface defined as an abstract IPaymentService class. The class actually registered against that DI token (the `provide: IPaymentService` in a module) must implement it, not extend it. This doesn't forbid a shared abstract base class between several concrete implementations that itself sits below the DI boundary, as long as neither it nor its own parent interface is ever registered as a `provide:` token itself — only the concrete `I<Entity>X`/`<Entity>X` pairs are, and those still follow implements-not-extends.
 
 ### Testing
 

@@ -11,7 +11,6 @@ import { DuplicateExampleKindNameError } from '#/domain/example/kind/error/dupli
 import { ExampleKindConcurrencyError } from '#/domain/example/kind/error/example-kind-concurrency.error.js'
 import { ExampleKindInUseError } from '#/domain/example/kind/error/example-kind-in-use.error.js'
 import { ExampleKindNotFoundError } from '#/domain/example/kind/error/example-kind-not-found.error.js'
-import { toConcurrencyToken } from '#/infrastructure/persistence/concurrency-token.codec.js'
 import { IConnectionProvider } from '#/infrastructure/persistence/connection-provider.interface.js'
 import { ExampleKindRepository } from '#/infrastructure/persistence/example/kind/example-kind.repository.js'
 import { mockTimeProvider, type TimeProviderMock } from '#/mocks.js'
@@ -108,11 +107,12 @@ describe('ExampleKindRepository', () => {
       const exampleKind = ExampleKindBuilder.create({ name: 'Tool' })
 
       const result = await exampleKindRepository.create(exampleKind)
+      const token = (await getETags(db)).exampleKinds[exampleKind.id].token
 
       expect(result).toEqual(
         ok({
           value: exampleKind,
-          token: toConcurrencyToken(now),
+          token,
         }),
       )
 
@@ -163,11 +163,12 @@ describe('ExampleKindRepository', () => {
         updated,
         etags.exampleKinds[exampleKinds.pattern.id].token,
       )
+      const token = (await getETags(db)).exampleKinds[updated.id].token
 
       expect(result).toEqual(
         ok({
           value: updated,
-          token: toConcurrencyToken(later),
+          token,
         }),
       )
 
@@ -189,7 +190,7 @@ describe('ExampleKindRepository', () => {
     it('should return ExampleKindNotFoundError if the example kind does not exist', async () => {
       const exampleKind = new ExampleKindBuilder().withId(UNKNOWN_EXAMPLE_KIND_ID).build()
 
-      const result = await exampleKindRepository.update(exampleKind, toConcurrencyToken(now))
+      const result = await exampleKindRepository.update(exampleKind, STALE_CONCURRENCY_TOKEN)
 
       expect(result).toEqual(err(new ExampleKindNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
     })
@@ -252,7 +253,7 @@ describe('ExampleKindRepository', () => {
     it('should return ExampleKindNotFoundError if the example kind does not exist', async () => {
       const result = await exampleKindRepository.delete(
         UNKNOWN_EXAMPLE_KIND_ID,
-        toConcurrencyToken(now),
+        STALE_CONCURRENCY_TOKEN,
       )
 
       expect(result).toEqual(err(new ExampleKindNotFoundError(UNKNOWN_EXAMPLE_KIND_ID)))
