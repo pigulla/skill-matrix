@@ -1,8 +1,19 @@
 {
+    "application": {
+        "isProduction": false
+    },
     "logging": {
-        "enabled": true
+        "enabled": false
     },
     "database": {
-        "disableWarnings": true
+        "connection": {
+            "name": "application",
+            "host": "localhost",
+            "port": 5432,
+            "ssl": false,
+            "username": "postgres",
+            "password": "postgres",
+            "database": "skillmatrix"
+        }
     }
 }

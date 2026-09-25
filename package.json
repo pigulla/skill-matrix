@@ -45,7 +45,7 @@
     "lint:sql": "NODE_OPTIONS='--conditions development' jiti scripts/sql-formatter.ts lint",
     "lint:tsc": "tsc --project tsconfig.test.json",
     "openapi": "npm run openapi:build && npm run openapi:html && npm run openapi:lint",
-    "openapi:build": "NODE_OPTIONS='--conditions development' jiti scripts/build-openapi-spec.ts > docs/openapi.json",
+    "openapi:build": "NODE_ENV=test NODE_OPTIONS='--conditions development' jiti scripts/build-openapi-spec.ts > docs/openapi.json",
     "openapi:html": "redocly build-docs docs/openapi.json --output=docs/openapi.html",
     "openapi:lint": "redocly lint docs/openapi.json",
     "start": "NODE_OPTIONS='--conditions development' jiti src/index.ts",
